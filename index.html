@@ -5,18 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Booha Invaders — Stage 1 DOTTY</title>
 <style>
-html,body{
-  margin:0;
-  height:100%;
-  background:#000;
-  overflow:hidden;
-}
-canvas{
-  display:block;
-  width:100vw;
-  height:100vh;
-  touch-action:none;
-}
+  html,body{ margin:0; height:100%; background:#000; overflow:hidden; }
+  canvas{ display:block; width:100vw; height:100vh; touch-action:none; }
 </style>
 </head>
 <body>
@@ -24,339 +14,767 @@ canvas{
 
 <script>
 (() => {
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d",{alpha:false});
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha:false });
 
-const DPR_CAP = 2;
-let DPR=1;
-function resize(){
-  DPR=Math.min(devicePixelRatio||1,DPR_CAP);
-  canvas.width=innerWidth*DPR;
-  canvas.height=innerHeight*DPR;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-}
-addEventListener("resize",resize);
+  // -----------------------
+  // DPR / resize
+  // -----------------------
+  const DPR_CAP = 2;
+  let DPR = 1;
 
-// ---------- Assets ----------
-const ASSETS={
-  bg:"assets/background.png",
-  booIdle:"assets/booha-invad-1.png",
-  booShoot:"assets/booha-invad-2.png",
-  bug:"assets/bug-1.png",
-  candy:"assets/candy.png",
-  rocks:[
-    "assets/rock1.png",
-    "assets/rock2.png",
-    "assets/rock3.png",
-    "assets/rock4.png"
-  ]
-};
-function load(src){
-  return new Promise(res=>{
-    const i=new Image();
-    i.onload=()=>res(i);
-    i.src=src;
-  });
-}
-let IMG={};
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    canvas.width  = Math.floor(innerWidth * DPR);
+    canvas.height = Math.floor(innerHeight * DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
+  }
+  addEventListener("resize", resize);
 
-// ---------- Helpers ----------
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const rand=(a,b)=>a+Math.random()*(b-a);
-const aabb=(ax,ay,aw,ah,bx,by,bw,bh)=>
-  ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+  // -----------------------
+  // Assets (folders)
+  // -----------------------
+  const ASSETS = {
+    bg:       "assets/background.png",
+    booIdle:  "assets/booha-invad-1.png",
+    booShoot: "assets/booha-invad-2.png",
+    bug:      "assets/bug-1.png",
+    candy:    "assets/candy.png",
+    rocks: [
+      "assets/rock1.png",
+      "assets/rock2.png",
+      "assets/rock3.png",
+      "assets/rock4.png"
+    ]
+  };
 
-// ---------- Input ----------
-let pointerX=null;
-canvas.addEventListener("pointerdown",e=>pointerX=e.clientX);
-canvas.addEventListener("pointermove",e=>pointerX=e.clientX);
-canvas.addEventListener("pointerup",()=>pointerX=null);
-const keys=new Set();
-addEventListener("keydown",e=>keys.add(e.key));
-addEventListener("keyup",e=>keys.delete(e.key));
-
-// ---------- Player ----------
-const player={
-  x:0,y:0,w:80,h:80,
-  energy:100,
-  glow:0,
-  fireCooldown:0,
-  sugar:0
-};
-
-// ---------- World ----------
-const rocks=[];
-const bugs=[];
-const booShots=[];
-const bugShots=[];
-const sparkles=[];
-const candies=[];
-
-// ---------- Stage ----------
-let round=0;
-let bugsThisRound=1;
-let bugsKilled=0;
-let spawnDelay=0;
-let bugSpeed=10;
-
-// ---------- Setup ----------
-function reset(){
-  resize();
-  player.energy=100;
-  player.sugar=0;
-  player.fireCooldown=0;
-  player.w=clamp(innerWidth*0.12,70,90);
-  player.h=player.w;
-  player.x=innerWidth/2-player.w/2;
-  player.y=innerHeight-player.h-20;
-
-  rocks.length=0;
-  for(let i=0;i<4;i++){
-    rocks.push({
-      x:(i+1)*(innerWidth/5)-50,
-      y:player.y-90,
-      w:100,h:70,
-      hp:20
+  function loadImg(src){
+    return new Promise((res, rej)=>{
+      const img = new Image();
+      img.onload = ()=>res(img);
+      img.onerror = ()=>rej(new Error("Failed to load: " + src));
+      img.src = src;
     });
   }
 
-  bugs.length=0;
-  booShots.length=0;
-  bugShots.length=0;
-  candies.length=0;
-  sparkles.length=0;
+  const IMG = {};
 
-  round=0;
-  nextRound();
-}
+  // -----------------------
+  // Helpers
+  // -----------------------
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const rand  = (a,b)=>a + Math.random()*(b-a);
 
-function nextRound(){
-  round++;
-  bugsKilled=0;
-  if(round===1) bugsThisRound=1;
-  else if(round===2) bugsThisRound=2;
-  else if(round===3) bugsThisRound=4;
-  else if(round===4) bugsThisRound=8;
-  else bugsThisRound++;
+  function aabb(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  }
 
-  spawnDelay=0;
-  bugSpeed+=2;
-}
+  // cover background (no distortion)
+  function drawCover(img){
+    const W = innerWidth, H = innerHeight;
+    const iw = img.width, ih = img.height;
+    const s = Math.max(W/iw, H/ih);
+    const dw = iw*s, dh = ih*s;
+    const dx = (W - dw)/2;
+    const dy = (H - dh)/2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
 
-function spawnBug(){
-  bugs.push({
-    x:rand(50,innerWidth-100),
-    y:-80,
-    w:90,h:90,
-    drift:rand(-1,1),
-    fireCD:rand(2,4),
-    alive:true
+  // -----------------------
+  // Input (universal)
+  // -----------------------
+  let pointerDown = false;
+  let pointerX = null;
+
+  canvas.addEventListener("pointerdown", (e)=>{
+    pointerDown = true;
+    pointerX = e.clientX;
   });
-}
+  canvas.addEventListener("pointermove", (e)=>{
+    if(!pointerDown) return;
+    pointerX = e.clientX;
+  });
+  canvas.addEventListener("pointerup", ()=>{
+    pointerDown = false;
+    pointerX = null;
+  });
+  canvas.addEventListener("pointercancel", ()=>{
+    pointerDown = false;
+    pointerX = null;
+  });
 
-// ---------- Update ----------
-let last=0;
-function update(dt){
-  if(player.energy<=0) return;
+  // Mouse move on desktop (no click needed)
+  addEventListener("mousemove", (e)=>{
+    if(pointerDown) return;
+    if(window.matchMedia && window.matchMedia("(pointer:fine)").matches){
+      pointerX = e.clientX;
+    }
+  });
 
-  // movement
-  if(pointerX!==null){
-    player.x=clamp(pointerX-player.w/2,0,innerWidth-player.w);
-  } else {
-    if(keys.has("ArrowLeft")) player.x-=400*dt;
-    if(keys.has("ArrowRight")) player.x+=400*dt;
+  const keys = new Set();
+  addEventListener("keydown", (e)=>{
+    if(["ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
+    keys.add(e.key);
+  }, {passive:false});
+  addEventListener("keyup", (e)=>keys.delete(e.key));
+
+  // -----------------------
+  // Entities
+  // -----------------------
+  const player = {
+    x:0, y:0, w:80, h:80,
+    energy: 100,
+    glow: 0,          // small gold pulse when shooting
+    sugar: 0,         // seconds remaining
+    hitIFrames: 0     // invincibility window
+  };
+
+  const rocks = [];     // {x,y,w,h,hp}
+  const bugs  = [];     // {x,y,w,h,alive, enterT, enterDur, tx,ty, bob, driftSpeed, fireCD, glow}
+  const booShots = [];  // {x,y,vy,color,isPink,dead}
+  const bugShots = [];  // {x,y,vx,vy,r,dead,t}
+  const sparkles = [];  // {x,y,vx,vy,life,ttl,size,kind}
+  const candies  = [];  // {x,y,vx,vy,spin,dead}
+
+  // -----------------------
+  // Round / stage pacing
+  // -----------------------
+  let round = 0;
+  let bugsThisRound = 1;
+  let killedThisRound = 0;
+  let spawnTimer = 0;
+
+  // drift increases over time (within stage)
+  let stageTime = 0;
+
+  function nextRound(){
+    round++;
+    killedThisRound = 0;
+
+    if(round === 1) bugsThisRound = 1;
+    else if(round === 2) bugsThisRound = 2;
+    else if(round === 3) bugsThisRound = 4;
+    else if(round === 4) bugsThisRound = 8;
+    else bugsThisRound++;
+
+    spawnTimer = 0.5; // slight breathing room before next spawn
   }
 
-  // firing
-  player.fireCooldown-=dt;
-  const fireRate=player.sugar>0?0.12:0.28;
-  if(player.fireCooldown<=0){
-    booShots.push({
-      x:player.x+player.w/2,
-      y:player.y,
-      vy:-900
-    });
-    player.fireCooldown=fireRate;
-    player.glow=0.2;
-  }
+  function resetGame(){
+    resize();
 
-  player.glow=Math.max(0,player.glow-dt);
-  player.sugar=Math.max(0,player.sugar-dt);
+    // player sizing
+    player.w = clamp(innerWidth * 0.11, 68, 92);
+    player.h = player.w;
+    player.x = innerWidth/2 - player.w/2;
+    player.y = innerHeight - player.h - 18;
 
-  // spawn bugs
-  spawnDelay-=dt;
-  if(bugs.length<bugsThisRound && spawnDelay<=0){
-    spawnBug();
-    spawnDelay=0.8;
-  }
+    player.energy = 100;
+    player.glow = 0;
+    player.sugar = 0;
+    player.hitIFrames = 0;
 
-  // bugs
-  bugs.forEach(b=>{
-    if(!b.alive) return;
-    b.y+=40*dt;
-    b.x+=Math.sin(Date.now()/1000+b.y)*bugSpeed*dt;
-    b.fireCD-=dt;
-    if(b.fireCD<=0){
-      bugShots.push({
-        x:b.x+b.w/2,
-        y:b.y+b.h,
-        vy:300
+    // rocks
+    rocks.length = 0;
+    const count = 4;
+    const rockW = clamp(innerWidth*0.18, 110, 160);
+    const rockH = rockW * 0.72;
+    const gap = (innerWidth - count*rockW) / (count+1);
+    const ry = player.y - rockH - 55;
+
+    for(let i=0;i<count;i++){
+      rocks.push({
+        x: gap + i*(rockW+gap),
+        y: ry,
+        w: rockW,
+        h: rockH,
+        hp: 20
       });
-      b.fireCD=rand(1.5,3.5);
     }
-  });
 
-  // boo shots
-  booShots.forEach(s=>{
-    s.y+=s.vy*dt;
-    sparkles.push({x:s.x,y:s.y,life:0});
-    bugs.forEach(b=>{
-      if(b.alive && aabb(s.x-4,s.y-4,8,8,b.x,b.y,b.w,b.h)){
-        b.alive=false;
-        s.dead=true;
-        bugsKilled++;
-      }
-    });
-  });
+    bugs.length = 0;
+    booShots.length = 0;
+    bugShots.length = 0;
+    sparkles.length = 0;
+    candies.length = 0;
 
-  // bug shots
-  bugShots.forEach(s=>{
-    s.y+=s.vy*dt;
-    if(aabb(s.x-6,s.y-6,12,12,player.x,player.y,player.w,player.h)){
-      s.dead=true;
-      player.energy-=10;
-    }
-    rocks.forEach(r=>{
-      if(r.hp>0 && aabb(s.x-6,s.y-6,12,12,r.x,r.y,r.w,r.h)){
-        r.hp--;
-        s.dead=true;
-      }
-    });
-  });
-
-  // cleanup
-  booShots.filter(s=>!s.dead && s.y>-20);
-  bugShots.filter(s=>!s.dead && s.y<innerHeight+20);
-  bugs.filter(b=>b.alive);
-
-  // round clear
-  if(bugsKilled>=bugsThisRound){
-    dropCandy();
+    round = 0;
+    stageTime = 0;
     nextRound();
   }
-}
 
-// ---------- Candy ----------
-function dropCandy(){
-  candies.push({
-    x:rand(40,innerWidth-40),
-    y:-40,
-    vy:80
-  });
-}
+  // -----------------------
+  // Spawning DOTTY (20% larger)
+  // -----------------------
+  function spawnBug(){
+    const bw = clamp(innerWidth * 0.078, 54, 78); // ~20% larger than earlier
+    const bh = bw;
 
-function updateCandy(dt){
-  candies.forEach(c=>{
-    c.y+=c.vy*dt;
-    sparkles.push({x:c.x,y:c.y,life:0});
-    if(aabb(c.x-20,c.y-20,40,40,player.x,player.y,player.w,player.h)){
-      c.dead=true;
-      player.sugar=8;
-      player.energy=clamp(player.energy+40,0,100);
-    }
-  });
-  for(let i=candies.length-1;i>=0;i--) if(candies[i].dead) candies.splice(i,1);
-}
+    const lanes = 6;
+    const laneW = innerWidth / lanes;
+    const lane = (Math.random()*lanes)|0;
+    const tx = lane*laneW + laneW/2 - bw/2;
+    const ty = clamp(innerHeight*0.18, 90, 150) + rand(0,40);
 
-// ---------- Draw ----------
-function draw(){
-  ctx.drawImage(IMG.bg,0,0,innerWidth,innerHeight);
+    const startX = tx + rand(-laneW*0.35, laneW*0.35);
+    const startY = -bh - rand(30, 130);
 
-  // rocks
-  rocks.forEach(r=>{
-    if(r.hp<=0) return;
-    const idx=clamp(4-Math.ceil(r.hp/5),0,3);
-    ctx.drawImage(IMG.rocks[idx],r.x,r.y,r.w,r.h);
-  });
+    bugs.push({
+      x: startX,
+      y: startY,
+      w: bw,
+      h: bh,
+      alive: true,
 
-  // bugs
-  bugs.forEach(b=>{
-    if(!b.alive) return;
-    ctx.drawImage(IMG.bug,b.x,b.y,b.w,b.h);
-  });
+      // elegant entry
+      enterT: 0,
+      enterDur: rand(0.9, 1.3),
+      sx: startX,
+      sy: startY,
+      tx, ty,
 
-  // shots
-  ctx.fillStyle="#ffd166";
-  booShots.forEach(s=>ctx.fillRect(s.x-2,s.y-8,4,12));
-  ctx.fillStyle="#66ff99";
-  bugShots.forEach(s=>ctx.fillRect(s.x-4,s.y-4,8,8));
-
-  // candy
-  candies.forEach(c=>{
-    ctx.drawImage(IMG.candy,c.x-20,c.y-20,40,40);
-  });
-
-  // booha
-  if(player.energy>0){
-    if(player.glow>0){
-      ctx.globalAlpha=0.7;
-      ctx.beginPath();
-      ctx.arc(player.x+player.w/2,player.y+player.h/2,player.w,0,Math.PI*2);
-      ctx.fillStyle="#ffd166";
-      ctx.fill();
-      ctx.globalAlpha=1;
-    }
-    ctx.drawImage(
-      player.fireCooldown<0.15?IMG.booShoot:IMG.booIdle,
-      player.x,player.y,player.w,player.h
-    );
+      bob: rand(0, 10),
+      driftSpeed: 8,  // will ramp with stageTime
+      fireCD: rand(2.6, 4.0), // calm at start
+      glow: 0
+    });
   }
 
-  // energy meter
-  ctx.fillStyle="#000";
-  ctx.fillRect(20,20,120,10);
-  ctx.fillStyle="#ffd166";
-  ctx.fillRect(20,20,120*(player.energy/100),10);
-}
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
 
-// ---------- Loop ----------
-function loop(t){
-  const dt=Math.min(0.033,(t-last)/1000);
-  last=t;
-  update(dt);
-  updateCandy(dt);
-  draw();
-  requestAnimationFrame(loop);
-}
+  // -----------------------
+  // FX
+  // -----------------------
+  function addSpark(x,y, n=3, kind="gold"){
+    for(let i=0;i<n;i++){
+      sparkles.push({
+        x, y,
+        vx: rand(-120,120),
+        vy: rand(-160,60),
+        life: 0,
+        ttl: rand(0.18, 0.34),
+        size: rand(1.2, 2.6),
+        kind
+      });
+    }
+  }
 
-// ---------- Boot ----------
-(async()=>{
-  resize();
-  const [
-    bg,boo1,boo2,bug,candy,
-    r1,r2,r3,r4
-  ]=await Promise.all([
-    load(ASSETS.bg),
-    load(ASSETS.booIdle),
-    load(ASSETS.booShoot),
-    load(ASSETS.bug),
-    load(ASSETS.candy),
-    load(ASSETS.rocks[0]),
-    load(ASSETS.rocks[1]),
-    load(ASSETS.rocks[2]),
-    load(ASSETS.rocks[3])
-  ]);
-  IMG={
-    bg,
-    booIdle:boo1,
-    booShoot:boo2,
-    bug,
-    candy,
-    rocks:[r1,r2,r3,r4]
-  };
-  reset();
-  requestAnimationFrame(loop);
-})();
+  function dropCandy(){
+    candies.push({
+      x: rand(40, innerWidth-40),
+      y: -30,
+      vx: rand(-20, 20),
+      vy: rand(70, 90),
+      spin: rand(-2, 2),
+      dead:false
+    });
+  }
+
+  // -----------------------
+  // Shooting rules
+  // -----------------------
+  // Normal: GOLD sparkly, one shot at a time (wait until clear)
+  // Sugar:  PINK rapid shots + pink pulsate
+
+  function canFireNormal(){
+    // one-shot-at-a-time
+    return booShots.length === 0;
+  }
+
+  function fireBooShot(isPink){
+    booShots.push({
+      x: player.x + player.w/2,
+      y: player.y + 6,
+      vy: isPink ? -1050 : -900,
+      isPink,
+      dead:false
+    });
+
+    // subtle glow when shooting (smaller)
+    player.glow = isPink ? 0.10 : 0.12;
+  }
+
+  function fireBugShot(b){
+    bugShots.push({
+      x: b.x + b.w/2,
+      y: b.y + b.h + 8,
+      vx: rand(-55, 55),
+      vy: rand(260, 340),
+      r: rand(7, 10),
+      t: 0,
+      dead:false
+    });
+    b.glow = 0.18;
+  }
+
+  // -----------------------
+  // Update
+  // -----------------------
+  let last = 0;
+  function update(dt){
+    if(player.energy <= 0) return;
+
+    stageTime += dt;
+
+    // drift ramps slowly (gentle -> faster)
+    const driftBase = 10;
+    const driftRamp = clamp((stageTime - 18) / 40, 0, 1); // starts later
+    const driftNow  = driftBase + driftRamp * 28;         // ends faster
+
+    // movement
+    if(pointerX !== null){
+      player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
+    } else {
+      if(keys.has("ArrowLeft"))  player.x -= 420*dt;
+      if(keys.has("ArrowRight")) player.x += 420*dt;
+      player.x = clamp(player.x, 10, innerWidth - player.w - 10);
+    }
+
+    // timers
+    player.glow = Math.max(0, player.glow - dt*2.2);
+    player.sugar = Math.max(0, player.sugar - dt);
+    player.hitIFrames = Math.max(0, player.hitIFrames - dt);
+
+    // spawn bugs until we reach bugsThisRound
+    spawnTimer -= dt;
+    const aliveCount = bugs.reduce((n,b)=>n+(b.alive?1:0),0);
+    if(aliveCount < bugsThisRound && spawnTimer <= 0){
+      spawnBug();
+      spawnTimer = 0.85; // elegant spacing
+    }
+
+    // bugs update (enter + drift + shooting)
+    for(const b of bugs){
+      if(!b.alive) continue;
+
+      b.glow = Math.max(0, b.glow - dt*2.0);
+      b.bob += dt;
+
+      // entry
+      if(b.enterT < b.enterDur){
+        b.enterT += dt;
+        const t = clamp(b.enterT / b.enterDur, 0, 1);
+        const e = easeOutCubic(t);
+
+        const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
+        b.x = b.sx + (b.tx - b.sx)*e + curve*(1-t);
+        b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
+      } else {
+        // drift (gentle, then faster)
+        b.driftSpeed = driftNow;
+        b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
+        b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+
+        // firing (starts calm, ramps with time + rounds)
+        // early: rare; later: more frequent
+        const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+        const base = 3.4 - fireRamp*1.6; // 3.4s down to ~1.8s
+        b.fireCD -= dt;
+        if(b.fireCD <= 0){
+          fireBugShot(b);
+          b.fireCD = rand(base, base + 1.2);
+          b.fireCD = Math.max(0.9, b.fireCD);
+        }
+      }
+    }
+
+    // Booha firing
+    // - Normal: one shot at a time
+    // - Sugar: rapid pink shots (not one-shot limited)
+    // Auto-fire always on (as you wanted), but behaves differently in sugar
+    if(player.sugar > 0){
+      // sugar rapid fire (pink)
+      // rate tuned to feel boosted but not ridiculous
+      // also cap max shots to avoid screen spam
+      const maxPinkShots = 3;
+      if(booShots.length < maxPinkShots){
+        // fire cadence based on dt accumulator pattern
+        // simple cooldown using glow as a tiny timer isn't clean; use a hidden timer:
+      }
+    }
+  }
+
+  // We keep a dedicated shot timer to avoid weird cadence
+  let booFireTimer = 0;
+
+  function updateFiring(dt){
+    booFireTimer -= dt;
+
+    if(player.sugar > 0){
+      // rapid pink shots
+      const cooldown = 0.12;
+      const maxPinkShots = 3;
+      if(booFireTimer <= 0 && booShots.length < maxPinkShots){
+        fireBooShot(true);
+        booFireTimer = cooldown;
+      }
+    } else {
+      // calm gold, one-at-a-time
+      const cooldown = 0.12; // only used for "just after clear" feel
+      if(booFireTimer <= 0 && canFireNormal()){
+        fireBooShot(false);
+        booFireTimer = cooldown;
+      }
+    }
+  }
+
+  function updateProjectiles(dt){
+    // boo shots
+    for(const s of booShots){
+      if(s.dead) continue;
+      s.y += s.vy * dt;
+
+      // sparkly trail
+      if(s.isPink){
+        addSpark(s.x + rand(-2,2), s.y + 10 + rand(-2,2), 2, "pink");
+      } else {
+        addSpark(s.x + rand(-2,2), s.y + 10 + rand(-2,2), 2, "gold");
+      }
+
+      // hit bugs
+      for(const b of bugs){
+        if(!b.alive) continue;
+        if(aabb(s.x-5, s.y-10, 10, 18, b.x, b.y, b.w, b.h)){
+          b.alive = false;
+          s.dead = true;
+          killedThisRound++;
+          addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
+          break;
+        }
+      }
+
+      // offscreen
+      if(s.y < -40) s.dead = true;
+    }
+
+    // bug shots (green blobs)
+    for(const bl of bugShots){
+      if(bl.dead) continue;
+      bl.t += dt;
+      const wob = Math.sin(bl.t*6) * 0.8;
+
+      bl.x += (bl.vx * (1+wob)) * dt;
+      bl.y += bl.vy * dt;
+
+      // hit rocks
+      for(const r of rocks){
+        if(r.hp <= 0) continue;
+        if(aabb(bl.x-bl.r, bl.y-bl.r, bl.r*2, bl.r*2, r.x, r.y, r.w, r.h)){
+          r.hp = Math.max(0, r.hp - 1);
+          bl.dead = true;
+          // a little slime puff via sparkles in green
+          addSpark(bl.x, bl.y, 8, "slime");
+          break;
+        }
+      }
+
+      // hit player (with i-frames)
+      if(!bl.dead && player.hitIFrames <= 0){
+        if(aabb(bl.x-bl.r, bl.y-bl.r, bl.r*2, bl.r*2, player.x, player.y, player.w, player.h)){
+          bl.dead = true;
+          player.energy = Math.max(0, player.energy - 10);
+          player.hitIFrames = 0.55; // prevents one-hit feeling
+          addSpark(player.x+player.w/2, player.y+player.h/2, 10, "slime");
+        }
+      }
+
+      if(bl.y > innerHeight + 80) bl.dead = true;
+    }
+
+    // cleanup arrays (real cleanup, not a no-op)
+    for(let i=booShots.length-1;i>=0;i--){
+      if(booShots[i].dead) booShots.splice(i,1);
+    }
+    for(let i=bugShots.length-1;i>=0;i--){
+      if(bugShots[i].dead) bugShots.splice(i,1);
+    }
+    for(let i=bugs.length-1;i>=0;i--){
+      if(!bugs[i].alive) bugs.splice(i,1);
+    }
+  }
+
+  function updateCandy(dt){
+    for(const c of candies){
+      if(c.dead) continue;
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+
+      // sparkle as it falls
+      addSpark(c.x + rand(-6,6), c.y + rand(-6,6), 1, "pink");
+
+      // catch
+      if(aabb(c.x-18, c.y-18, 36, 36, player.x, player.y, player.w, player.h)){
+        c.dead = true;
+        player.sugar = 8.0;                 // sugar rush duration
+        player.energy = Math.min(100, player.energy + 30); // small restore
+        // pink pulse kickoff
+        player.glow = 0.10;
+      }
+
+      if(c.y > innerHeight + 60) c.dead = true;
+    }
+
+    for(let i=candies.length-1;i>=0;i--){
+      if(candies[i].dead) candies.splice(i,1);
+    }
+  }
+
+  function updateParticles(dt){
+    for(const p of sparkles){
+      p.life += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 280 * dt;
+    }
+    for(let i=sparkles.length-1;i>=0;i--){
+      if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
+    }
+  }
+
+  function maybeAdvanceRound(){
+    if(killedThisRound >= bugsThisRound){
+      // reward drop: candy for now (questions will later be the main trigger)
+      dropCandy();
+      nextRound();
+    }
+  }
+
+  // -----------------------
+  // Draw
+  // -----------------------
+  function drawGlow(x,y,r,alpha,color){
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function draw(){
+    // background
+    if(IMG.bg) drawCover(IMG.bg);
+    else {
+      ctx.fillStyle = "#050014";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+    }
+
+    // rocks
+    for(const r of rocks){
+      if(r.hp <= 0) continue;
+      // 20 hp, switch every 5
+      const idx = clamp(4 - Math.ceil(r.hp/5), 0, 3);
+      const img = IMG.rocks?.[idx];
+      if(img) ctx.drawImage(img, r.x, r.y, r.w, r.h);
+    }
+
+    // bugs (glow while shooting)
+    for(const b of bugs){
+      if(!b.alive) continue;
+
+      if(b.glow > 0){
+        drawGlow(
+          b.x + b.w/2, b.y + b.h/2,
+          b.w*0.55,
+          (b.glow/0.18)*0.22,
+          "rgba(120,255,200,0.55)"
+        );
+      }
+      if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
+    }
+
+    // bug shots (green blobs)
+    for(const bl of bugShots){
+      if(bl.dead) continue;
+      drawGlow(bl.x, bl.y, bl.r*2.0, 0.10, "rgba(70,255,140,0.55)");
+      ctx.fillStyle = "rgba(70,255,140,0.92)";
+      ctx.beginPath();
+      ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // boo shots (gold or pink)
+    for(const s of booShots){
+      if(s.dead) continue;
+
+      if(s.isPink){
+        drawGlow(s.x, s.y, 16, 0.22, "rgba(255,120,220,0.55)");
+        ctx.fillStyle = "#ffd1ef";
+        ctx.fillRect(s.x-2, s.y-10, 4, 14);
+      } else {
+        drawGlow(s.x, s.y, 16, 0.18, "rgba(255,214,102,0.55)");
+        ctx.fillStyle = "#fff2c7";
+        ctx.fillRect(s.x-2, s.y-10, 4, 14);
+      }
+    }
+
+    // candy
+    for(const c of candies){
+      if(c.dead) continue;
+      if(IMG.candy) ctx.drawImage(IMG.candy, c.x-18, c.y-18, 36, 36);
+    }
+
+    // sparkles
+    if(sparkles.length){
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for(const p of sparkles){
+        const t = p.life / p.ttl;
+        const a = 1 - t;
+        ctx.globalAlpha = a;
+
+        if(p.kind === "pink") ctx.fillStyle = "rgba(255,170,235,0.9)";
+        else if(p.kind === "slime") ctx.fillStyle = "rgba(120,255,160,0.7)";
+        else ctx.fillStyle = "rgba(255,230,140,0.85)";
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    // player glow:
+    // - subtle gold on normal shoot
+    // - pink pulsate during sugar
+    const px = player.x + player.w/2;
+    const py = player.y + player.h/2;
+
+    if(player.sugar > 0){
+      // pink pulsate (subtle)
+      const pulse = 0.5 + 0.5*Math.sin((performance.now()/1000)*6);
+      drawGlow(px, py, player.w*0.50, 0.10 + pulse*0.08, "rgba(255,120,220,0.55)");
+    } else if(player.glow > 0){
+      drawGlow(px, py, player.w*0.45, 0.12, "rgba(255,214,102,0.55)");
+    }
+
+    // player sprite (shoot pose if a shot just fired recently)
+    const isShootingPose = (booFireTimer > 0 && booFireTimer < 0.10);
+    const pimg = isShootingPose ? IMG.booShoot : IMG.booIdle;
+
+    // i-frame flicker (very subtle)
+    if(player.hitIFrames > 0){
+      ctx.globalAlpha = 0.78;
+    }
+
+    if(pimg) ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
+    else {
+      ctx.fillStyle = "#ff7eb9";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+    }
+    ctx.globalAlpha = 1;
+
+    // HUD: energy meter + stage label
+    // meter
+    const barX=16, barY=16, barW=150, barH=10;
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(barX, barY, barW, barH);
+    const fillW = barW * (player.energy/100);
+    const color = (player.energy > 50) ? "rgba(255,214,102,0.95)"
+                : (player.energy > 20) ? "rgba(255,180,120,0.95)"
+                : "rgba(255,120,160,0.95)";
+    ctx.fillStyle = color;
+    ctx.fillRect(barX, barY, fillW, barH);
+
+    ctx.font = "700 13px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillText("BOOHA INVADERS — STAGE 1 DOTTY", 16, 44);
+
+    // Game Over
+    if(player.energy <= 0){
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+      const msg = "GAME OVER";
+      const mw = ctx.measureText(msg).width;
+      ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
+
+      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+      const msg2 = "Tap / Press R to Restart";
+      const mw2 = ctx.measureText(msg2).width;
+      ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
+      ctx.restore();
+    }
+  }
+
+  // Restart
+  addEventListener("keydown",(e)=>{
+    if((e.key==="r"||e.key==="R") && player.energy<=0){
+      booFireTimer = 0;
+      resetGame();
+    }
+  });
+  canvas.addEventListener("pointerdown", ()=>{
+    if(player.energy<=0){
+      booFireTimer = 0;
+      resetGame();
+    }
+  });
+
+  // -----------------------
+  // Main loop
+  // -----------------------
+  function tick(ts){
+    const t = ts/1000;
+    const dt = Math.min(0.033, (t - last) || 0);
+    last = t;
+
+    if(player.energy > 0){
+      update(dt);
+      updateFiring(dt);
+      updateProjectiles(dt);
+      updateCandy(dt);
+      updateParticles(dt);
+      maybeAdvanceRound();
+    }
+
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  // -----------------------
+  // Boot
+  // -----------------------
+  (async function boot(){
+    resize();
+
+    try{
+      const [
+        bg, b1, b2, bug, candy,
+        r1,r2,r3,r4
+      ] = await Promise.all([
+        loadImg(ASSETS.bg),
+        loadImg(ASSETS.booIdle),
+        loadImg(ASSETS.booShoot),
+        loadImg(ASSETS.bug),
+        loadImg(ASSETS.candy),
+        loadImg(ASSETS.rocks[0]),
+        loadImg(ASSETS.rocks[1]),
+        loadImg(ASSETS.rocks[2]),
+        loadImg(ASSETS.rocks[3])
+      ]);
+
+      IMG.bg = bg;
+      IMG.booIdle = b1;
+      IMG.booShoot = b2;
+      IMG.bug = bug;
+      IMG.candy = candy;
+      IMG.rocks = [r1,r2,r3,r4];
+    } catch(err){
+      console.warn(err);
+    }
+
+    resetGame();
+    requestAnimationFrame(tick);
+  })();
+
 })();
 </script>
 </body>
