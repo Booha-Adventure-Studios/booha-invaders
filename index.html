@@ -103,19 +103,23 @@
     pointerX = null;
   });
 
-  // Mouse move on desktop (no click needed)
   addEventListener("mousemove", (e)=>{
-    if(pointerDown) return;
-    if(window.matchMedia && window.matchMedia("(pointer:fine)").matches){
-      pointerX = e.clientX;
-    }
-  });
+  // Desktop: ignore mouse unless dragging
+  if(!pointerDown) return;
+  pointerX = e.clientX;
+});
+
 
   const keys = new Set();
-  addEventListener("keydown", (e)=>{
-    if(["ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
-    keys.add(e.key);
-  }, {passive:false});
+ addEventListener("keydown", (e)=>{
+  if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
+    e.preventDefault();
+    pointerX = null; // ✅ keyboard takes control
+  }
+  keys.add(e.key);
+}, {passive:false});
+
+  
   addEventListener("keyup", (e)=>keys.delete(e.key));
 
   // -----------------------
@@ -326,8 +330,9 @@
     if(pointerX !== null){
       player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
     } else {
-      if(keys.has("ArrowLeft"))  player.x -= 420*dt;
-      if(keys.has("ArrowRight")) player.x += 420*dt;
+     if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
+     if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
+
       player.x = clamp(player.x, 10, innerWidth - player.w - 10);
     }
 
@@ -586,15 +591,35 @@
       if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
     }
 
-    // bug shots (green blobs)
-    for(const bl of bugShots){
-      if(bl.dead) continue;
-      drawGlow(bl.x, bl.y, bl.r*2.0, 0.10, "rgba(70,255,140,0.55)");
-      ctx.fillStyle = "rgba(70,255,140,0.92)";
-      ctx.beginPath();
-      ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
-      ctx.fill();
-    }
+   // bug shots (green glowing slime blobs)
+for(const bl of bugShots){
+  if(bl.dead) continue;
+
+  // outer soft glow
+  drawGlow(
+    bl.x,
+    bl.y,
+    bl.r * 2.8,
+    0.18,
+    "rgba(70,255,140,0.65)"
+  );
+
+  // inner glow (gives depth)
+  drawGlow(
+    bl.x,
+    bl.y,
+    bl.r * 1.6,
+    0.22,
+    "rgba(140,255,190,0.75)"
+  );
+
+  // solid slime core
+  ctx.fillStyle = "rgba(90,255,150,0.95)";
+  ctx.beginPath();
+  ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
+  ctx.fill();
+}
+
 
     // boo shots (gold or pink)
     for(const s of booShots){
