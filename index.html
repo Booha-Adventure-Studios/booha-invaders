@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Booha Invaders — Stage 1</title>
+  <title>Booha Invaders — Stage 1 (Art Build)</title>
   <style>
-    html, body { margin:0; height:100%; background:#000; }
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; }
     canvas { display:block; width:100vw; height:100vh; touch-action:none; }
   </style>
 </head>
@@ -17,403 +17,563 @@
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d", { alpha:false });
 
-  // ---------- Asset loading ----------
+  // -----------------------
+  // Assets (FOLDERS)
+  // -----------------------
+  // Images in: assets/
+  // Audio later in: audio/  (no audio code yet)
+  const ASSETS = {
+    bg: "assets/background.png",
+    booIdle: "assets/booha-invad-1.png",
+    booShoot: "assets/booha-invad-2.png",
+    bug1: "assets/bug-1.png",
+    rocks: [
+      "assets/rock1.png",
+      "assets/rock2.png",
+      "assets/rock3.png",
+      "assets/rock4.png"
+    ]
+  };
+
   function loadImg(src){
-    return new Promise((resolve, reject)=>{
+    return new Promise((res, rej)=>{
       const img = new Image();
-      img.onload = ()=>resolve(img);
-      img.onerror = ()=>reject(new Error("Failed to load: " + src));
+      img.onload = ()=>res(img);
+      img.onerror = ()=>rej(new Error("Failed to load: " + src));
       img.src = src;
     });
   }
 
-  const ASSETS = {
-    bg: "background.png",
-    player1: "booha-invad-1.png",
-    player2: "booha-invad-2.png",
-    bug1: "bug-1.png",
-    rock: ["rock1.png","rock2.png","rock3.png","rock4.png"],
-  };
-
   let IMG = null;
 
-  // ---------- Resize ----------
-  const DPR_CAP = 2; // keep performance reasonable
+  // -----------------------
+  // Resize / DPR
+  // -----------------------
+  const DPR_CAP = 2;
+  let DPR = 1;
   function resize(){
-    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-    canvas.width  = Math.floor(window.innerWidth  * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+    DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    canvas.width = Math.floor(innerWidth * DPR);
+    canvas.height = Math.floor(innerHeight * DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS pixels
   }
-  window.addEventListener("resize", resize);
+  addEventListener("resize", resize);
 
-  // ---------- Game constants ----------
-  const STAGE = 1;
-  const WORLD = {
-    w: () => window.innerWidth,
-    h: () => window.innerHeight,
-  };
+  // -----------------------
+  // Helpers
+  // -----------------------
+  const rand = (a,b)=>a + Math.random()*(b-a);
+  const clamp = (v,a,b)=>Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
 
-  const keys = new Set();
-  window.addEventListener("keydown", (e)=>{
-    if(["ArrowLeft","ArrowRight"," ","Space","Spacebar"].includes(e.key)) e.preventDefault();
-    keys.add(e.key);
-  }, {passive:false});
-  window.addEventListener("keyup", (e)=> keys.delete(e.key));
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
 
-  // ---------- Entities ----------
-  const player = {
-    x: 0,
-    y: 0,
-    w: 70,
-    h: 70,
-    speed: 420, // px/sec
-    shootCooldown: 0,
-    shootFlash: 0, // seconds
-    alive: true,
-  };
-
-  const bullet = { active:false, x:0, y:0, w:6, h:16, vy:-900 };
-  const invaderBullets = []; // {x,y,w,h,vy}
-
-  const invaders = []; // {x,y,w,h,alive}
-  const inv = {
-    cols: 9,
-    rows: 4,
-    padX: 18,
-    padY: 14,
-    w: 44,
-    h: 44,
-    startY: 90,
-    dir: 1,
-    speed: 52,   // px/sec horizontal baseline
-    drop: 26,    // px each edge hit
-    edgePad: 18,
-    fireRate: 0.75, // bullets/sec-ish scaled with randomness
-    fireTimer: 0,
-  };
-
-  // Shields: 4 bunkers, each with HP 4 -> 0 (0 = removed)
-  const shields = []; // {x,y,w,h,hp}
-
-  // ---------- Helpers ----------
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
   function aabb(ax,ay,aw,ah, bx,by,bw,bh){
     return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
   }
 
+  // -----------------------
+  // World / Entities
+  // -----------------------
+  const W = ()=>innerWidth;
+  const H = ()=>innerHeight;
+
+  const keys = new Set();
+  addEventListener("keydown", (e)=>{
+    if(["ArrowLeft","ArrowRight"," ","Space","Spacebar"].includes(e.key)) e.preventDefault();
+    keys.add(e.key);
+  }, {passive:false});
+  addEventListener("keyup", (e)=>keys.delete(e.key));
+
+  const player = {
+    x: 0, y: 0,
+    w: 76, h: 76,
+    speed: 460,
+    canShootIn: 0,
+    shootFlash: 0,
+    glow: 0
+  };
+
+  const rocks = [];      // {x,y,w,h,hp:4..0}
+  const booShots = [];   // golden sparkly shots
+  const bugShots = [];   // slime green blobs
+
+  const sparkles = [];   // gold particles
+  const slimePuffs = []; // slime particles
+
+  const bugs = [];       // bug entities
+
+  const stage = {
+    t: 0,
+    spawnTimer: 0,
+    spawnInterval: 2.4,
+    maxBugsOnScreen: 1,
+    bugFireBase: 2.2,
+    bugFireJitter: 1.0,
+    bugDrift: 12,
+  };
+
   function resetStage1(){
-    // Player
-    player.w = Math.min(80, WORLD.w()*0.12);
-    player.h = player.w;
-    player.x = WORLD.w()/2 - player.w/2;
-    player.y = WORLD.h() - player.h - 22;
-    player.shootCooldown = 0;
+    stage.t = 0;
+    stage.spawnTimer = 0;
+    stage.spawnInterval = 2.4;
+    stage.maxBugsOnScreen = 1;
+    stage.bugFireBase = 2.2;
+    stage.bugFireJitter = 1.0;
+
+    bugs.length = 0;
+    booShots.length = 0;
+    bugShots.length = 0;
+    sparkles.length = 0;
+    slimePuffs.length = 0;
+
+    const size = clamp(W()*0.10, 64, 92);
+    player.w = size;
+    player.h = size;
+    player.x = W()/2 - player.w/2;
+    player.y = H() - player.h - 18;
+    player.canShootIn = 0;
     player.shootFlash = 0;
-    player.alive = true;
+    player.glow = 0;
 
-    bullet.active = false;
-    invaderBullets.length = 0;
+    // Rocks: BUG shots can damage rocks; Booha shots cannot.
+    rocks.length = 0;
+    const count = 4;
+    const rockW = clamp(W()*0.18, 110, 160);
+    const rockH = rockW * 0.72;
+    const gap = (W() - count*rockW) / (count + 1);
+    const y = player.y - rockH - 55;
 
-    // Invaders grid
-    invaders.length = 0;
-    const totalW = inv.cols*inv.w + (inv.cols-1)*inv.padX;
-    const startX = WORLD.w()/2 - totalW/2;
-    for(let r=0;r<inv.rows;r++){
-      for(let c=0;c<inv.cols;c++){
-        invaders.push({
-          x: startX + c*(inv.w+inv.padX),
-          y: inv.startY + r*(inv.h+inv.padY),
-          w: inv.w,
-          h: inv.h,
-          alive: true
-        });
-      }
-    }
-    inv.dir = 1;
-    inv.fireTimer = 0;
-
-    // Shields
-    shields.length = 0;
-    const bunkerCount = 4;
-    const bunkerW = Math.min(120, WORLD.w()*0.18);
-    const bunkerH = bunkerW * 0.75;
-    const gap = (WORLD.w() - bunkerCount*bunkerW) / (bunkerCount+1);
-    const y = player.y - bunkerH - 55;
-    for(let i=0;i<bunkerCount;i++){
-      shields.push({
-        x: gap + i*(bunkerW+gap),
+    for(let i=0;i<count;i++){
+      rocks.push({
+        x: gap + i*(rockW + gap),
         y,
-        w: bunkerW,
-        h: bunkerH,
-        hp: 4,
+        w: rockW,
+        h: rockH,
+        hp: 4
       });
     }
   }
 
-  // ---------- Update ----------
-  let lastT = 0;
+  function spawnBug(){
+    const lanes = 6;
+    const laneW = W() / lanes;
+    const lane = (Math.random()*lanes)|0;
+    const targetX = lane*laneW + laneW/2;
 
-  function update(dt){
-    if(!player.alive) return;
+    const bw = clamp(W()*0.065, 44, 62);
+    const bh = bw;
 
-    // player movement
-    const left = keys.has("ArrowLeft");
-    const right = keys.has("ArrowRight");
-    const shoot = keys.has(" ") || keys.has("Space") || keys.has("Spacebar");
+    const targetY = clamp(H()*0.18, 90, 150) + rand(0, 40);
 
-    if(left)  player.x -= player.speed * dt;
-    if(right) player.x += player.speed * dt;
-    player.x = clamp(player.x, 10, WORLD.w()-player.w-10);
+    const startX = targetX + rand(-laneW*0.35, laneW*0.35);
+    const startY = -bh - rand(30, 120);
 
-    // shooting
-    player.shootCooldown = Math.max(0, player.shootCooldown - dt);
-    player.shootFlash = Math.max(0, player.shootFlash - dt);
+    const enterDur = rand(0.9, 1.3);
 
-    if(shoot && player.shootCooldown <= 0 && !bullet.active){
-      bullet.active = true;
-      bullet.x = player.x + player.w/2 - bullet.w/2;
-      bullet.y = player.y - 8;
-      player.shootCooldown = 0.22; // feel snappy
-      player.shootFlash = 0.08;    // sprite flash time
-    }
+    bugs.push({
+      x: startX, y: startY,
+      w: bw, h: bh,
+      alive: true,
+      state: "enter",
+      tEnter: 0,
+      enterDur,
+      startX, startY,
+      targetX: targetX - bw/2,
+      targetY,
+      shootCD: rand(stage.bugFireBase - stage.bugFireJitter, stage.bugFireBase + stage.bugFireJitter),
+      glow: 0,
+      bobT: rand(0, 10)
+    });
+  }
 
-    // player bullet
-    if(bullet.active){
-      bullet.y += bullet.vy * dt;
-
-      // collide with invaders
-      for(const e of invaders){
-        if(!e.alive) continue;
-        if(aabb(bullet.x,bullet.y,bullet.w,bullet.h, e.x,e.y,e.w,e.h)){
-          e.alive = false;
-          bullet.active = false;
-          break;
-        }
-      }
-
-      // collide with shields
-      if(bullet.active){
-        for(const s of shields){
-          if(s.hp<=0) continue;
-          if(aabb(bullet.x,bullet.y,bullet.w,bullet.h, s.x,s.y,s.w,s.h)){
-            s.hp = Math.max(0, s.hp-1);
-            bullet.active = false;
-            break;
-          }
-        }
-      }
-
-      // offscreen
-      if(bullet.active && bullet.y + bullet.h < -20) bullet.active = false;
-    }
-
-    // invader movement
-    const aliveInvaders = invaders.filter(v=>v.alive);
-    if(aliveInvaders.length){
-      // speed ramps slightly as fewer remain
-      const aliveRatio = aliveInvaders.length / (inv.rows*inv.cols);
-      const speed = inv.speed + (1 - aliveRatio) * 90;
-
-      let hitEdge = false;
-      for(const e of aliveInvaders){
-        e.x += inv.dir * speed * dt;
-        if(e.x < inv.edgePad || (e.x + e.w) > (WORLD.w()-inv.edgePad)) hitEdge = true;
-      }
-      if(hitEdge){
-        inv.dir *= -1;
-        for(const e of aliveInvaders) e.y += inv.drop;
-      }
-
-      // if invaders reach player line -> game over
-      const dangerY = player.y - 10;
-      for(const e of aliveInvaders){
-        if(e.y + e.h >= dangerY){
-          player.alive = false;
-          break;
-        }
-      }
-    }
-
-    // invader firing
-    inv.fireTimer += dt;
-    // approximate: try to fire a bullet every so often with randomness
-    const fireInterval = 0.45; // base
-    if(inv.fireTimer >= fireInterval){
-      inv.fireTimer = 0;
-
-      // choose a "bottom-most" invader in a random column
-      const cols = {};
-      for(const e of invaders){
-        if(!e.alive) continue;
-        const colKey = Math.round(e.x / (inv.w+inv.padX));
-        if(!cols[colKey] || cols[colKey].y < e.y) cols[colKey] = e;
-      }
-      const options = Object.values(cols);
-      if(options.length && Math.random() < 0.75){
-        const shooter = options[(Math.random()*options.length)|0];
-        invaderBullets.push({
-          x: shooter.x + shooter.w/2 - 3,
-          y: shooter.y + shooter.h + 6,
-          w: 6,
-          h: 16,
-          vy: 420 + Math.random()*120
-        });
-      }
-    }
-
-    // invader bullets update + collisions
-    for(let i=invaderBullets.length-1;i>=0;i--){
-      const b = invaderBullets[i];
-      b.y += b.vy * dt;
-
-      // hit shields
-      let removed = false;
-      for(const s of shields){
-        if(s.hp<=0) continue;
-        if(aabb(b.x,b.y,b.w,b.h, s.x,s.y,s.w,s.h)){
-          s.hp = Math.max(0, s.hp-1);
-          invaderBullets.splice(i,1);
-          removed = true;
-          break;
-        }
-      }
-      if(removed) continue;
-
-      // hit player
-      if(aabb(b.x,b.y,b.w,b.h, player.x,player.y,player.w,player.h)){
-        player.alive = false;
-        invaderBullets.splice(i,1);
-        continue;
-      }
-
-      // offscreen
-      if(b.y > WORLD.h()+40){
-        invaderBullets.splice(i,1);
-      }
+  function addSpark(x,y, n=6){
+    for(let i=0;i<n;i++){
+      sparkles.push({
+        x, y,
+        vx: rand(-120, 120),
+        vy: rand(-180, 80),
+        life: 0,
+        ttl: rand(0.25, 0.45),
+        size: rand(1.5, 3.4)
+      });
     }
   }
 
-  // ---------- Render ----------
-  function draw(){
-    const W = WORLD.w(), H = WORLD.h();
+  function addSlimePuff(x,y, n=5){
+    for(let i=0;i<n;i++){
+      slimePuffs.push({
+        x, y,
+        vx: rand(-90, 90),
+        vy: rand(-60, 60),
+        life: 0,
+        ttl: rand(0.25, 0.5),
+        size: rand(3, 7)
+      });
+    }
+  }
 
-    // background
-    if(IMG?.bg){
-      // cover mode
-      const iw = IMG.bg.width, ih = IMG.bg.height;
-      const scale = Math.max(W/iw, H/ih);
-      const dw = iw*scale, dh = ih*scale;
-      const dx = (W-dw)/2, dy = (H-dh)/2;
-      ctx.drawImage(IMG.bg, dx, dy, dw, dh);
-    } else {
-      ctx.fillStyle = "#02010a";
-      ctx.fillRect(0,0,W,H);
+  function fireBooShot(){
+    const sx = player.x + player.w/2;
+    const sy = player.y + 8;
+
+    booShots.push({
+      x: sx, y: sy,
+      vx: 0, vy: -980,
+      r: 6,
+      alive: true
+    });
+
+    player.shootFlash = 0.10;
+    player.glow = 0.18;
+  }
+
+  function fireBugShot(bug){
+    const sx = bug.x + bug.w/2;
+    const sy = bug.y + bug.h + 6;
+
+    bugShots.push({
+      x: sx, y: sy,
+      vx: rand(-60, 60),
+      vy: rand(290, 410),
+      r: rand(7, 10),
+      alive: true,
+      t: 0
+    });
+
+    bug.glow = 0.22;
+  }
+
+  // -----------------------
+  // Update / Draw
+  // -----------------------
+  let last = 0;
+
+  function update(dt){
+    stage.t += dt;
+
+    // Difficulty ramp (gentle)
+    if(stage.t > 10){
+      stage.maxBugsOnScreen = 2;
+      stage.spawnInterval = lerp(2.4, 1.8, clamp((stage.t-10)/15, 0, 1));
+    }
+    if(stage.t > 28){
+      stage.maxBugsOnScreen = 3;
+      stage.spawnInterval = lerp(1.8, 1.25, clamp((stage.t-28)/20, 0, 1));
+      stage.bugFireBase = lerp(2.2, 1.4, clamp((stage.t-28)/22, 0, 1));
+      stage.bugFireJitter = lerp(1.0, 0.6, clamp((stage.t-28)/22, 0, 1));
     }
 
-    // shields
-    for(const s of shields){
-      if(s.hp<=0) continue;
-      // hp: 4->rock1, 3->rock2, 2->rock3, 1->rock4
-      const idx = clamp(4 - s.hp, 0, 3);
-      const img = IMG?.rock?.[idx];
-      if(img) ctx.drawImage(img, s.x, s.y, s.w, s.h);
-      else {
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
-        ctx.fillRect(s.x, s.y, s.w, s.h);
+    // Spawn bugs at intervals
+    stage.spawnTimer -= dt;
+    const aliveCount = bugs.reduce((n,b)=>n+(b.alive?1:0),0);
+    if(stage.spawnTimer <= 0 && aliveCount < stage.maxBugsOnScreen){
+      spawnBug();
+      stage.spawnTimer = stage.spawnInterval + rand(-0.15, 0.25);
+    }
+
+    // Player
+    const left = keys.has("ArrowLeft");
+    const right = keys.has("ArrowRight");
+    if(left) player.x -= player.speed * dt;
+    if(right) player.x += player.speed * dt;
+    player.x = clamp(player.x, 10, W()-player.w-10);
+
+    player.canShootIn = Math.max(0, player.canShootIn - dt);
+    player.shootFlash = Math.max(0, player.shootFlash - dt);
+    player.glow = Math.max(0, player.glow - dt);
+
+    const shoot = keys.has(" ") || keys.has("Space") || keys.has("Spacebar");
+    if(shoot && player.canShootIn <= 0){
+      const active = booShots.some(s=>s.alive);
+      if(!active){
+        fireBooShot();
+        player.canShootIn = 0.24;
       }
     }
 
-    // invaders
-    const bug = IMG?.bug1;
-    for(const e of invaders){
-      if(!e.alive) continue;
-      if(bug) ctx.drawImage(bug, e.x, e.y, e.w, e.h);
-      else {
-        ctx.fillStyle = "#7dd3fc";
-        ctx.fillRect(e.x, e.y, e.w, e.h);
+    // Bugs
+    for(const b of bugs){
+      if(!b.alive) continue;
+
+      b.glow = Math.max(0, b.glow - dt);
+      b.bobT += dt;
+
+      if(b.state === "enter"){
+        b.tEnter += dt;
+        const t = clamp(b.tEnter / b.enterDur, 0, 1);
+        const e = easeOutCubic(t);
+
+        const curve = Math.sin(t*Math.PI) * (W()*0.02) * (Math.random() < 0.5 ? -1 : 1);
+        b.x = lerp(b.startX, b.targetX, e) + curve * (1 - t);
+        b.y = lerp(b.startY, b.targetY, easeInOutSine(t));
+
+        if(t >= 1){
+          b.state = "active";
+          b.x = b.targetX;
+          b.y = b.targetY;
+        }
+      } else {
+        const driftX = Math.sin(b.bobT*0.9) * stage.bugDrift;
+        const driftY = Math.cos(b.bobT*1.1) * (stage.bugDrift*0.35);
+        b.x = b.targetX + driftX;
+        b.y = b.targetY + driftY;
+
+        b.shootCD -= dt;
+        if(b.shootCD <= 0){
+          fireBugShot(b);
+          b.shootCD = rand(stage.bugFireBase - stage.bugFireJitter, stage.bugFireBase + stage.bugFireJitter);
+          b.shootCD = Math.max(0.55, b.shootCD);
+        }
       }
     }
 
-    // bullets
-    if(bullet.active){
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(bullet.x, bullet.y, bullet.w, bullet.h);
-    }
-    ctx.fillStyle = "#ffd166";
-    for(const b of invaderBullets){
-      ctx.fillRect(b.x, b.y, b.w, b.h);
+    // Boo shots (gold) — hit bugs ONLY (never rocks)
+    for(const s of booShots){
+      if(!s.alive) continue;
+      s.y += s.vy * dt;
+      addSpark(s.x + rand(-2,2), s.y + 14 + rand(-2,2), 2);
+
+      for(const b of bugs){
+        if(!b.alive) continue;
+        if(aabb(s.x - s.r, s.y - s.r, s.r*2, s.r*2, b.x, b.y, b.w, b.h)){
+          b.alive = false;
+          s.alive = false;
+          addSpark(b.x + b.w/2, b.y + b.h/2, 18);
+          break;
+        }
+      }
+      if(s.y < -40) s.alive = false;
     }
 
-    // player sprite (shoot flash)
-    const pimg = (player.shootFlash > 0) ? IMG?.player2 : IMG?.player1;
-    if(pimg){
-      ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
-    } else {
-      ctx.fillStyle = "#ff7eb9";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
+    // Bug shots (slime) — can damage rocks
+    for(const bl of bugShots){
+      if(!bl.alive) continue;
+      bl.t += dt;
+
+      const wob = Math.sin(bl.t*6) * 0.9;
+      bl.x += (bl.vx * (1 + wob)) * dt;
+      bl.y += bl.vy * dt;
+
+      if(Math.random() < 0.55) addSlimePuff(bl.x, bl.y, 1);
+
+      for(const r of rocks){
+        if(r.hp <= 0) continue;
+        if(aabb(bl.x - bl.r, bl.y - bl.r, bl.r*2, bl.r*2, r.x, r.y, r.w, r.h)){
+          r.hp = Math.max(0, r.hp - 1);
+          bl.alive = false;
+          addSlimePuff(bl.x, bl.y, 10);
+          break;
+        }
+      }
+
+      if(bl.y > H() + 60) bl.alive = false;
     }
 
-    // simple HUD (Stage label)
+    // Particles
+    for(const p of sparkles){
+      p.life += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 420 * dt;
+    }
+    for(let i=sparkles.length-1;i>=0;i--){
+      if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
+    }
+
+    for(const p of slimePuffs){
+      p.life += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+    }
+    for(let i=slimePuffs.length-1;i>=0;i--){
+      if(slimePuffs[i].life >= slimePuffs[i].ttl) slimePuffs.splice(i,1);
+    }
+  }
+
+  function drawGlowRing(x,y, r, alpha, color){
     ctx.save();
-    ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fillText(`BOOHA INVADERS  —  STAGE ${STAGE}`, 14, 26);
-
-    // Game over text
-    if(!player.alive){
-      ctx.font = "900 34px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      const msg = "GAME OVER";
-      const m = ctx.measureText(msg);
-      ctx.fillText(msg, W/2 - m.width/2, H/2 - 10);
-
-      ctx.font = "600 16px system-ui, -apple-system, sans-serif";
-      const msg2 = "Press R to restart";
-      const m2 = ctx.measureText(msg2);
-      ctx.fillText(msg2, W/2 - m2.width/2, H/2 + 22);
-    }
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
     ctx.restore();
   }
 
-  // ---------- Loop ----------
-  function loop(t){
-    const now = t/1000;
-    const dt = Math.min(0.033, now - lastT || 0);
-    lastT = now;
+  function drawBackground(){
+    if(IMG?.bg){
+      const iw = IMG.bg.width, ih = IMG.bg.height;
+      const scale = Math.max(W()/iw, H()/ih);
+      const dw = iw*scale, dh = ih*scale;
+      const dx = (W()-dw)/2, dy = (H()-dh)/2;
+      ctx.drawImage(IMG.bg, dx, dy, dw, dh);
+    } else {
+      ctx.fillStyle = "#02010a";
+      ctx.fillRect(0,0,W(),H());
+    }
+  }
+
+  function draw(){
+    drawBackground();
+
+    // Rocks
+    for(const r of rocks){
+      if(r.hp <= 0) continue;
+      const idx = clamp(4 - r.hp, 0, 3);
+      const img = IMG?.rocks?.[idx];
+      if(img) ctx.drawImage(img, r.x, r.y, r.w, r.h);
+    }
+
+    // Bugs
+    for(const b of bugs){
+      if(!b.alive) continue;
+
+      if(b.glow > 0){
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        drawGlowRing(
+          b.x + b.w/2, b.y + b.h/2,
+          b.w*0.75,
+          clamp(b.glow/0.22, 0, 1),
+          "rgba(140,255,210,0.22)"
+        );
+        ctx.restore();
+      }
+
+      if(IMG?.bug1) ctx.drawImage(IMG.bug1, b.x, b.y, b.w, b.h);
+    }
+
+    // Boo shots
+    for(const s of booShots){
+      if(!s.alive) continue;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      drawGlowRing(s.x, s.y, 18, 1, "rgba(255,214,102,0.35)");
+      ctx.restore();
+
+      ctx.fillStyle = "#fff6d1";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Bug shots
+    for(const bl of bugShots){
+      if(!bl.alive) continue;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      drawGlowRing(bl.x, bl.y, bl.r*2.2, 1, "rgba(70,255,140,0.22)");
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(70,255,140,0.92)";
+      ctx.beginPath();
+      ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Sparkles
+    if(sparkles.length){
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for(const p of sparkles){
+        const t = p.life / p.ttl;
+        const a = 1 - t;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "rgba(255,230,140,0.9)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    // Slime puffs
+    if(slimePuffs.length){
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for(const p of slimePuffs){
+        const t = p.life / p.ttl;
+        const a = (1 - t) * 0.6;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "rgba(70,255,140,0.6)";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    // Player (glow while shooting)
+    const pimg = (player.shootFlash > 0) ? IMG?.booShoot : IMG?.booIdle;
+
+    if(player.glow > 0){
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      drawGlowRing(
+        player.x + player.w/2, player.y + player.h/2,
+        player.w*0.9,
+        clamp(player.glow/0.18, 0, 1),
+        "rgba(255,214,102,0.20)"
+      );
+      ctx.restore();
+    }
+
+    if(pimg) ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
+
+    // HUD
+    ctx.save();
+    ctx.font = "700 14px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.86)";
+    ctx.fillText("BOOHA INVADERS — STAGE 1", 14, 24);
+    ctx.font = "600 12px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.70)";
+    ctx.fillText("← → move   SPACE shoot", 14, 42);
+    ctx.restore();
+  }
+
+  function loop(ts){
+    const t = ts/1000;
+    const dt = Math.min(0.033, t - last || 0);
+    last = t;
 
     update(dt);
     draw();
-
     requestAnimationFrame(loop);
   }
 
-  // Restart
-  window.addEventListener("keydown", (e)=>{
-    if((e.key === "r" || e.key === "R") && !player.alive){
-      resetStage1();
-    }
-  });
-
-  // ---------- Boot ----------
   async function boot(){
     resize();
     try{
-      const [bg,p1,p2,bug,r1,r2,r3,r4] = await Promise.all([
+      const [bg, idle, shoot, bug, r1, r2, r3, r4] = await Promise.all([
         loadImg(ASSETS.bg),
-        loadImg(ASSETS.player1),
-        loadImg(ASSETS.player2),
+        loadImg(ASSETS.booIdle),
+        loadImg(ASSETS.booShoot),
         loadImg(ASSETS.bug1),
-        loadImg(ASSETS.rock[0]),
-        loadImg(ASSETS.rock[1]),
-        loadImg(ASSETS.rock[2]),
-        loadImg(ASSETS.rock[3]),
+        loadImg(ASSETS.rocks[0]),
+        loadImg(ASSETS.rocks[1]),
+        loadImg(ASSETS.rocks[2]),
+        loadImg(ASSETS.rocks[3])
       ]);
-      IMG = { bg, player1:p1, player2:p2, bug1:bug, rock:[r1,r2,r3,r4] };
-    } catch(err){
-      console.warn(err);
+      IMG = {
+        bg,
+        booIdle: idle,
+        booShoot: shoot,
+        bug1: bug,
+        rocks: [r1,r2,r3,r4]
+      };
+    } catch(e){
+      console.warn(e);
       IMG = IMG || {};
     }
+
     resetStage1();
     requestAnimationFrame(loop);
   }
