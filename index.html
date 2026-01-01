@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Booha Invaders — Stage 1</title>
+  <style>
+    html, body { margin:0; height:100%; background:#000; }
+    canvas { display:block; width:100vw; height:100vh; touch-action:none; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+(() => {
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha:false });
+
+  // ---------- Asset loading ----------
+  function loadImg(src){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = ()=>reject(new Error("Failed to load: " + src));
+      img.src = src;
+    });
+  }
+
+  const ASSETS = {
+    bg: "background.png",
+    player1: "booha-invad-1.png",
+    player2: "booha-invad-2.png",
+    bug1: "bug-1.png",
+    rock: ["rock1.png","rock2.png","rock3.png","rock4.png"],
+  };
+
+  let IMG = null;
+
+  // ---------- Resize ----------
+  const DPR_CAP = 2; // keep performance reasonable
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    canvas.width  = Math.floor(window.innerWidth  * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
+  }
+  window.addEventListener("resize", resize);
+
+  // ---------- Game constants ----------
+  const STAGE = 1;
+  const WORLD = {
+    w: () => window.innerWidth,
+    h: () => window.innerHeight,
+  };
+
+  const keys = new Set();
+  window.addEventListener("keydown", (e)=>{
+    if(["ArrowLeft","ArrowRight"," ","Space","Spacebar"].includes(e.key)) e.preventDefault();
+    keys.add(e.key);
+  }, {passive:false});
+  window.addEventListener("keyup", (e)=> keys.delete(e.key));
+
+  // ---------- Entities ----------
+  const player = {
+    x: 0,
+    y: 0,
+    w: 70,
+    h: 70,
+    speed: 420, // px/sec
+    shootCooldown: 0,
+    shootFlash: 0, // seconds
+    alive: true,
+  };
+
+  const bullet = { active:false, x:0, y:0, w:6, h:16, vy:-900 };
+  const invaderBullets = []; // {x,y,w,h,vy}
+
+  const invaders = []; // {x,y,w,h,alive}
+  const inv = {
+    cols: 9,
+    rows: 4,
+    padX: 18,
+    padY: 14,
+    w: 44,
+    h: 44,
+    startY: 90,
+    dir: 1,
+    speed: 52,   // px/sec horizontal baseline
+    drop: 26,    // px each edge hit
+    edgePad: 18,
+    fireRate: 0.75, // bullets/sec-ish scaled with randomness
+    fireTimer: 0,
+  };
+
+  // Shields: 4 bunkers, each with HP 4 -> 0 (0 = removed)
+  const shields = []; // {x,y,w,h,hp}
+
+  // ---------- Helpers ----------
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function aabb(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  }
+
+  function resetStage1(){
+    // Player
+    player.w = Math.min(80, WORLD.w()*0.12);
+    player.h = player.w;
+    player.x = WORLD.w()/2 - player.w/2;
+    player.y = WORLD.h() - player.h - 22;
+    player.shootCooldown = 0;
+    player.shootFlash = 0;
+    player.alive = true;
+
+    bullet.active = false;
+    invaderBullets.length = 0;
+
+    // Invaders grid
+    invaders.length = 0;
+    const totalW = inv.cols*inv.w + (inv.cols-1)*inv.padX;
+    const startX = WORLD.w()/2 - totalW/2;
+    for(let r=0;r<inv.rows;r++){
+      for(let c=0;c<inv.cols;c++){
+        invaders.push({
+          x: startX + c*(inv.w+inv.padX),
+          y: inv.startY + r*(inv.h+inv.padY),
+          w: inv.w,
+          h: inv.h,
+          alive: true
+        });
+      }
+    }
+    inv.dir = 1;
+    inv.fireTimer = 0;
+
+    // Shields
+    shields.length = 0;
+    const bunkerCount = 4;
+    const bunkerW = Math.min(120, WORLD.w()*0.18);
+    const bunkerH = bunkerW * 0.75;
+    const gap = (WORLD.w() - bunkerCount*bunkerW) / (bunkerCount+1);
+    const y = player.y - bunkerH - 55;
+    for(let i=0;i<bunkerCount;i++){
+      shields.push({
+        x: gap + i*(bunkerW+gap),
+        y,
+        w: bunkerW,
+        h: bunkerH,
+        hp: 4,
+      });
+    }
+  }
+
+  // ---------- Update ----------
+  let lastT = 0;
+
+  function update(dt){
+    if(!player.alive) return;
+
+    // player movement
+    const left = keys.has("ArrowLeft");
+    const right = keys.has("ArrowRight");
+    const shoot = keys.has(" ") || keys.has("Space") || keys.has("Spacebar");
+
+    if(left)  player.x -= player.speed * dt;
+    if(right) player.x += player.speed * dt;
+    player.x = clamp(player.x, 10, WORLD.w()-player.w-10);
+
+    // shooting
+    player.shootCooldown = Math.max(0, player.shootCooldown - dt);
+    player.shootFlash = Math.max(0, player.shootFlash - dt);
+
+    if(shoot && player.shootCooldown <= 0 && !bullet.active){
+      bullet.active = true;
+      bullet.x = player.x + player.w/2 - bullet.w/2;
+      bullet.y = player.y - 8;
+      player.shootCooldown = 0.22; // feel snappy
+      player.shootFlash = 0.08;    // sprite flash time
+    }
+
+    // player bullet
+    if(bullet.active){
+      bullet.y += bullet.vy * dt;
+
+      // collide with invaders
+      for(const e of invaders){
+        if(!e.alive) continue;
+        if(aabb(bullet.x,bullet.y,bullet.w,bullet.h, e.x,e.y,e.w,e.h)){
+          e.alive = false;
+          bullet.active = false;
+          break;
+        }
+      }
+
+      // collide with shields
+      if(bullet.active){
+        for(const s of shields){
+          if(s.hp<=0) continue;
+          if(aabb(bullet.x,bullet.y,bullet.w,bullet.h, s.x,s.y,s.w,s.h)){
+            s.hp = Math.max(0, s.hp-1);
+            bullet.active = false;
+            break;
+          }
+        }
+      }
+
+      // offscreen
+      if(bullet.active && bullet.y + bullet.h < -20) bullet.active = false;
+    }
+
+    // invader movement
+    const aliveInvaders = invaders.filter(v=>v.alive);
+    if(aliveInvaders.length){
+      // speed ramps slightly as fewer remain
+      const aliveRatio = aliveInvaders.length / (inv.rows*inv.cols);
+      const speed = inv.speed + (1 - aliveRatio) * 90;
+
+      let hitEdge = false;
+      for(const e of aliveInvaders){
+        e.x += inv.dir * speed * dt;
+        if(e.x < inv.edgePad || (e.x + e.w) > (WORLD.w()-inv.edgePad)) hitEdge = true;
+      }
+      if(hitEdge){
+        inv.dir *= -1;
+        for(const e of aliveInvaders) e.y += inv.drop;
+      }
+
+      // if invaders reach player line -> game over
+      const dangerY = player.y - 10;
+      for(const e of aliveInvaders){
+        if(e.y + e.h >= dangerY){
+          player.alive = false;
+          break;
+        }
+      }
+    }
+
+    // invader firing
+    inv.fireTimer += dt;
+    // approximate: try to fire a bullet every so often with randomness
+    const fireInterval = 0.45; // base
+    if(inv.fireTimer >= fireInterval){
+      inv.fireTimer = 0;
+
+      // choose a "bottom-most" invader in a random column
+      const cols = {};
+      for(const e of invaders){
+        if(!e.alive) continue;
+        const colKey = Math.round(e.x / (inv.w+inv.padX));
+        if(!cols[colKey] || cols[colKey].y < e.y) cols[colKey] = e;
+      }
+      const options = Object.values(cols);
+      if(options.length && Math.random() < 0.75){
+        const shooter = options[(Math.random()*options.length)|0];
+        invaderBullets.push({
+          x: shooter.x + shooter.w/2 - 3,
+          y: shooter.y + shooter.h + 6,
+          w: 6,
+          h: 16,
+          vy: 420 + Math.random()*120
+        });
+      }
+    }
+
+    // invader bullets update + collisions
+    for(let i=invaderBullets.length-1;i>=0;i--){
+      const b = invaderBullets[i];
+      b.y += b.vy * dt;
+
+      // hit shields
+      let removed = false;
+      for(const s of shields){
+        if(s.hp<=0) continue;
+        if(aabb(b.x,b.y,b.w,b.h, s.x,s.y,s.w,s.h)){
+          s.hp = Math.max(0, s.hp-1);
+          invaderBullets.splice(i,1);
+          removed = true;
+          break;
+        }
+      }
+      if(removed) continue;
+
+      // hit player
+      if(aabb(b.x,b.y,b.w,b.h, player.x,player.y,player.w,player.h)){
+        player.alive = false;
+        invaderBullets.splice(i,1);
+        continue;
+      }
+
+      // offscreen
+      if(b.y > WORLD.h()+40){
+        invaderBullets.splice(i,1);
+      }
+    }
+  }
+
+  // ---------- Render ----------
+  function draw(){
+    const W = WORLD.w(), H = WORLD.h();
+
+    // background
+    if(IMG?.bg){
+      // cover mode
+      const iw = IMG.bg.width, ih = IMG.bg.height;
+      const scale = Math.max(W/iw, H/ih);
+      const dw = iw*scale, dh = ih*scale;
+      const dx = (W-dw)/2, dy = (H-dh)/2;
+      ctx.drawImage(IMG.bg, dx, dy, dw, dh);
+    } else {
+      ctx.fillStyle = "#02010a";
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // shields
+    for(const s of shields){
+      if(s.hp<=0) continue;
+      // hp: 4->rock1, 3->rock2, 2->rock3, 1->rock4
+      const idx = clamp(4 - s.hp, 0, 3);
+      const img = IMG?.rock?.[idx];
+      if(img) ctx.drawImage(img, s.x, s.y, s.w, s.h);
+      else {
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+      }
+    }
+
+    // invaders
+    const bug = IMG?.bug1;
+    for(const e of invaders){
+      if(!e.alive) continue;
+      if(bug) ctx.drawImage(bug, e.x, e.y, e.w, e.h);
+      else {
+        ctx.fillStyle = "#7dd3fc";
+        ctx.fillRect(e.x, e.y, e.w, e.h);
+      }
+    }
+
+    // bullets
+    if(bullet.active){
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(bullet.x, bullet.y, bullet.w, bullet.h);
+    }
+    ctx.fillStyle = "#ffd166";
+    for(const b of invaderBullets){
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+
+    // player sprite (shoot flash)
+    const pimg = (player.shootFlash > 0) ? IMG?.player2 : IMG?.player1;
+    if(pimg){
+      ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
+    } else {
+      ctx.fillStyle = "#ff7eb9";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+    }
+
+    // simple HUD (Stage label)
+    ctx.save();
+    ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillText(`BOOHA INVADERS  —  STAGE ${STAGE}`, 14, 26);
+
+    // Game over text
+    if(!player.alive){
+      ctx.font = "900 34px system-ui, -apple-system, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      const msg = "GAME OVER";
+      const m = ctx.measureText(msg);
+      ctx.fillText(msg, W/2 - m.width/2, H/2 - 10);
+
+      ctx.font = "600 16px system-ui, -apple-system, sans-serif";
+      const msg2 = "Press R to restart";
+      const m2 = ctx.measureText(msg2);
+      ctx.fillText(msg2, W/2 - m2.width/2, H/2 + 22);
+    }
+    ctx.restore();
+  }
+
+  // ---------- Loop ----------
+  function loop(t){
+    const now = t/1000;
+    const dt = Math.min(0.033, now - lastT || 0);
+    lastT = now;
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(loop);
+  }
+
+  // Restart
+  window.addEventListener("keydown", (e)=>{
+    if((e.key === "r" || e.key === "R") && !player.alive){
+      resetStage1();
+    }
+  });
+
+  // ---------- Boot ----------
+  async function boot(){
+    resize();
+    try{
+      const [bg,p1,p2,bug,r1,r2,r3,r4] = await Promise.all([
+        loadImg(ASSETS.bg),
+        loadImg(ASSETS.player1),
+        loadImg(ASSETS.player2),
+        loadImg(ASSETS.bug1),
+        loadImg(ASSETS.rock[0]),
+        loadImg(ASSETS.rock[1]),
+        loadImg(ASSETS.rock[2]),
+        loadImg(ASSETS.rock[3]),
+      ]);
+      IMG = { bg, player1:p1, player2:p2, bug1:bug, rock:[r1,r2,r3,r4] };
+    } catch(err){
+      console.warn(err);
+      IMG = IMG || {};
+    }
+    resetStage1();
+    requestAnimationFrame(loop);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
