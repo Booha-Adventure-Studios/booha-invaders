@@ -602,51 +602,42 @@ function update(dt){
     spawnTimer = 0.85; // spacing between arrivals
   }
 
-  // bugs update (enter + drift + shooting)
-  for(const b of bugs){
-    if(!b.alive) continue;
+// bugs update (enter + drift + shooting)
+for(const b of bugs){
+  if(!b.alive) continue;
 
-    b.glow = Math.max(0, b.glow - dt*2.0);
-    b.bob += dt;
+  b.glow = Math.max(0, b.glow - dt*2.0);
+  b.bob += dt;
 
-    // entry
-    if(b.enterT < b.enterDur){
-      b.enterT += dt;
-      const t = clamp(b.enterT / b.enterDur, 0, 1);
-      const e = easeOutCubic(t);
+  // entry
+  if(b.enterT < b.enterDur){
+    b.enterT += dt;
+    const t = clamp(b.enterT / b.enterDur, 0, 1);
 
-      const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
-      b.x = b.sx + (b.tx - b.sx)*e + curve*(1-t);
-      b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
-    } else {
-     // drift (gentle, then faster)
-let driftMult = 1;
+    const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
+    b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
+    b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
 
-// 🔥 Boost 3 reaction: Dotty get faster & aggressive
-if(player.boost >= 3){
-  driftMult = 1.6; // noticeable but not insane
-}
+  } else {
 
-b.driftSpeed = driftNow * driftMult;
-b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
-b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+    // drift (gentle, then faster) + Boost 3 reaction
+    let driftMult = 1;
+    if(player.boost >= 3) driftMult = 1.6;
 
-// firing (starts calm, ramps with time)
-const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
-let base = 3.4 - fireRamp*1.6; // 3.4s → ~1.8s
+    b.driftSpeed = driftNow * driftMult;
+    b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
+    b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
 
-// 🔥 Boost 3 reaction: faster firing
-if(player.boost >= 3){
-  base *= 0.6; // ~40% faster shots
-}
+    // firing (starts calm, ramps with time) + Boost 3 reaction
+    const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+    let base = 3.4 - fireRamp*1.6; // 3.4s → ~1.8s
+    if(player.boost >= 3) base *= 0.6; // ~40% faster shots
 
-b.fireCD -= dt;
-if(b.fireCD <= 0){
-  fireBugShot(b);
-  b.fireCD = rand(base, base + 1.0);
-  b.fireCD = Math.max(0.6, b.fireCD); // tighter floor when boosted
-}
-
+    b.fireCD -= dt;
+    if(b.fireCD <= 0){
+      fireBugShot(b);
+      b.fireCD = rand(base, base + 1.0);
+      b.fireCD = Math.max(0.6, b.fireCD);
     }
   }
 }
