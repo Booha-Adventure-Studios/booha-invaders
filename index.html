@@ -578,9 +578,17 @@ function update(dt){
   }
 
   // timers
-  player.glow = Math.max(0, player.glow - dt*2.2);
-  player.sugar = Math.max(0, player.sugar - dt); // legacy (ok to leave)
-  player.hitIFrames = Math.max(0, player.hitIFrames - dt);
+player.glow = Math.max(0, player.glow - dt*2.2);
+player.sugar = Math.max(0, player.sugar - dt); // legacy (ok to leave)
+player.hitIFrames = Math.max(0, player.hitIFrames - dt);
+
+// 🍬 candy timer
+candyTimer -= dt;
+if(candyTimer <= 0 && candies.length === 0){
+  dropCandy();
+  candyTimer = rand(8, 12); // next drop window
+}
+
 
   // spawn DOTTY for this step (SEQUENTIAL)
   spawnTimer -= dt;
@@ -989,63 +997,10 @@ SCRIPT (PART 2) + END
     ctx.fillText("BOOHA INVADERS — STAGE 1 DOTTY", 16, 44);
 
     // =========================
-    // QUIZ OVERLAY (Multiple Choice)
-    // =========================
-    if(quizOpen && quizQ){
-      ctx.save();
+// QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
+// =========================
+drawQuizOverlay();
 
-      // dim + vignette
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-
-      const cx = innerWidth/2, cy = innerHeight/2;
-      const r0 = Math.min(innerWidth, innerHeight) * 0.22;
-      const r1 = Math.min(innerWidth, innerHeight) * 0.80;
-      const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
-      vg.addColorStop(0, "rgba(0,0,0,0)");
-      vg.addColorStop(1, "rgba(0,0,0,0.65)");
-      ctx.fillStyle = vg;
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-
-      // Big number
-      const q = String(quizQ.n);
-      ctx.fillStyle = "rgba(255,255,255,0.96)";
-      ctx.font = "900 72px system-ui, -apple-system, sans-serif";
-      const qw = ctx.measureText(q).width;
-      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
-
-      // Buttons layout (must match hit-test)
-      const btnW = clamp(innerWidth*0.72, 260, 560);
-      const btnH = 54;
-      const gap = 14;
-      const startY = innerHeight*0.42;
-      const x = innerWidth/2 - btnW/2;
-
-      ctx.font = "800 20px system-ui, -apple-system, sans-serif";
-
-      for(let i=0;i<4;i++){
-        const y = startY + i*(btnH+gap);
-
-        ctx.fillStyle = "rgba(255,255,255,0.10)";
-        ctx.fillRect(x, y, btnW, btnH);
-
-        ctx.strokeStyle = "rgba(255,255,255,0.22)";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, btnW, btnH);
-
-        const label = (i+1) + ")  " + quizQ.choices[i];
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.fillText(label, x + 16, y + 36);
-      }
-
-      ctx.font = "700 14px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      const hint = "Tap an answer or press 1–4";
-      const hw = ctx.measureText(hint).width;
-      ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
-
-      ctx.restore();
-    }
 
     // Game Over overlay
     if(player.energy <= 0){
