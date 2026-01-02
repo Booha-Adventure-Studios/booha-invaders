@@ -410,14 +410,27 @@ BODY + SCRIPT (PART 1)
 function advanceWaveStep(){
   stepInWave++;
 
+  // ✅ finished the pattern = completed a wave
   if(stepInWave >= WAVE_PATTERN_1.length){
-    nextQuiz();        // ✅ LOAD the question
-    quizOpen = true;   // ✅ THEN open the quiz
+
+    // ✅ Quiz after every 3rd wave (3, 6, 9, ...)
+    if(wave % 3 === 0){
+      nextQuiz();        // load question
+      quizOpen = true;   // pause + show quiz
+      return;
+    }
+
+    // ✅ No quiz: immediately start next wave
+    wave++;
+    stepInWave = 0;
+    startWaveStep();
     return;
   }
 
+  // ✅ continue normal steps inside the wave
   startWaveStep();
 }
+
 
 
   function resetGame(){
@@ -571,106 +584,126 @@ function advanceWaveStep(){
     b.glow = 0.18;
   }
 
-  // -----------------------
-  // Update
-  // -----------------------
-  let last = 0;
-  function update(dt){
-    if(player.energy <= 0) return;
+ // -----------------------
+// Update  ✅ candy interval + candy-powered shots after 10 quizzes
+// -----------------------
+let last = 0;
 
-    stageTime += dt;
+// Candy interval timer
+let candyTimer = 10; // first drop happens ~10s in (tweak if you want)
 
-    // drift ramps slowly (gentle -> faster)
-    const driftBase = 10;
-    const driftRamp = clamp((stageTime - 18) / 40, 0, 1); // starts later
-    const driftNow  = driftBase + driftRamp * 28;         // ends faster
+function update(dt){
+  if(player.energy <= 0) return;
 
-    // movement
-    if(pointerX !== null){
-      player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
-    } else {
-      if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
-      if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
+  stageTime += dt;
 
-      player.x = clamp(player.x, 10, innerWidth - player.w - 10);
-    }
+  // drift ramps slowly (gentle -> faster)
+  const driftBase = 10;
+  const driftRamp = clamp((stageTime - 18) / 40, 0, 1); // starts later
+  const driftNow  = driftBase + driftRamp * 28;         // ends faster
 
-    // timers
-    player.glow = Math.max(0, player.glow - dt*2.2);
-    player.sugar = Math.max(0, player.sugar - dt);
-    player.hitIFrames = Math.max(0, player.hitIFrames - dt);
+  // movement
+  if(pointerX !== null){
+    player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
+  } else {
+    if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
+    if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
 
-    // spawn DOTTY for this step (SEQUENTIAL)
-    spawnTimer -= dt;
-
-    // Only spawn until we reach the target count for THIS step
-    if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
-      spawnBug();
-      spawnedThisStep++;
-      spawnTimer = 0.85; // spacing between arrivals
-    }
-
-    // bugs update (enter + drift + shooting)
-    for(const b of bugs){
-      if(!b.alive) continue;
-
-      b.glow = Math.max(0, b.glow - dt*2.0);
-      b.bob += dt;
-
-      // entry
-      if(b.enterT < b.enterDur){
-        b.enterT += dt;
-        const t = clamp(b.enterT / b.enterDur, 0, 1);
-        const e = easeOutCubic(t);
-
-        const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
-        b.x = b.sx + (b.tx - b.sx)*e + curve*(1-t);
-        b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
-      } else {
-        // drift (gentle, then faster)
-        b.driftSpeed = driftNow;
-        b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
-        b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
-
-        // firing (starts calm, ramps with time + rounds)
-        // early: rare; later: more frequent
-        const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
-        const base = 3.4 - fireRamp*1.6; // 3.4s down to ~1.8s
-        b.fireCD -= dt;
-        if(b.fireCD <= 0){
-          fireBugShot(b);
-          b.fireCD = rand(base, base + 1.2);
-          b.fireCD = Math.max(0.9, b.fireCD);
-        }
-      }
-    }
-
-    // Booha firing is handled by updateFiring(dt) below (kept separate to avoid cadence bugs)
+    player.x = clamp(player.x, 10, innerWidth - player.w - 10);
   }
 
-  // We keep a dedicated shot timer to avoid weird cadence
-  let booFireTimer = 0;
+  // timers
+  player.glow = Math.max(0, player.glow - dt*2.2);
+  player.sugar = Math.max(0, player.sugar - dt);
+  player.hitIFrames = Math.max(0, player.hitIFrames - dt);
 
-  function updateFiring(dt){
-    booFireTimer -= dt;
+  // ✅ Candy interval (max 3 per wave, and never during quiz)
+  candyTimer -= dt;
+  if(!quizOpen && candiesThisWave < 3 && candyTimer <= 0){
+    dropCandy();
+    candiesThisWave++;
 
-    if(player.sugar > 0){
-      // rapid pink shots
-      const cooldown = 0.12;
-      const maxPinkShots = 3;
-      if(booFireTimer <= 0 && booShots.length < maxPinkShots){
-        fireBooShot(true);
-        booFireTimer = cooldown;
-      }
+    // interval scales with Dotty multiplier (every 10 quizzes)
+    const m = dottyMultiplier();                 // 1,2,3...
+    const interval = clamp(20 - (m-1)*3, 8, 20); // 20s → 17s → 14s → ... (min 8s)
+    candyTimer = interval;
+  }
+
+  // spawn DOTTY for this step (SEQUENTIAL)
+  spawnTimer -= dt;
+
+  // Only spawn until we reach the target count for THIS step
+  if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
+    spawnBug();
+    spawnedThisStep++;
+    spawnTimer = 0.85; // spacing between arrivals
+  }
+
+  // bugs update (enter + drift + shooting)
+  for(const b of bugs){
+    if(!b.alive) continue;
+
+    b.glow = Math.max(0, b.glow - dt*2.0);
+    b.bob += dt;
+
+    // entry
+    if(b.enterT < b.enterDur){
+      b.enterT += dt;
+      const t = clamp(b.enterT / b.enterDur, 0, 1);
+      const e = easeOutCubic(t);
+
+      const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
+      b.x = b.sx + (b.tx - b.sx)*e + curve*(1-t);
+      b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
     } else {
-      // calm gold, one-at-a-time
-      const cooldown = 0.12; // only used for "just after clear" feel
-      if(booFireTimer <= 0 && canFireNormal()){
-        fireBooShot(false);
-        booFireTimer = cooldown;
+      // drift (gentle, then faster)
+      b.driftSpeed = driftNow;
+      b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
+      b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+
+      // firing (starts calm, ramps with time + rounds)
+      const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+      const base = 3.4 - fireRamp*1.6; // 3.4s down to ~1.8s
+      b.fireCD -= dt;
+      if(b.fireCD <= 0){
+        fireBugShot(b);
+        b.fireCD = rand(base, base + 1.2);
+        b.fireCD = Math.max(0.9, b.fireCD);
       }
     }
   }
+}
+
+// We keep a dedicated shot timer to avoid weird cadence
+let booFireTimer = 0;
+
+function updateFiring(dt){
+  booFireTimer -= dt;
+
+  const m = dottyMultiplier();       // increases every 10 quizzes
+  const powered = (quizCount >= 10); // ✅ candy becomes stronger after 10 quizzes
+
+  if(player.sugar > 0){
+    // ✅ Candy shots get stronger deeper in the game:
+    // After 10 quizzes, the candy allows MORE simultaneous shots and slightly faster fire rate,
+    // scaling with dottyMultiplier() (every 10 quizzes).
+    const cooldown = powered ? Math.max(0.08, 0.12 - 0.01*(m-1)) : 0.12;
+    const maxPinkShots = powered ? Math.min(12, 3*m) : 3;
+
+    if(booFireTimer <= 0 && booShots.length < maxPinkShots){
+      fireBooShot(true);
+      booFireTimer = cooldown;
+    }
+  } else {
+    // calm gold, one-at-a-time
+    const cooldown = 0.12;
+    if(booFireTimer <= 0 && canFireNormal()){
+      fireBooShot(false);
+      booFireTimer = cooldown;
+    }
+  }
+}
+
 
   function updateProjectiles(dt){
     // boo shots
