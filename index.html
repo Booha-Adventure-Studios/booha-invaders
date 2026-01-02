@@ -214,69 +214,90 @@ BODY + SCRIPT (PART 1)
   // Chunk 3 will call drawQuizOverlay() from inside draw().
   // -----------------------
   function drawQuizOverlay(){
-    // =========================
-    // QUIZ OVERLAY (multiple choice)
-    // =========================
-    if(quizOpen && quizQ){
-      ctx.save();
+   // =========================
+// QUIZ OVERLAY (Multiple Choice) ✅ shows red/green + message
+// =========================
+if(quizOpen && quizQ){
+  ctx.save();
 
-      // dim + vignette
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
+  // dim + vignette
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(0,0,innerWidth,innerHeight);
 
-      const cx = innerWidth/2, cy = innerHeight/2;
-      const r0 = Math.min(innerWidth, innerHeight) * 0.22;
-      const r1 = Math.min(innerWidth, innerHeight) * 0.80;
-      const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
-      vg.addColorStop(0, "rgba(0,0,0,0)");
-      vg.addColorStop(1, "rgba(0,0,0,0.65)");
-      ctx.fillStyle = vg;
-      ctx.fillRect(0,0,innerWidth,innerHeight);
+  const cx = innerWidth/2, cy = innerHeight/2;
+  const r0 = Math.min(innerWidth, innerHeight) * 0.22;
+  const r1 = Math.min(innerWidth, innerHeight) * 0.80;
+  const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.65)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0,0,innerWidth,innerHeight);
 
-      // Big number
-      const q = String(quizQ.n);
-      ctx.fillStyle = "rgba(255,255,255,0.96)";
-      ctx.font = "900 72px system-ui, -apple-system, sans-serif";
-      const qw = ctx.measureText(q).width;
-      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
+  // Big number
+  const q = String(quizQ.n);
+  ctx.fillStyle = "rgba(255,255,255,0.96)";
+  ctx.font = "900 72px system-ui, -apple-system, sans-serif";
+  const qw = ctx.measureText(q).width;
+  ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
 
-      // Buttons layout
-      const btnW = clamp(innerWidth*0.72, 260, 560);
-      const btnH = 54;
-      const gap = 14;
-      const startY = innerHeight*0.42;
+  // Buttons layout (must match hit-test)
+  const btnW = clamp(innerWidth*0.72, 260, 560);
+  const btnH = 54;
+  const gap = 14;
+  const startY = innerHeight*0.42;
+  const x = innerWidth/2 - btnW/2;
 
-      ctx.font = "800 20px system-ui, -apple-system, sans-serif";
+  ctx.font = "800 20px system-ui, -apple-system, sans-serif";
 
-      for(let i=0;i<4;i++){
-        const x = innerWidth/2 - btnW/2;
-        const y = startY + i*(btnH+gap);
+  for(let i=0;i<4;i++){
+    const y = startY + i*(btnH+gap);
 
-        // panel
-        ctx.fillStyle = "rgba(255,255,255,0.10)";
-        ctx.fillRect(x, y, btnW, btnH);
+    // ✅ state colors
+    const isCorrect = (quizSolved && i === quizQ.correctIndex);
+    const isWrong   = (quizTried && quizTried[i]);
 
-        // border
-        ctx.strokeStyle = "rgba(255,255,255,0.22)";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, btnW, btnH);
+    let fill = "rgba(255,255,255,0.10)";
+    let stroke = "rgba(255,255,255,0.22)";
 
-        // label (with 1–4 prefix)
-        const label = (i+1) + ")  " + quizQ.choices[i];
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.fillText(label, x + 16, y + 36);
-      }
-
-      // tiny hint
-      ctx.font = "700 14px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      const hint = "Tap an answer or press 1–4";
-      const hw = ctx.measureText(hint).width;
-      ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
-
-      ctx.restore();
+    if(isWrong){
+      fill = "rgba(255,60,90,0.22)";
+      stroke = "rgba(255,60,90,0.55)";
     }
+    if(isCorrect){
+      fill = "rgba(60,255,140,0.22)";
+      stroke = "rgba(60,255,140,0.65)";
+    }
+
+    ctx.fillStyle = fill;
+    ctx.fillRect(x, y, btnW, btnH);
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, btnW, btnH);
+
+    const label = (i+1) + ")  " + quizQ.choices[i];
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.fillText(label, x + 16, y + 36);
   }
+
+  // Hint
+  ctx.font = "700 14px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  const hint = "Tap an answer or press 1–4";
+  const hw = ctx.measureText(hint).width;
+  ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
+
+  // ✅ Message (JP)
+  if(typeof quizMsg === "string" && quizMsg){
+    ctx.font = "900 16px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    const mw = ctx.measureText(quizMsg).width;
+    ctx.fillText(quizMsg, innerWidth/2 - mw/2, startY + 4*(btnH+gap) + 38);
+  }
+
+  ctx.restore();
+}
+
 
   // -----------------------
   // Input (universal)
@@ -598,20 +619,34 @@ function update(dt){
       b.x = b.sx + (b.tx - b.sx)*e + curve*(1-t);
       b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
     } else {
-      // drift (gentle, then faster)
-      b.driftSpeed = driftNow;
-      b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
-      b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+     // drift (gentle, then faster)
+let driftMult = 1;
 
-      // firing (starts calm, ramps with time + rounds)
-      const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
-      const base = 3.4 - fireRamp*1.6; // 3.4s down to ~1.8s
-      b.fireCD -= dt;
-      if(b.fireCD <= 0){
-        fireBugShot(b);
-        b.fireCD = rand(base, base + 1.2);
-        b.fireCD = Math.max(0.9, b.fireCD);
-      }
+// 🔥 Boost 3 reaction: Dotty get faster & aggressive
+if(player.boost >= 3){
+  driftMult = 1.6; // noticeable but not insane
+}
+
+b.driftSpeed = driftNow * driftMult;
+b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
+b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+
+// firing (starts calm, ramps with time)
+const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+let base = 3.4 - fireRamp*1.6; // 3.4s → ~1.8s
+
+// 🔥 Boost 3 reaction: faster firing
+if(player.boost >= 3){
+  base *= 0.6; // ~40% faster shots
+}
+
+b.fireCD -= dt;
+if(b.fireCD <= 0){
+  fireBugShot(b);
+  b.fireCD = rand(base, base + 1.0);
+  b.fireCD = Math.max(0.6, b.fireCD); // tighter floor when boosted
+}
+
     }
   }
 }
