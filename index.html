@@ -107,39 +107,45 @@ BODY + SCRIPT (PART 1)
   let pointerX = null;
 
   canvas.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
     pointerDown = true;
     pointerX = e.clientX;
-  });
+    try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+  }, { passive:false });
+
   canvas.addEventListener("pointermove", (e)=>{
     if(!pointerDown) return;
+    e.preventDefault();
     pointerX = e.clientX;
-  });
-  canvas.addEventListener("pointerup", ()=>{
+  }, { passive:false });
+
+  canvas.addEventListener("pointerup", (e)=>{
     pointerDown = false;
     pointerX = null;
+    try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
   });
-  canvas.addEventListener("pointercancel", ()=>{
+
+  canvas.addEventListener("pointercancel", (e)=>{
     pointerDown = false;
     pointerX = null;
+    try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
   });
 
   addEventListener("mousemove", (e)=>{
-  // Desktop: ignore mouse unless dragging
-  if(!pointerDown) return;
-  pointerX = e.clientX;
-});
-
+    // Desktop: ignore mouse unless dragging
+    if(!pointerDown) return;
+    pointerX = e.clientX;
+  });
 
   const keys = new Set();
- addEventListener("keydown", (e)=>{
-  if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
-    e.preventDefault();
-    pointerX = null; // ✅ keyboard takes control
-  }
-  keys.add(e.key);
-}, {passive:false});
+  addEventListener("keydown", (e)=>{
+    if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
+      e.preventDefault();
+      pointerX = null; // ✅ keyboard takes control
+    }
+    keys.add(e.key);
+  }, {passive:false});
 
-  
   addEventListener("keyup", (e)=>keys.delete(e.key));
 
   // -----------------------
@@ -160,10 +166,14 @@ BODY + SCRIPT (PART 1)
   const sparkles = [];  // {x,y,vx,vy,life,ttl,size,kind}
   const candies  = [];  // {x,y,vx,vy,spin,dead}
 
-  let quizOpen = false;
+  // -----------------------
+  // Question Popup
+  // -----------------------
+  // ✅ NOTE: quizOpen is declared ONCE (below in waves section)
+  let quizNumber = 0;
+  let quizInput = "";
 
-
-   // -----------------------
+  // -----------------------
   // Waves / pacing
   // -----------------------
   const WAVE_PATTERN_1 = [1, 2, 4, 6, 8, 10]; // Wave #1 structure
@@ -180,6 +190,9 @@ BODY + SCRIPT (PART 1)
   // drift increases over time (within stage)
   let stageTime = 0;
 
+  // ✅ SINGLE SOURCE OF TRUTH (do NOT redeclare later)
+  let quizOpen = false;
+
   function startWave(n){
     wave = n;
     stepInWave = 0;
@@ -187,28 +200,25 @@ BODY + SCRIPT (PART 1)
     startWaveStep();
   }
 
-function startWaveStep(){
-  killedThisStep = 0;
-  spawnedThisStep = 0;   // ✅ ADD THIS
+  function startWaveStep(){
+    killedThisStep = 0;
+    spawnedThisStep = 0;   // ✅ ADD THIS
 
-  bugsThisStep = WAVE_PATTERN_1[stepInWave];
-  spawnTimer = 0.6;
-}
-
-
-function advanceWaveStep(){
-  stepInWave++;
-
-  if(stepInWave >= WAVE_PATTERN_1.length){
-    quizNumber = (Math.random() * 101) | 0; // 0–100
-    quizOpen = true;
-    return;
+    bugsThisStep = WAVE_PATTERN_1[stepInWave];
+    spawnTimer = 0.6;
   }
 
-  startWaveStep();
-}
+  function advanceWaveStep(){
+    stepInWave++;
 
+    if(stepInWave >= WAVE_PATTERN_1.length){
+      quizNumber = (Math.random() * 101) | 0; // 0–100
+      quizOpen = true;
+      return;
+    }
 
+    startWaveStep();
+  }
 
   function resetGame(){
     resize();
@@ -250,7 +260,6 @@ function advanceWaveStep(){
 
     stageTime = 0;
     startWave(1);
-
   }
 
   // -----------------------
@@ -293,19 +302,6 @@ function advanceWaveStep(){
   function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
   function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
 
-  
-
-// -----------------------
-// Question Popup
-// -----------------------
-let quizOpen = false;
-let quizNumber = 0;
-let quizInput = "";
-
-
-
-
-  
   // -----------------------
   // FX
   // -----------------------
@@ -389,8 +385,8 @@ let quizInput = "";
     if(pointerX !== null){
       player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
     } else {
-     if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
-     if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
+      if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
+      if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
 
       player.x = clamp(player.x, 10, innerWidth - player.w - 10);
     }
@@ -400,18 +396,15 @@ let quizInput = "";
     player.sugar = Math.max(0, player.sugar - dt);
     player.hitIFrames = Math.max(0, player.hitIFrames - dt);
 
-    // spawn bugs until we reach bugsThisRound
-    // spawn bugs until we reach bugsThisStep
-  // spawn DOTTY for this step (SEQUENTIAL)
-   spawnTimer -= dt;
+    // spawn DOTTY for this step (SEQUENTIAL)
+    spawnTimer -= dt;
 
-// Only spawn until we reach the target count for THIS step
-if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
-  spawnBug();
-  spawnedThisStep++;
-  spawnTimer = 0.85; // spacing between arrivals
-}
-
+    // Only spawn until we reach the target count for THIS step
+    if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
+      spawnBug();
+      spawnedThisStep++;
+      spawnTimer = 0.85; // spacing between arrivals
+    }
 
     // bugs update (enter + drift + shooting)
     for(const b of bugs){
@@ -448,20 +441,7 @@ if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
       }
     }
 
-    // Booha firing
-    // - Normal: one shot at a time
-    // - Sugar: rapid pink shots (not one-shot limited)
-    // Auto-fire always on (as you wanted), but behaves differently in sugar
-    if(player.sugar > 0){
-      // sugar rapid fire (pink)
-      // rate tuned to feel boosted but not ridiculous
-      // also cap max shots to avoid screen spam
-      const maxPinkShots = 3;
-      if(booShots.length < maxPinkShots){
-        // fire cadence based on dt accumulator pattern
-        // simple cooldown using glow as a tiny timer isn't clean; use a hidden timer:
-      }
-    }
+    // Booha firing is handled by updateFiring(dt) below (kept separate to avoid cadence bugs)
   }
 
   // We keep a dedicated shot timer to avoid weird cadence
@@ -597,29 +577,30 @@ if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
       p.y += p.vy * dt;
       p.vy += 280 * dt;
     }
-    for(let i=sparkles.length-1;i>=0;i--){
-      if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
-    }
-  }
-
-function maybeAdvanceRound(){
-  // Only advance when:
-  // 1) we’ve killed the target for this step AND
-  // 2) there are no living DOTTY left on screen
-  if(killedThisStep >= bugsThisStep){
-    const anyAlive = bugs.some(b => b.alive);
-    if(!anyAlive){
-      advanceWaveStep();
-    }
-  }
+  for(let i=sparkles.length-1;i>=0;i--){
+  if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
 }
 
+  }
+
+  function maybeAdvanceRound(){
+    // Only advance when:
+    // 1) we’ve killed the target for this step AND
+    // 2) there are no living DOTTY left on screen
+    if(killedThisStep >= bugsThisStep){
+      const anyAlive = bugs.some(b => b.alive);
+      if(!anyAlive){
+        advanceWaveStep();
+      }
+    }
+  }
+
+  /* =========================
+  END CHUNK 2 / 3
+  (stop here – logic & updates above)
+  ========================= */
 
 
-/* =========================
-END CHUNK 2 / 3
-(stop here – logic & updates above)
-========================= */
 
 /* =========================
 CHUNK 3 / 3
@@ -630,7 +611,6 @@ SCRIPT (PART 2) + END
   // -----------------------
   // Draw
   // -----------------------
-
 
   function drawGlow(x,y,r,alpha,color){
     ctx.save();
@@ -675,35 +655,34 @@ SCRIPT (PART 2) + END
       if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
     }
 
-   // bug shots (green glowing slime blobs)
-for(const bl of bugShots){
-  if(bl.dead) continue;
+    // bug shots (green glowing slime blobs)
+    for(const bl of bugShots){
+      if(bl.dead) continue;
 
-  // outer soft glow
-  drawGlow(
-    bl.x,
-    bl.y,
-    bl.r * 2.8,
-    0.18,
-    "rgba(70,255,140,0.65)"
-  );
+      // outer soft glow
+      drawGlow(
+        bl.x,
+        bl.y,
+        bl.r * 2.8,
+        0.18,
+        "rgba(70,255,140,0.65)"
+      );
 
-  // inner glow (gives depth)
-  drawGlow(
-    bl.x,
-    bl.y,
-    bl.r * 1.6,
-    0.22,
-    "rgba(140,255,190,0.75)"
-  );
+      // inner glow (gives depth)
+      drawGlow(
+        bl.x,
+        bl.y,
+        bl.r * 1.6,
+        0.22,
+        "rgba(140,255,190,0.75)"
+      );
 
-  // solid slime core
-  ctx.fillStyle = "rgba(90,255,150,0.95)";
-  ctx.beginPath();
-  ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
-  ctx.fill();
-}
-
+      // solid slime core
+      ctx.fillStyle = "rgba(90,255,150,0.95)";
+      ctx.beginPath();
+      ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
+      ctx.fill();
+    }
 
     // boo shots (gold or pink)
     for(const s of booShots){
@@ -778,7 +757,6 @@ for(const bl of bugShots){
     ctx.globalAlpha = 1;
 
     // HUD: energy meter + stage label
-    // meter
     const barX=16, barY=16, barW=150, barH=10;
     ctx.fillStyle = "rgba(0,0,0,0.45)";
     ctx.fillRect(barX, barY, barW, barH);
@@ -793,71 +771,49 @@ for(const bl of bugShots){
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.fillText("BOOHA INVADERS — STAGE 1 DOTTY", 16, 44);
 
-
-        // Quiz Overlay
+    // =========================
+    // QUIZ OVERLAY (single, unified)
+    // =========================
     if(quizOpen){
       ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.65)";
+
+      // dim layer
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(0,0,innerWidth,innerHeight);
 
+      // vignette
+      const cx = innerWidth/2, cy = innerHeight/2;
+      const r0 = Math.min(innerWidth, innerHeight) * 0.22;
+      const r1 = Math.min(innerWidth, innerHeight) * 0.78;
+      const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(0,0,0,0.60)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+
+      // number
+      const q = String(quizNumber);
       ctx.fillStyle = "rgba(255,255,255,0.96)";
-      ctx.font = "900 54px system-ui, -apple-system, sans-serif";
-      const q = quizNumber;
+      ctx.font = "900 64px system-ui, -apple-system, sans-serif";
       const qw = ctx.measureText(q).width;
-      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight/2 - 10);
+      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight/2 - 12);
 
-     ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-const hint = "Type the answer and press Enter";
-const hw = ctx.measureText(hint).width;
-ctx.fillText(hint, innerWidth/2 - hw/2, innerHeight/2 + 28);
+      // hint
+      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      const hint = "Type the answer and press Enter";
+      const hw = ctx.measureText(hint).width;
+      ctx.fillText(hint, innerWidth/2 - hw/2, innerHeight/2 + 26);
 
-// typed input (centered)
-ctx.font = "700 18px system-ui, -apple-system, sans-serif";
-const iw = ctx.measureText(quizInput).width;
-ctx.fillText(quizInput, innerWidth/2 - iw/2, innerHeight/2 + 58);
+      // typed input (centered)
+      ctx.font = "700 18px system-ui, -apple-system, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      const inp = quizInput || "";
+      const iw = ctx.measureText(inp).width;
+      ctx.fillText(inp, innerWidth/2 - iw/2, innerHeight/2 + 58);
 
-ctx.restore();
-}
-
-
-// =========================
-// QUIZ OVERLAY (B: dim + vignette)
-// =========================
-if(quizOpen){
-  ctx.save();
-
-  // dim layer
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(0,0,innerWidth,innerHeight);
-
-  // vignette
-  const cx = innerWidth/2, cy = innerHeight/2;
-  const r0 = Math.min(innerWidth, innerHeight) * 0.22;
-  const r1 = Math.min(innerWidth, innerHeight) * 0.78;
-  const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
-  vg.addColorStop(0, "rgba(0,0,0,0)");
-  vg.addColorStop(1, "rgba(0,0,0,0.60)");
-  ctx.fillStyle = vg;
-  ctx.fillRect(0,0,innerWidth,innerHeight);
-
-  // number (temporary placeholder)
-  const q = String(quizNumber);
-  ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.font = "900 64px system-ui, -apple-system, sans-serif";
-  const qw = ctx.measureText(q).width;
-  ctx.fillText(q, innerWidth/2 - qw/2, innerHeight/2 - 12);
-
-  // hint (temporary)
-  ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
-  const hint = "Press Enter to continue";
-  const hw = ctx.measureText(hint).width;
-  ctx.fillText(hint, innerWidth/2 - hw/2, innerHeight/2 + 26);
-
-  ctx.restore();
-}
-
-    
+      ctx.restore();
+    }
 
     // Game Over
     if(player.energy <= 0){
@@ -879,68 +835,71 @@ if(quizOpen){
     }
   }
 
-  // Restart
- addEventListener("keydown",(e)=>{
-  if(!quizOpen) return;
-
-  if(e.key === "Enter"){
-    // TEMP: accept any input (we add correctness next)
+  // -----------------------
+  // Quiz close (kept simple for now)
+  // -----------------------
+  function closeQuiz(){
     quizInput = "";
     quizOpen = false;
 
+    // start next wave fresh (same behavior you were going for)
     wave++;
     stepInWave = 0;
     startWaveStep();
   }
-}, { passive:false });
 
-  canvas.addEventListener("pointerdown", ()=>{
-    if(player.energy<=0){
+// -----------------------
+// Key handling (single, non-duplicated)
+// -----------------------
+addEventListener("keydown", (e)=>{
+  // ✅ Restart (game over)
+  if(player.energy <= 0){
+    if(e.key === "r" || e.key === "R"){
+      e.preventDefault();
       booFireTimer = 0;
       resetGame();
     }
-  });
-
-    addEventListener("keydown",(e)=>{
-    if(quizOpen && e.key === "Enter"){
-      closeQuiz();
-    }
-  });
-
-  addEventListener("keydown",(e)=>{
-  if(quizOpen && e.key === "Enter"){
-    // close quiz and start next wave fresh
-    quizOpen = false;
-
-    wave++;
-    stepInWave = 0;
-    startWaveStep();
+    return; // don't process anything else while game over
   }
-});
 
-  addEventListener("keydown", (e)=>{
+  // ✅ If quiz isn't open, don't steal keys (lets arrows/A/D work normally)
   if(!quizOpen) return;
 
-  // backspace
+  // ✅ Quiz: submit / close
+  if(e.key === "Enter"){
+    e.preventDefault();
+    closeQuiz();
+    return;
+  }
+
+  // ✅ Quiz: backspace
   if(e.key === "Backspace"){
     e.preventDefault();
     quizInput = quizInput.slice(0, -1);
     return;
   }
 
-  // clear input
+  // ✅ Quiz: clear input
   if(e.key === "Escape"){
+    e.preventDefault();
     quizInput = "";
     return;
   }
 
-  // letters, space, hyphen only
+  // ✅ Quiz: letters, space, hyphen only
   if(e.key.length === 1 && /[a-zA-Z -]/.test(e.key)){
+    e.preventDefault(); // keeps the page from doing weird browser stuff
     quizInput += e.key.toLowerCase();
   }
 }, { passive:false });
 
-
+// Restart (tap)
+canvas.addEventListener("pointerdown", ()=>{
+  if(player.energy<=0){
+    booFireTimer = 0;
+    resetGame();
+  }
+});
 
 
   // -----------------------
@@ -951,16 +910,14 @@ if(quizOpen){
     const dt = Math.min(0.033, (t - last) || 0);
     last = t;
 
-      if(player.energy > 0 && !quizOpen){
-  update(dt);
-  updateFiring(dt);
-  updateProjectiles(dt);
-  updateCandy(dt);
-  updateParticles(dt);
-  maybeAdvanceRound();
-}
-
-
+    if(player.energy > 0 && !quizOpen){
+      update(dt);
+      updateFiring(dt);
+      updateProjectiles(dt);
+      updateCandy(dt);
+      updateParticles(dt);
+      maybeAdvanceRound();
+    }
 
     draw();
     requestAnimationFrame(tick);
