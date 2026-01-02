@@ -31,7 +31,6 @@ BODY + SCRIPT (PART 1)
 <body>
 <canvas id="c"></canvas>
 
-
 <script>
 (() => {
   const canvas = document.getElementById("c");
@@ -101,12 +100,198 @@ BODY + SCRIPT (PART 1)
   }
 
   // -----------------------
+  // Question Popup (Multiple Choice 1–100)
+  // ✅ SINGLE SOURCE OF TRUTH (declare ONCE here)
+  // -----------------------
+  let quizOpen  = false;
+  let quizCount = 0;        // completed questions (Dotty scaling)
+  let quizDeck  = [];
+  let quizPos   = 0;
+  let quizQ     = null;     // { n, choices:[...], correctIndex }
+
+  // -----------------------
+  // Quiz helpers (1–100 multiple choice)
+  // -----------------------
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = (Math.random()*(i+1))|0;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  const ONES  = ["zero","one","two","three","four","five","six","seven","eight","nine"];
+  const TEENS = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
+  const TENS  = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+
+  function numberToWords(n){
+    if(n < 10) return ONES[n];
+    if(n < 20) return TEENS[n-10];
+    const t = (n/10)|0;
+    const o = n % 10;
+    if(o === 0) return TENS[t];
+    return TENS[t] + "-" + ONES[o];
+  }
+
+  function splitDigitsWords(n){
+    const t = (n/10)|0;
+    const o = n % 10;
+    return ONES[t] + " " + ONES[o]; // "two eight"
+  }
+
+  function twoEightyStyle(n){
+    const t = (n/10)|0;
+    return ONES[t] + "-" + TENS[t]; // "two-eighty"
+  }
+
+  function punChoice(n){
+    const H = { one:"won", two:"too", four:"for", eight:"ate", zero:"oh" };
+    if(n >= 10){
+      const t = (n/10)|0;
+      const o = n % 10;
+      const a = H[ONES[t]] || ONES[t];
+      const b = H[ONES[o]] || ONES[o];
+      return a + "-" + b; // "too-ate"
+    }
+    const w = ONES[n];
+    return (H[w] || ("the-" + w));
+  }
+
+  function makeQuestion(n){
+    const correct = numberToWords(n);
+
+    // 3 wrongs (intentionally a little silly)
+    let wrong1, wrong2, wrong3;
+
+    if(n >= 10){
+      wrong1 = splitDigitsWords(n);
+      wrong2 = twoEightyStyle(n);
+      wrong3 = punChoice(n);
+    } else {
+      wrong1 = "the " + ONES[n];
+      wrong2 = ONES[n] + "-" + ONES[n];
+      wrong3 = punChoice(n);
+    }
+
+    // de-dupe + ensure not equal to correct
+    const pool = [];
+    for(const w of [wrong1, wrong2, wrong3]){
+      if(!w) continue;
+      if(w === correct) continue;
+      if(pool.includes(w)) continue;
+      pool.push(w);
+    }
+    while(pool.length < 3){
+      const w = TENS[2 + ((Math.random()*8)|0)] + "-" + ONES[(Math.random()*10)|0];
+      if(w !== correct && !pool.includes(w)) pool.push(w);
+    }
+
+    const choices = [correct, pool[0], pool[1], pool[2]];
+    shuffle(choices);
+    return { n, choices, correctIndex: choices.indexOf(correct) };
+  }
+
+  function buildQuizDeck(){
+    quizDeck = [];
+    for(let n=1;n<=100;n++) quizDeck.push(n);
+    shuffle(quizDeck);
+    quizPos = 0;
+  }
+
+  function nextQuiz(){
+    if(!quizDeck.length) buildQuizDeck();
+    if(quizPos >= quizDeck.length){
+      shuffle(quizDeck);
+      quizPos = 0;
+    }
+    const n = quizDeck[quizPos++];
+    quizQ = makeQuestion(n);
+  }
+
+  // -----------------------
+  // NOTE: Quiz overlay drawing DOES NOT belong in Chunk 2 update section.
+  // Keeping your code (not deleting) but wrapping it so it doesn't run here.
+  // Chunk 3 will call drawQuizOverlay() from inside draw().
+  // -----------------------
+  function drawQuizOverlay(){
+    // =========================
+    // QUIZ OVERLAY (multiple choice)
+    // =========================
+    if(quizOpen && quizQ){
+      ctx.save();
+
+      // dim + vignette
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+
+      const cx = innerWidth/2, cy = innerHeight/2;
+      const r0 = Math.min(innerWidth, innerHeight) * 0.22;
+      const r1 = Math.min(innerWidth, innerHeight) * 0.80;
+      const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(0,0,0,0.65)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+
+      // Big number
+      const q = String(quizQ.n);
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      ctx.font = "900 72px system-ui, -apple-system, sans-serif";
+      const qw = ctx.measureText(q).width;
+      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
+
+      // Buttons layout
+      const btnW = clamp(innerWidth*0.72, 260, 560);
+      const btnH = 54;
+      const gap = 14;
+      const startY = innerHeight*0.42;
+
+      ctx.font = "800 20px system-ui, -apple-system, sans-serif";
+
+      for(let i=0;i<4;i++){
+        const x = innerWidth/2 - btnW/2;
+        const y = startY + i*(btnH+gap);
+
+        // panel
+        ctx.fillStyle = "rgba(255,255,255,0.10)";
+        ctx.fillRect(x, y, btnW, btnH);
+
+        // border
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, btnW, btnH);
+
+        // label (with 1–4 prefix)
+        const label = (i+1) + ")  " + quizQ.choices[i];
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fillText(label, x + 16, y + 36);
+      }
+
+      // tiny hint
+      ctx.font = "700 14px system-ui, -apple-system, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      const hint = "Tap an answer or press 1–4";
+      const hw = ctx.measureText(hint).width;
+      ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
+
+      ctx.restore();
+    }
+  }
+
+  // -----------------------
   // Input (universal)
   // -----------------------
   let pointerDown = false;
   let pointerX = null;
 
   canvas.addEventListener("pointerdown", (e)=>{
+    // ✅ QUIZ: tap an answer (do not start dragging)
+    if(quizOpen){
+      const idx = quizHitTest(e.clientX, e.clientY);
+      if(idx >= 0) answerQuiz(idx);
+      return;
+    }
+
     e.preventDefault();
     pointerDown = true;
     pointerX = e.clientX;
@@ -167,11 +352,14 @@ BODY + SCRIPT (PART 1)
   const candies  = [];  // {x,y,vx,vy,spin,dead}
 
   // -----------------------
-  // Question Popup
+  // Question Popup (Multiple Choice 1–100)
+  // (kept as-is from your file, but fixed to NOT redeclare)
   // -----------------------
-  // ✅ NOTE: quizOpen is declared ONCE (below in waves section)
-  let quizNumber = 0;
-  let quizInput = "";
+  // let quizOpen = false;
+  // let quizCount = 0;
+  // let quizDeck = [];
+  // let quizPos = 0;
+  // let quizQ = null;
 
   // -----------------------
   // Waves / pacing
@@ -191,7 +379,17 @@ BODY + SCRIPT (PART 1)
   let stageTime = 0;
 
   // ✅ SINGLE SOURCE OF TRUTH (do NOT redeclare later)
-  let quizOpen = false;
+  // let quizOpen = false;
+
+  // -----------------------
+  // Quiz progression scaling (Dotty multiplier)
+  // -----------------------
+  // let quizCount = 0; // how many questions have been completed
+
+  function dottyMultiplier(){
+    // 0–9 => 1x, 10–19 => 2x, 20–29 => 3x, etc.
+    return 1 + Math.floor(quizCount / 10);
+  }
 
   function startWave(n){
     wave = n;
@@ -204,7 +402,8 @@ BODY + SCRIPT (PART 1)
     killedThisStep = 0;
     spawnedThisStep = 0;   // ✅ ADD THIS
 
-    bugsThisStep = WAVE_PATTERN_1[stepInWave];
+    bugsThisStep = WAVE_PATTERN_1[stepInWave] * dottyMultiplier();
+
     spawnTimer = 0.6;
   }
 
@@ -212,7 +411,7 @@ BODY + SCRIPT (PART 1)
     stepInWave++;
 
     if(stepInWave >= WAVE_PATTERN_1.length){
-      quizNumber = (Math.random() * 101) | 0; // 0–100
+      nextQuiz();        // ✅ build MC question
       quizOpen = true;
       return;
     }
@@ -257,6 +456,10 @@ BODY + SCRIPT (PART 1)
     bugShots.length = 0;
     sparkles.length = 0;
     candies.length = 0;
+
+    // ensure quiz deck exists for first quiz
+    if(!quizDeck.length) buildQuizDeck();
+    nextQuiz();
 
     stageTime = 0;
     startWave(1);
@@ -577,10 +780,9 @@ BODY + SCRIPT (PART 1)
       p.y += p.vy * dt;
       p.vy += 280 * dt;
     }
-  for(let i=sparkles.length-1;i>=0;i--){
-  if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
-}
-
+    for(let i=sparkles.length-1;i>=0;i--){
+      if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
+    }
   }
 
   function maybeAdvanceRound(){
@@ -599,7 +801,6 @@ BODY + SCRIPT (PART 1)
   END CHUNK 2 / 3
   (stop here – logic & updates above)
   ========================= */
-
 
 
 /* =========================
@@ -772,50 +973,65 @@ SCRIPT (PART 2) + END
     ctx.fillText("BOOHA INVADERS — STAGE 1 DOTTY", 16, 44);
 
     // =========================
-    // QUIZ OVERLAY (single, unified)
+    // QUIZ OVERLAY (Multiple Choice)
     // =========================
-    if(quizOpen){
+    if(quizOpen && quizQ){
       ctx.save();
 
-      // dim layer
+      // dim + vignette
       ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(0,0,innerWidth,innerHeight);
 
-      // vignette
       const cx = innerWidth/2, cy = innerHeight/2;
       const r0 = Math.min(innerWidth, innerHeight) * 0.22;
-      const r1 = Math.min(innerWidth, innerHeight) * 0.78;
+      const r1 = Math.min(innerWidth, innerHeight) * 0.80;
       const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
       vg.addColorStop(0, "rgba(0,0,0,0)");
-      vg.addColorStop(1, "rgba(0,0,0,0.60)");
+      vg.addColorStop(1, "rgba(0,0,0,0.65)");
       ctx.fillStyle = vg;
       ctx.fillRect(0,0,innerWidth,innerHeight);
 
-      // number
-      const q = String(quizNumber);
+      // Big number
+      const q = String(quizQ.n);
       ctx.fillStyle = "rgba(255,255,255,0.96)";
-      ctx.font = "900 64px system-ui, -apple-system, sans-serif";
+      ctx.font = "900 72px system-ui, -apple-system, sans-serif";
       const qw = ctx.measureText(q).width;
-      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight/2 - 12);
+      ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
 
-      // hint
-      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.82)";
-      const hint = "Type the answer and press Enter";
+      // Buttons layout (must match hit-test)
+      const btnW = clamp(innerWidth*0.72, 260, 560);
+      const btnH = 54;
+      const gap = 14;
+      const startY = innerHeight*0.42;
+      const x = innerWidth/2 - btnW/2;
+
+      ctx.font = "800 20px system-ui, -apple-system, sans-serif";
+
+      for(let i=0;i<4;i++){
+        const y = startY + i*(btnH+gap);
+
+        ctx.fillStyle = "rgba(255,255,255,0.10)";
+        ctx.fillRect(x, y, btnW, btnH);
+
+        ctx.strokeStyle = "rgba(255,255,255,0.22)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, btnW, btnH);
+
+        const label = (i+1) + ")  " + quizQ.choices[i];
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fillText(label, x + 16, y + 36);
+      }
+
+      ctx.font = "700 14px system-ui, -apple-system, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      const hint = "Tap an answer or press 1–4";
       const hw = ctx.measureText(hint).width;
-      ctx.fillText(hint, innerWidth/2 - hw/2, innerHeight/2 + 26);
-
-      // typed input (centered)
-      ctx.font = "700 18px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.92)";
-      const inp = quizInput || "";
-      const iw = ctx.measureText(inp).width;
-      ctx.fillText(inp, innerWidth/2 - iw/2, innerHeight/2 + 58);
+      ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
 
       ctx.restore();
     }
 
-    // Game Over
+    // Game Over overlay
     if(player.energy <= 0){
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.55)";
@@ -828,79 +1044,88 @@ SCRIPT (PART 2) + END
       ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
 
       ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-      const msg2 = "Tap / Press R to Restart";
+      const msg2 = "Press R to Restart";
       const mw2 = ctx.measureText(msg2).width;
       ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
       ctx.restore();
     }
+  } // ✅ end draw()
+
+  // -----------------------
+  // Quiz helpers (Multiple Choice runtime)
+  // -----------------------
+  function quizHitTest(mx, my){
+    const btnW = clamp(innerWidth*0.72, 260, 560);
+    const btnH = 54;
+    const gap = 14;
+    const startY = innerHeight*0.42;
+    const x = innerWidth/2 - btnW/2;
+
+    for(let i=0;i<4;i++){
+      const y = startY + i*(btnH+gap);
+      if(mx >= x && mx <= x+btnW && my >= y && my <= y+btnH) return i;
+    }
+    return -1;
   }
 
-  // -----------------------
-  // Quiz close (kept simple for now)
-  // -----------------------
   function closeQuiz(){
-    quizInput = "";
+    quizCount++;           // ✅ drives dottyMultiplier()
     quizOpen = false;
 
-    // start next wave fresh (same behavior you were going for)
+    // prepare next question for next time
+    if(typeof nextQuiz === "function") nextQuiz();
+
+    // start next wave fresh
     wave++;
     stepInWave = 0;
     startWaveStep();
   }
 
-// -----------------------
-// Key handling (single, non-duplicated)
-// -----------------------
-addEventListener("keydown", (e)=>{
-  // ✅ Restart (game over)
-  if(player.energy <= 0){
-    if(e.key === "r" || e.key === "R"){
-      e.preventDefault();
-      booFireTimer = 0;
-      resetGame();
+  function answerQuiz(index){
+    // correctness hook (optional now)
+    const correct = (quizQ && index === quizQ.correctIndex);
+
+    // tiny feedback (keep it light)
+    if(correct){
+      player.energy = Math.min(100, player.energy + 5);
+    } else {
+      player.energy = Math.max(0, player.energy - 5);
     }
-    return; // don't process anything else while game over
-  }
 
-  // ✅ If quiz isn't open, don't steal keys (lets arrows/A/D work normally)
-  if(!quizOpen) return;
-
-  // ✅ Quiz: submit / close
-  if(e.key === "Enter"){
-    e.preventDefault();
     closeQuiz();
-    return;
   }
 
-  // ✅ Quiz: backspace
-  if(e.key === "Backspace"){
-    e.preventDefault();
-    quizInput = quizInput.slice(0, -1);
-    return;
-  }
+  // -----------------------
+  // Key handling (single, non-duplicated)
+  // - R restarts on game over
+  // - 1–4 answers during quiz
+  // -----------------------
+  addEventListener("keydown", (e)=>{
+    // Restart (game over)
+    if(player.energy <= 0){
+      if(e.key === "r" || e.key === "R"){
+        e.preventDefault();
+        booFireTimer = 0;
+        resetGame();
+      }
+      return;
+    }
 
-  // ✅ Quiz: clear input
-  if(e.key === "Escape"){
-    e.preventDefault();
-    quizInput = "";
-    return;
-  }
-
-  // ✅ Quiz: letters, space, hyphen only
-  if(e.key.length === 1 && /[a-zA-Z -]/.test(e.key)){
-    e.preventDefault(); // keeps the page from doing weird browser stuff
-    quizInput += e.key.toLowerCase();
-  }
-}, { passive:false });
-
-// Restart (tap)
-canvas.addEventListener("pointerdown", ()=>{
-  if(player.energy<=0){
-    booFireTimer = 0;
-    resetGame();
-  }
-});
-
+    // Quiz answers
+    if(quizOpen){
+      if(e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4"){
+        e.preventDefault();
+        answerQuiz((e.key|0) - 1);
+        return;
+      }
+      // optional: Escape closes quiz (counts as a completed question)
+      if(e.key === "Escape"){
+        e.preventDefault();
+        closeQuiz();
+        return;
+      }
+    }
+  }, { passive:false });
 
   // -----------------------
   // Main loop
@@ -963,3 +1188,4 @@ canvas.addEventListener("pointerdown", ()=>{
 </script>
 </body>
 </html>
+
