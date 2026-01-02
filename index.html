@@ -622,22 +622,29 @@ let booFireTimer = 0;
 function updateFiring(dt){
   booFireTimer -= dt;
 
-  const m = dottyMultiplier();       // increases every 10 quizzes
-  const powered = (quizCount >= 10); // ✅ candy becomes stronger after 10 quizzes
+  // ✅ Boost stacks (persistent until hit)
+  // If you haven't added these yet, add to player object:
+  // boost: 0
+  const boost = player.boost || 0;   // 0..cap
 
-  if(player.sugar > 0){
-    // ✅ Candy shots get stronger deeper in the game:
-    // After 10 quizzes, the candy allows MORE simultaneous shots and slightly faster fire rate,
-    // scaling with dottyMultiplier() (every 10 quizzes).
-    const cooldown = powered ? Math.max(0.08, 0.12 - 0.01*(m-1)) : 0.12;
-    const maxPinkShots = powered ? Math.min(12, 3*m) : 3;
+  if(boost > 0){
+    // Boosted shots (pink)
+    // Stack 1 = stronger, Stack 2 = even more, Stack 3 = capped max
+    const stack = clamp(boost, 1, 3);
+
+    // fire rate gets a bit faster per stack (capped)
+    const cooldown = Math.max(0.07, 0.12 - 0.015*(stack-1));
+
+    // max simultaneous shots increases with stacks (capped)
+    const maxPinkShots = [0, 3, 6, 9][stack];
 
     if(booFireTimer <= 0 && booShots.length < maxPinkShots){
       fireBooShot(true);
       booFireTimer = cooldown;
     }
+
   } else {
-    // calm gold, one-at-a-time
+    // Normal (gold), one-at-a-time
     const cooldown = 0.12;
     if(booFireTimer <= 0 && canFireNormal()){
       fireBooShot(false);
@@ -699,14 +706,22 @@ function updateFiring(dt){
       }
 
       // hit player (with i-frames)
-      if(!bl.dead && player.hitIFrames <= 0){
-        if(aabb(bl.x-bl.r, bl.y-bl.r, bl.r*2, bl.r*2, player.x, player.y, player.w, player.h)){
-          bl.dead = true;
-          player.energy = Math.max(0, player.energy - 10);
-          player.hitIFrames = 0.55; // prevents one-hit feeling
-          addSpark(player.x+player.w/2, player.y+player.h/2, 10, "slime");
-        }
-      }
+// hit player (with i-frames)
+if(!bl.dead && player.hitIFrames <= 0){
+  if(aabb(bl.x-bl.r, bl.y-bl.r, bl.r*2, bl.r*2, player.x, player.y, player.w, player.h)){
+    bl.dead = true;
+
+    // damage
+    player.energy = Math.max(0, player.energy - 10);
+    player.hitIFrames = 0.55;
+
+    // ✅ RESET BOOST STACKS ON HIT
+    player.boost = 0;
+
+    // visual feedback
+    addSpark(player.x+player.w/2, player.y+player.h/2, 12, "slime");
+  }
+}
 
       if(bl.y > innerHeight + 80) bl.dead = true;
     }
@@ -723,31 +738,41 @@ function updateFiring(dt){
     }
   }
 
-  function updateCandy(dt){
-    for(const c of candies){
-      if(c.dead) continue;
-      c.x += c.vx * dt;
-      c.y += c.vy * dt;
+ function updateCandy(dt){
+  for(const c of candies){
+    if(c.dead) continue;
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
 
-      // sparkle as it falls
-      addSpark(c.x + rand(-6,6), c.y + rand(-6,6), 1, "pink");
+    // sparkle as it falls
+    addSpark(c.x + rand(-6,6), c.y + rand(-6,6), 1, "pink");
 
-      // catch
-      if(aabb(c.x-18, c.y-18, 36, 36, player.x, player.y, player.w, player.h)){
-        c.dead = true;
-        player.sugar = 8.0;                 // sugar rush duration
-        player.energy = Math.min(100, player.energy + 30); // small restore
-        // pink pulse kickoff
-        player.glow = 0.10;
-      }
+    // catch
+    if(aabb(c.x-18, c.y-18, 36, 36, player.x, player.y, player.w, player.h)){
+      c.dead = true;
 
-      if(c.y > innerHeight + 60) c.dead = true;
+      // ✅ BOOST STACKS (persist until hit)
+      // 1 candy = +1 stack, 2 candies = +2 stacks, capped at 3
+      player.boost = clamp((player.boost || 0) + 1, 0, 3);
+
+      // small restore (keep this)
+      player.energy = Math.min(100, player.energy + 30);
+
+      // turn off old timer-based sugar (so boost is the only system)
+      player.sugar = 0;
+
+      // little pulse
+      player.glow = 0.12;
     }
 
-    for(let i=candies.length-1;i>=0;i--){
-      if(candies[i].dead) candies.splice(i,1);
-    }
+    if(c.y > innerHeight + 60) c.dead = true;
   }
+
+  for(let i=candies.length-1;i>=0;i--){
+    if(candies[i].dead) candies.splice(i,1);
+  }
+}
+
 
   function updateParticles(dt){
     for(const p of sparkles){
@@ -1069,9 +1094,21 @@ function closeQuiz(){
   quizTried = [false,false,false,false];
   quizMsg = "";
 
-  // get next question ready
+  // get next question ready (but do NOT open it)
   nextQuiz();
+
+  // ✅ IMPORTANT: reset pacing so we don't instantly reopen the quiz
+  wave++;
+  stepInWave = 0;
+  candiesThisWave = 0;
+
+  killedThisStep = 0;
+  spawnedThisStep = 0;
+  spawnTimer = 0.6;
+
+  startWaveStep();
 }
+
 
 function answerQuiz(index){
   if(!quizOpen || !quizQ) return;
