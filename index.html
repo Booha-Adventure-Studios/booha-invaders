@@ -562,8 +562,8 @@ function update(dt){
 
   // drift ramps slowly (gentle -> faster)
   const driftBase = 10;
-  const driftRamp = clamp((stageTime - 18) / 40, 0, 1); // starts later
-  const driftNow  = driftBase + driftRamp * 28;         // ends faster
+  const driftRamp = clamp((stageTime - 18) / 40, 0, 1);
+  const driftNow  = driftBase + driftRamp * 28;
 
   // movement
   if(pointerX !== null){
@@ -571,73 +571,59 @@ function update(dt){
   } else {
     if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
     if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
-
     player.x = clamp(player.x, 10, innerWidth - player.w - 10);
   }
 
   // timers
   player.glow = Math.max(0, player.glow - dt*2.2);
-  player.sugar = Math.max(0, player.sugar - dt);
+  player.sugar = Math.max(0, player.sugar - dt); // legacy (ok to leave)
   player.hitIFrames = Math.max(0, player.hitIFrames - dt);
-
-  // ✅ Candy interval (max 3 per wave, and never during quiz)
-  candyTimer -= dt;
-  if(!quizOpen && candiesThisWave < 3 && candyTimer <= 0){
-    dropCandy();
-    candiesThisWave++;
-
-    // interval scales with Dotty multiplier (every 10 quizzes)
-    const m = dottyMultiplier();                 // 1,2,3...
-    const interval = clamp(20 - (m-1)*3, 8, 20); // 20s → 17s → 14s → ... (min 8s)
-    candyTimer = interval;
-  }
 
   // spawn DOTTY for this step (SEQUENTIAL)
   spawnTimer -= dt;
-
-  // Only spawn until we reach the target count for THIS step
   if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
     spawnBug();
     spawnedThisStep++;
-    spawnTimer = 0.85; // spacing between arrivals
+    spawnTimer = 0.85;
   }
 
-// bugs update (enter + drift + shooting)
-for(const b of bugs){
-  if(!b.alive) continue;
+  // bugs update (enter + drift + shooting)
+  for(const b of bugs){
+    if(!b.alive) continue;
 
-  b.glow = Math.max(0, b.glow - dt*2.0);
-  b.bob += dt;
+    b.glow = Math.max(0, b.glow - dt*2.0);
+    b.bob += dt;
 
-  // entry
-  if(b.enterT < b.enterDur){
-    b.enterT += dt;
-    const t = clamp(b.enterT / b.enterDur, 0, 1);
+    // entry
+    if(b.enterT < b.enterDur){
+      b.enterT += dt;
+      const t = clamp(b.enterT / b.enterDur, 0, 1);
 
-    const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
-    b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
-    b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
+      const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
+      b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
+      b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
 
-  } else {
+    } else {
 
-    // drift (gentle, then faster) + Boost 3 reaction
-    let driftMult = 1;
-    if(player.boost >= 3) driftMult = 1.6;
+      // drift (gentle, then faster) + Boost 3 reaction
+      let driftMult = 1;
+      if(player.boost >= 3) driftMult = 1.6;
 
-    b.driftSpeed = driftNow * driftMult;
-    b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
-    b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+      b.driftSpeed = driftNow * driftMult;
+      b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
+      b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
 
-    // firing (starts calm, ramps with time) + Boost 3 reaction
-    const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
-    let base = 3.4 - fireRamp*1.6; // 3.4s → ~1.8s
-    if(player.boost >= 3) base *= 0.6; // ~40% faster shots
+      // firing (starts calm, ramps with time) + Boost 3 reaction
+      const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+      let base = 3.4 - fireRamp*1.6;
+      if(player.boost >= 3) base *= 0.6;
 
-    b.fireCD -= dt;
-    if(b.fireCD <= 0){
-      fireBugShot(b);
-      b.fireCD = rand(base, base + 1.0);
-      b.fireCD = Math.max(0.6, b.fireCD);
+      b.fireCD -= dt;
+      if(b.fireCD <= 0){
+        fireBugShot(b);
+        b.fireCD = rand(base, base + 1.0);
+        b.fireCD = Math.max(0.6, b.fireCD);
+      }
     }
   }
 }
