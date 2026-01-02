@@ -361,123 +361,65 @@ BODY + SCRIPT (PART 1)
   // let quizPos = 0;
   // let quizQ = null;
 
-  // -----------------------
-  // Waves / pacing
-  // -----------------------
-  const WAVE_PATTERN_1 = [1, 2, 4, 6, 8, 10]; // Wave #1 structure
+ // -----------------------
+// Waves / pacing  ✅ NEW: mini-groups + quiz after 4th group
+// -----------------------
+const PATTERN_EARLY = [1, 2, 4, 8];
+const PATTERN_LATE  = [8, 10, 12, 14]; // becomes spicy once x2 kicks in at 20 quizzes
 
-  let wave = 1;              // 1..∞
-  let stepInWave = 0;        // index into pattern
-  let bugsThisStep = WAVE_PATTERN_1[0];
-  let spawnedThisStep = 0;   // ✅ ADD THIS
-  let killedThisStep = 0;
-  let spawnTimer = 0;
+let wave = 1;              // still used (for display / counting)
+let stepInWave = 0;        // index into current pattern
+let bugsThisStep = PATTERN_EARLY[0];
+let spawnedThisStep = 0;
+let killedThisStep = 0;
+let spawnTimer = 0;
 
-  let candiesThisWave = 0;   // we’ll enforce “3 drops per wave” later
+let candiesThisWave = 0;   // your candy cap per wave still works
+let stageTime = 0;
 
-  // drift increases over time (within stage)
-  let stageTime = 0;
+// ✅ Spicy multiplier starts AFTER 20 quizzes
+function dottyMultiplier(){
+  if(quizCount < 20) return 1;                 // 0–19 quizzes: no multiplier
+  return 1 + Math.floor(quizCount / 10);       // 20–29: 3x, 30–39: 4x, etc. (SPICY)
+}
 
-  // ✅ SINGLE SOURCE OF TRUTH (do NOT redeclare later)
-  // let quizOpen = false;
+function currentPattern(){
+  return (quizCount >= 20) ? PATTERN_LATE : PATTERN_EARLY;
+}
 
-  // -----------------------
-  // Quiz progression scaling (Dotty multiplier)
-  // -----------------------
-  // let quizCount = 0; // how many questions have been completed
+function startWave(n){
+  wave = n;
+  stepInWave = 0;
+  candiesThisWave = 0;
+  startWaveStep();
+}
 
-  function dottyMultiplier(){
-    // 0–9 => 1x, 10–19 => 2x, 20–29 => 3x, etc.
-    return 1 + Math.floor(quizCount / 10);
-  }
+function startWaveStep(){
+  killedThisStep = 0;
+  spawnedThisStep = 0;
 
-  function startWave(n){
-    wave = n;
-    stepInWave = 0;
-    candiesThisWave = 0;
-    startWaveStep();
-  }
+  const pat = currentPattern();
+  const baseCount = pat[stepInWave];
+  bugsThisStep = baseCount * dottyMultiplier();
 
-  function startWaveStep(){
-    killedThisStep = 0;
-    spawnedThisStep = 0;   // ✅ ADD THIS
-
-    bugsThisStep = WAVE_PATTERN_1[stepInWave] * dottyMultiplier();
-
-    spawnTimer = 0.6;
-  }
+  spawnTimer = 0.6;
+}
 
 function advanceWaveStep(){
   stepInWave++;
 
-  // ✅ finished the pattern = completed a wave
-  if(stepInWave >= WAVE_PATTERN_1.length){
+  const pat = currentPattern();
 
-    // ✅ Quiz after every 3rd wave (3, 6, 9, ...)
-    if(wave % 3 === 0){
-      nextQuiz();        // load question
-      quizOpen = true;   // pause + show quiz
-      return;
-    }
-
-    // ✅ No quiz: immediately start next wave
-    wave++;
-    stepInWave = 0;
-    startWaveStep();
+  // ✅ After the 4th group: quiz
+  if(stepInWave >= pat.length){
+    nextQuiz();
+    quizOpen = true;
     return;
   }
 
-  // ✅ continue normal steps inside the wave
   startWaveStep();
 }
 
-
-
-  function resetGame(){
-    resize();
-
-    // player sizing
-    player.w = clamp(innerWidth * 0.11, 68, 92);
-    player.h = player.w;
-    player.x = innerWidth/2 - player.w/2;
-    player.y = innerHeight - player.h - 18;
-
-    player.energy = 100;
-    player.glow = 0;
-    player.sugar = 0;
-    player.hitIFrames = 0;
-
-    // rocks
-    rocks.length = 0;
-    const count = 4;
-    const rockW = clamp(innerWidth*0.18, 110, 160);
-    const rockH = rockW * 0.72;
-    const gap = (innerWidth - count*rockW) / (count+1);
-    const ry = player.y - rockH - 55;
-
-    for(let i=0;i<count;i++){
-      rocks.push({
-        x: gap + i*(rockW+gap),
-        y: ry,
-        w: rockW,
-        h: rockH,
-        hp: 20
-      });
-    }
-
-    bugs.length = 0;
-    booShots.length = 0;
-    bugShots.length = 0;
-    sparkles.length = 0;
-    candies.length = 0;
-
-    // ensure quiz deck exists for first quiz
-    if(!quizDeck.length) buildQuizDeck();
-    nextQuiz();
-
-    stageTime = 0;
-    startWave(1);
-  }
 
   // -----------------------
   // Spawning DOTTY (20% larger)
