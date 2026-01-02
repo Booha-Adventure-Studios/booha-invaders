@@ -1124,6 +1124,58 @@ SCRIPT (PART 2) + END
     requestAnimationFrame(tick);
   }
 
+
+// -----------------------
+// Reset Game (RESTORED – required by boot())
+// -----------------------
+function resetGame(){
+  resize();
+
+  // player sizing
+  player.w = clamp(innerWidth * 0.11, 68, 92);
+  player.h = player.w;
+  player.x = innerWidth/2 - player.w/2;
+  player.y = innerHeight - player.h - 18;
+
+  player.energy = 100;
+  player.glow = 0;
+  player.sugar = 0;
+  player.hitIFrames = 0;
+
+  // rocks
+  rocks.length = 0;
+  const count = 4;
+  const rockW = clamp(innerWidth*0.18, 110, 160);
+  const rockH = rockW * 0.72;
+  const gap = (innerWidth - count*rockW) / (count+1);
+  const ry = player.y - rockH - 55;
+
+  for(let i=0;i<count;i++){
+    rocks.push({
+      x: gap + i*(rockW+gap),
+      y: ry,
+      w: rockW,
+      h: rockH,
+      hp: 20
+    });
+  }
+
+  bugs.length = 0;
+  booShots.length = 0;
+  bugShots.length = 0;
+  sparkles.length = 0;
+  candies.length = 0;
+
+  // quiz setup
+  if(!quizDeck.length) buildQuizDeck();
+  nextQuiz();
+
+  stageTime = 0;
+  startWave(1);
+}
+
+
+  
   // -----------------------
   // Boot
   // -----------------------
