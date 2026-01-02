@@ -407,17 +407,18 @@ BODY + SCRIPT (PART 1)
     spawnTimer = 0.6;
   }
 
-  function advanceWaveStep(){
-    stepInWave++;
+function advanceWaveStep(){
+  stepInWave++;
 
-    if(stepInWave >= WAVE_PATTERN_1.length){
-      nextQuiz();        // ✅ build MC question
-      quizOpen = true;
-      return;
-    }
-
-    startWaveStep();
+  if(stepInWave >= WAVE_PATTERN_1.length){
+    nextQuiz();        // ✅ LOAD the question
+    quizOpen = true;   // ✅ THEN open the quiz
+    return;
   }
+
+  startWaveStep();
+}
+
 
   function resetGame(){
     resize();
