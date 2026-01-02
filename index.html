@@ -1028,48 +1028,86 @@ SCRIPT (PART 2) + END
   } // ✅ end draw()
 
   // -----------------------
-  // Quiz helpers (Multiple Choice runtime)
-  // -----------------------
-  function quizHitTest(mx, my){
-    const btnW = clamp(innerWidth*0.72, 260, 560);
-    const btnH = 54;
-    const gap = 14;
-    const startY = innerHeight*0.42;
-    const x = innerWidth/2 - btnW/2;
+// Quiz helpers (Multiple Choice runtime) ✅ feedback + retry + 1st-try reward
+// -----------------------
+let quizTried = [false,false,false,false];   // wrong attempts (red)
+let quizSolved = false;                      // lock after correct
+let quizFirstTry = true;                     // reward only if true
+let quizMsg = "";                            // JP message
 
-    for(let i=0;i<4;i++){
-      const y = startY + i*(btnH+gap);
-      if(mx >= x && mx <= x+btnW && my >= y && my <= y+btnH) return i;
-    }
-    return -1;
+function quizHitTest(mx, my){
+  const btnW = clamp(innerWidth*0.72, 260, 560);
+  const btnH = 54;
+  const gap = 14;
+  const startY = innerHeight*0.42;
+  const x = innerWidth/2 - btnW/2;
+
+  for(let i=0;i<4;i++){
+    const y = startY + i*(btnH+gap);
+    if(mx >= x && mx <= x+btnW && my >= y && my <= y+btnH) return i;
+  }
+  return -1;
+}
+
+function restoreRocksAndEnergy(){
+  // Energy restore
+  player.energy = Math.min(100, player.energy + 25);
+
+  // Rocks restore (bring back destroyed rocks + heal)
+  for(const r of rocks){
+    r.hp = Math.min(20, r.hp + 10);
+  }
+}
+
+function closeQuiz(){
+  quizCount++;           // ✅ drives difficulty
+  quizOpen = false;
+
+  // reset quiz state for next time
+  quizSolved = false;
+  quizFirstTry = true;
+  quizTried = [false,false,false,false];
+  quizMsg = "";
+
+  // get next question ready
+  nextQuiz();
+}
+
+function answerQuiz(index){
+  if(!quizOpen || !quizQ) return;
+
+  // already solved: ignore extra taps
+  if(quizSolved) return;
+
+  // already tried wrong: ignore repeat taps on same wrong button
+  if(quizTried[index]) return;
+
+  const correct = (index === quizQ.correctIndex);
+
+  if(!correct){
+    // ❌ wrong: mark red, allow retry
+    quizTried[index] = true;
+    quizFirstTry = false;
+    quizMsg = "ちがう！もういちど！";
+    return;
   }
 
-  function closeQuiz(){
-    quizCount++;           // ✅ drives dottyMultiplier()
-    quizOpen = false;
+  // ✅ correct: mark green, reward only if first try
+  quizSolved = true;
 
-    // prepare next question for next time
-    if(typeof nextQuiz === "function") nextQuiz();
-
-    // start next wave fresh
-    wave++;
-    stepInWave = 0;
-    startWaveStep();
+  if(quizFirstTry){
+    restoreRocksAndEnergy();
+    quizMsg = "すごい！エネルギーとブロックが回復した！";
+  } else {
+    quizMsg = "正解！";
   }
 
-  function answerQuiz(index){
-    // correctness hook (optional now)
-    const correct = (quizQ && index === quizQ.correctIndex);
+  // close after a short beat so they SEE green
+  setTimeout(()=>{
+    if(quizOpen) closeQuiz();
+  }, 650);
+}
 
-    // tiny feedback (keep it light)
-    if(correct){
-      player.energy = Math.min(100, player.energy + 5);
-    } else {
-      player.energy = Math.max(0, player.energy - 5);
-    }
-
-    closeQuiz();
-  }
 
   // -----------------------
   // Key handling (single, non-duplicated)
