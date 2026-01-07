@@ -115,6 +115,16 @@ HEAD + STYLE
   line-height: 1.2;
 }
 
+/* === OVERRIDE INLINE ALIGN (Mission / How to play) === */
+#startOverlay div[style*="text-align:left"]{
+  text-align:center !important;
+}
+
+/* === FORCE START BUTTON TEXT BLACK (JP + EN) === */
+#startOverlay #startBtn span{
+  color:#000 !important;
+  opacity:1 !important;
+}
 
 
   
@@ -158,13 +168,15 @@ BODY + SCRIPT (PART 1)
       <span style="display:block;font-weight:900;font-size:14px;color:#000;opacity:.9;margin-top:2px;">START!</span>
     </button>
 
-    <div style="margin-top:10px;font-size:13px;font-weight:700;">
-  ドッティが多すぎる！
+  <div style="margin-top:6px;">
+  <div style="font-size:13px;font-weight:700;">
+    ドッティが多すぎる！
+  </div>
+  <div style="margin-top:2px;font-size:12px;opacity:.85;">
+    So many Dotty!
+  </div>
 </div>
-<div style="margin-top:2px;font-size:12px;opacity:.85;">
-  So many Dotty!
-</div>
-</div>
+
   
 
 <script>
