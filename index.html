@@ -11,11 +11,64 @@ HEAD + STYLE
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Booha Invaders — Stage 1 DOTTY</title>
 <style>
-  html,body{ margin:0; height:100%; background:#000; overflow:hidden; }
-  canvas{ display:block; width:100vw; height:100vh; touch-action:none; }
-</style>
-</head>
+  html,body{
+    margin:0;
+    height:100%;
+    background:#000;
+    overflow:hidden;
+  }
+  canvas{
+    display:block;
+    width:100vw;
+    height:100vh;
+    touch-action:none;
+  }
 
+  /* =========================
+     Booha Invaders — Start Overlay (Black + Pink Glow)
+     JP: white / EN: light green
+     ========================= */
+
+  #startOverlay{
+    background: rgba(0,0,0,.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  #startOverlay > div{
+    background: rgba(0,0,0,.78);
+    border: 1px solid rgba(255, 90, 170, .45);
+    box-shadow:
+      0 0 22px rgba(255, 90, 170, .35),
+      0 0 65px rgba(255, 90, 170, .18);
+    text-align: center;
+  }
+
+  #startOverlay ul{
+    list-style:none;
+    padding:0;
+    margin:10px 0 0;
+  }
+
+  #startOverlay li{
+    margin:10px 0;
+  }
+
+  #startOverlay li b{
+    color:#ffffff;
+    display:block;
+  }
+
+  #startOverlay li div{
+    color:#b9ffcf;
+  }
+
+  #startBtn{
+    box-shadow:
+      0 0 18px rgba(255, 90, 170, .45),
+      0 0 40px rgba(255, 90, 170, .22);
+  }
+</style>
 </head>
 
 <!-- =========================
