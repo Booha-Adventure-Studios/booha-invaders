@@ -24,108 +24,74 @@ HEAD + STYLE
     touch-action:none;
   }
 
-  /* =========================
-     Booha Invaders — Start Overlay (Black + Pink Glow)
-     JP: white / EN: light green
-     ========================= */
+ /* =========================
+   Booha Invaders — Start Overlay (FINAL)
+   Black + Pink glow
+   JP: white
+   EN: light green
+   Keep START button gradient + black text
+   ========================= */
 
-  #startOverlay{
-    background: rgba(0,0,0,.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  #startOverlay > div{
-    background: rgba(0,0,0,.78);
-    border: 1px solid rgba(255, 90, 170, .45);
-    box-shadow:
-      0 0 22px rgba(255, 90, 170, .35),
-      0 0 65px rgba(255, 90, 170, .18);
-    text-align: center;
-  }
-
-  #startOverlay ul{
-    list-style:none;
-    padding:0;
-    margin:10px 0 0;
-  }
-
-  #startOverlay li{
-    margin:10px 0;
-  }
-
-  #startOverlay li b{
-    color:#ffffff;
-    display:block;
-  }
-
-  #startOverlay li div{
-    color:#b9ffcf;
-  }
-
-  #startBtn{
-    box-shadow:
-      0 0 18px rgba(255, 90, 170, .45),
-      0 0 40px rgba(255, 90, 170, .22);
-  }
-/* FORCE JP / EN COLORS IN START OVERLAY */
-
-#startOverlay *{
-  color: inherit;
-}
-
-/* Japanese = white */
 #startOverlay{
-  color: #ffffff;
+  background: rgba(0,0,0,.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-/* English lines = light green */
-#startOverlay .titleEN,
-#startOverlay .missionEN,
-#startOverlay .howEN,
-#startOverlay li div,
-#startOverlay .noteEN{
-  color: #b9ffcf !important;
+/* main panel (your inner <div>) */
+#startOverlay > div{
+  background: rgba(0,0,0,.78);
+  border: 1px solid rgba(255, 90, 170, .45);
+  box-shadow:
+    0 0 22px rgba(255, 90, 170, .35),
+    0 0 65px rgba(255, 90, 170, .18);
+  text-align: center;
 }
 
-/* Japanese emphasis */
-#startOverlay .titleJP,
-#startOverlay .missionJP,
-#startOverlay .howJP,
-#startOverlay li b,
-#startOverlay .noteJP{
-  color: #ffffff !important;
+/* lists */
+#startOverlay ul{
+  list-style:none;
+  padding:0;
+  margin:10px 0 0;
+}
+#startOverlay li{ margin:10px 0; }
+
+/* --- COLOR RULES --- */
+/* Default: Japanese white */
+#startOverlay{ color:#ffffff; }
+#startOverlay *{ color:inherit; }
+
+/* English lines: in your HTML the EN lines all have inline opacity styles.
+   So we target those safely (EXCEPT the START button). */
+#startOverlay [style*="opacity"]{
+  color:#b9ffcf !important;
 }
 
-/* === FINAL OVERLAY COLOR LOCK + CLEANUP === */
+/* Japanese bullet headers (b) always white */
+#startOverlay li b{
+  color:#ffffff !important;
+  display:block;
+}
 
-/* Kill the BGM info completely */
-#startOverlay .noteJP,
-#startOverlay .noteEN{
+/* Remove the old BGM info lines (if still present) */
+#startOverlay [style*="BGM starts"],
+#startOverlay [style*="BGMがはじまります"]{
   display:none !important;
 }
 
-/* English = unified Booha green everywhere */
-#startOverlay *{
-  color: #ffffff; /* default JP */
+/* --- START BUTTON: KEEP IT PRETTY --- */
+/* Force the gradient + keep text black (so it never turns white/green) */
+#startBtn{
+  background: linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98)) !important;
+  box-shadow:
+    0 0 18px rgba(255, 90, 170, .45),
+    0 0 40px rgba(255, 90, 170, .22) !important;
 }
 
-#startOverlay .titleEN,
-#startOverlay .missionEN,
-#startOverlay .howEN,
-#startOverlay li div,
-#startOverlay button span:last-child{
-  color: #b9ffcf !important;
+#startBtn span{
+  color:#000000 !important;
 }
 
-/* Japanese = pure white */
-#startOverlay .titleJP,
-#startOverlay .missionJP,
-#startOverlay .howJP,
-#startOverlay li b,
-#startOverlay button span:first-child{
-  color:#ffffff !important;
-}
   
 </style>
 </head>
