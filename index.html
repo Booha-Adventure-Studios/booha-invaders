@@ -533,63 +533,206 @@ if(quizOpen && quizQ){
   // let quizPos = 0;
   // let quizQ = null;
 
- // -----------------------
-// Waves / pacing  ✅ NEW: mini-groups + quiz after 4th group
 // -----------------------
-const PATTERN_EARLY = [1, 2, 4, 8];
-const PATTERN_LATE  = [8, 10, 12, 14]; // becomes spicy once x2 kicks in at 20 quizzes
+// Waves / pacing (FINAL)
+// 2s wait -> WAVE card -> 4 groups -> quiz -> next wave
+// Easy to edit: only change WAVE_TIERS + WAVE_SCALE
+// -----------------------
 
-let wave = 1;              // still used (for display / counting)
-let stepInWave = 0;        // index into current pattern
-let bugsThisStep = PATTERN_EARLY[0];
-let spawnedThisStep = 0;
-let killedThisStep = 0;
-let spawnTimer = 0;
+// 4-group patterns per wave tier (EDIT THESE)
+const WAVE_TIERS = [
+  { from:  1, to:  5,  groups: [ 1,  2,  4,  5] },
+  { from:  6, to: 15,  groups: [10, 12, 14, 16] },
+  { from: 16, to: 25,  groups: [18, 20, 22, 26] },
+  { from: 26, to: 35,  groups: [28, 30, 32, 36] },
+  { from: 36, to: 45,  groups: [38, 40, 42, 46] },
+  { from: 46, to: 55,  groups: [48, 50, 52, 58] },
+  // add more tiers anytime (50+ waves supported)
+];
 
+// Difficulty scaling knobs (EDIT THESE)
+const WAVE_SCALE = {
+  introDelaySec: 2.0,     // after start click, before WAVE 1 card
+  waveCardSec: 1.25,      // how long “WAVE N — get ready!” shows
 
-// ✅ Spicy multiplier starts AFTER 20 quizzes
-function dottyMultiplier(){
-  if(quizCount < 20) return 1;                 // 0–19 quizzes: no multiplier
-  return 1 + Math.floor(quizCount / 10);       // 20–29: 3x, 30–39: 4x, etc. (SPICY)
+  spawnIntervalBase: 0.60,
+  spawnIntervalMin:  0.12,
+  spawnIntervalDropPerWave: 0.012,
+
+  driftBase: 8,
+  driftGainPerWave: 0.55,
+  driftMax: 40,
+
+  fireCooldownBase: 3.6,
+  fireCooldownMin:  0.55,
+  fireCooldownDropPerWave: 0.08,
+
+  shootersBase: 1,
+  shootersGainEveryNWaves: 5,
+  shootersMax: 10,
+};
+
+const WaveState = {
+  wave: 1,
+  groupIdx: 0,        // 0..3
+  targetCount: 0,
+  spawned: 0,
+  killed: 0,
+  spawnTimer: 0,
+  phase: "intro",     // intro | card | run | quiz
+  phaseT: 0
+};
+
+function tierForWave(n){
+  for(const t of WAVE_TIERS){
+    if(n >= t.from && n <= t.to) return t;
+  }
+  return WAVE_TIERS[WAVE_TIERS.length - 1];
 }
 
-function currentPattern(){
-  return (quizCount >= 20) ? PATTERN_LATE : PATTERN_EARLY;
+function groupCountForWave(wave, groupIdx){
+  const tier = tierForWave(wave);
+  return tier.groups[groupIdx] ?? tier.groups[tier.groups.length-1];
+}
+
+function waveSpawnInterval(wave){
+  const v = WAVE_SCALE.spawnIntervalBase - WAVE_SCALE.spawnIntervalDropPerWave*(wave-1);
+  return clamp(v, WAVE_SCALE.spawnIntervalMin, 99);
+}
+function waveDriftSpeed(wave){
+  const v = WAVE_SCALE.driftBase + WAVE_SCALE.driftGainPerWave*(wave-1);
+  return clamp(v, 0, WAVE_SCALE.driftMax);
+}
+function waveFireCooldown(wave){
+  const v = WAVE_SCALE.fireCooldownBase - WAVE_SCALE.fireCooldownDropPerWave*(wave-1);
+  return clamp(v, WAVE_SCALE.fireCooldownMin, 99);
+}
+function waveShooterCap(wave){
+  const add = Math.floor((wave-1) / WAVE_SCALE.shootersGainEveryNWaves);
+  return clamp(WAVE_SCALE.shootersBase + add, 1, WAVE_SCALE.shootersMax);
 }
 
 function startWave(n){
-  wave = n;
-  stepInWave = 0;
-  candiesThisWave = 0;
-  startWaveStep();
+  WaveState.wave = n;
+  WaveState.groupIdx = 0;
+  WaveState.phase = "intro";
+  WaveState.phaseT = 0;
+  beginGroup();
 }
 
-function startWaveStep(){
-  killedThisStep = 0;
-  spawnedThisStep = 0;
-
-  const pat = currentPattern();
-  const baseCount = pat[stepInWave];
-  bugsThisStep = baseCount * dottyMultiplier();
-
-  spawnTimer = 0.6;
+function beginGroup(){
+  WaveState.spawned = 0;
+  WaveState.killed = 0;
+  WaveState.targetCount = groupCountForWave(WaveState.wave, WaveState.groupIdx);
+  WaveState.spawnTimer = 0;
 }
 
-function advanceWaveStep(){
-  stepInWave++;
-
-  const pat = currentPattern();
-
-  // ✅ After the 4th group: quiz
-  if(stepInWave >= pat.length){
+function advanceGroupOrQuiz(){
+  WaveState.groupIdx++;
+  if(WaveState.groupIdx >= 4){
+    // after 4th group -> quiz
+    WaveState.phase = "quiz";
     nextQuiz();
     quizOpen = true;
     return;
   }
-
-  startWaveStep();
+  beginGroup();
 }
 
+function nextWave(){
+  startWave(WaveState.wave + 1);
+}
+
+// Call this every frame (dt in seconds)
+function updateWaveSystem(dt){
+  WaveState.phaseT += dt;
+
+  if(WaveState.phase === "intro"){
+    if(WaveState.phaseT >= WAVE_SCALE.introDelaySec){
+      WaveState.phase = "card";
+      WaveState.phaseT = 0;
+      // TODO: showWaveCard(WaveState.wave)
+    }
+    return;
+  }
+
+  if(WaveState.phase === "card"){
+    if(WaveState.phaseT >= WAVE_SCALE.waveCardSec){
+      WaveState.phase = "run";
+      WaveState.phaseT = 0;
+      WaveState.spawnTimer = 0;
+      // TODO: hideWaveCard()
+    }
+    return;
+  }
+
+  if(WaveState.phase === "quiz"){
+    // wait here until quiz closes
+    return;
+  }
+
+  // phase === "run"
+  if(WaveState.spawned < WaveState.targetCount){
+    WaveState.spawnTimer -= dt;
+    if(WaveState.spawnTimer <= 0){
+      spawnBug();
+      WaveState.spawned++;
+      WaveState.spawnTimer = waveSpawnInterval(WaveState.wave);
+    }
+  }
+
+  if(WaveState.killed >= WaveState.targetCount){
+    advanceGroupOrQuiz();
+  }
+}
+
+// -----------------------
+// DOTTY placement (NO OVERLAP)
+// -----------------------
+function canPlaceTarget(tx, ty, bw, bh){
+  const minDX = bw * 0.92;
+  const minDY = bh * 0.55;
+
+  for(const b of bugs){
+    if(!b.alive) continue;
+    const ox = (b.tx ?? b.x);
+    const oy = (b.ty ?? b.y);
+    if(Math.abs(tx - ox) < minDX && Math.abs(ty - oy) < minDY) return false;
+  }
+  return true;
+}
+
+function pickTargetSlot(bw, bh){
+  const lanes = 6;
+  const laneW = innerWidth / lanes;
+
+  const baseY = clamp(innerHeight*0.18, 90, 150);
+  const rows = [ baseY, baseY + bh*0.75, baseY + bh*1.5 ];
+
+  for(let tries=0; tries<24; tries++){
+    const lane = (Math.random()*lanes)|0;
+    const baseX = lane*laneW + laneW/2 - bw/2;
+    const row = rows[(Math.random()*rows.length)|0];
+    const ty = row + rand(0, 20);
+
+    const wiggle = laneW * 0.18;
+    const tx = baseX + rand(-wiggle, wiggle);
+
+    if(canPlaceTarget(tx, ty, bw, bh)) return { tx, ty };
+  }
+
+  for(const row of rows){
+    for(let lane=0; lane<lanes; lane++){
+      const tx = lane*laneW + laneW/2 - bw/2;
+      const ty = row;
+      if(canPlaceTarget(tx, ty, bw, bh)) return { tx, ty };
+    }
+  }
+
+  return { tx: innerWidth*0.5 - bw*0.5, ty: rows[rows.length-1] };
+}
+
+  
 
   // -----------------------
   // Spawning DOTTY (20% larger)
@@ -598,11 +741,10 @@ function advanceWaveStep(){
     const bw = clamp(innerWidth * 0.078, 54, 78); // ~20% larger than earlier
     const bh = bw;
 
-    const lanes = 6;
-    const laneW = innerWidth / lanes;
-    const lane = (Math.random()*lanes)|0;
-    const tx = lane*laneW + laneW/2 - bw/2;
-    const ty = clamp(innerHeight*0.18, 90, 150) + rand(0,40);
+ const slot = pickTargetSlot(bw, bh);
+const tx = slot.tx;
+const ty = slot.ty;
+
 
     const startX = tx + rand(-laneW*0.35, laneW*0.35);
     const startY = -bh - rand(30, 130);
