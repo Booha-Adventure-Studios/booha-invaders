@@ -88,9 +88,32 @@ HEAD + STYLE
     0 0 40px rgba(255, 90, 170, .22) !important;
 }
 
-#startBtn span{
-  color:#000000 !important;
+#startOverlay [style*="opacity"]:not(#startBtn span){
+  color:#b9ffcf !important;
 }
+/* === Overlay layout polish: center text + smaller card === */
+
+/* Center ALL text inside overlay panel */
+#startOverlay > div{
+  text-align: center;
+}
+
+/* Make the inner text card smaller + tighter */
+#startOverlay > div > div{
+  max-width: 520px;
+  margin: 12px auto;
+  padding: 12px 14px;
+}
+
+/* Center list text and remove left-indent feel */
+#startOverlay ul{
+  text-align: center;
+}
+
+#startOverlay li{
+  margin: 8px 0;
+}
+
 
   
 </style>
