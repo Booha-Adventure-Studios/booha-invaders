@@ -30,6 +30,36 @@ BODY + SCRIPT (PART 1)
 
 <body>
 <canvas id="c"></canvas>
+<div id="startOverlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(1200px 700px at 50% 35%, rgba(255,215,120,.18), rgba(0,0,0,.92));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+  <div style="width:min(680px,92vw);border-radius:22px;padding:18px 16px 16px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.14);box-shadow:0 0 22px rgba(255,209,102,.20),0 0 60px rgba(255,126,185,.12);text-align:center;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;">
+    <div style="font-weight:900;font-size:24px;">ようこそ！ブーハー・インベーダーズへ！</div>
+    <div style="font-weight:800;font-size:16px;opacity:.9;margin-top:2px;">WELCOME TO BOOHA INVADERS!</div>
+
+    <div style="margin:14px auto 14px;padding:14px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);text-align:left;">
+      <div style="font-weight:900;font-size:18px;">ミッション１：ドッティ</div>
+      <div style="font-weight:800;font-size:14px;opacity:.9;margin-top:2px;">Mission 1: Dotty</div>
+
+      <div style="margin-top:10px;font-weight:900;">あそびかた</div>
+      <div style="font-weight:800;font-size:12px;opacity:.85;margin-top:1px;">How to Play</div>
+
+      <ul style="margin:10px 0 0;padding-left:18px;line-height:1.35;font-size:14px;">
+        <li style="margin:8px 0;"><b>左右にうごかして よけよう！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Drag (mobile) / Arrow keys (desktop)</div></li>
+        <li style="margin:8px 0;"><b>ブーハーは じどうで うつ！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Booha shoots automatically</div></li>
+        <li style="margin:8px 0;"><b>クイズに こたえて すすもう！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Answer questions to progress</div></li>
+        <li style="margin:8px 0;"><b>あめを とると パワーアップ！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Get candy to power up</div></li>
+      </ul>
+    </div>
+
+    <button id="startBtn" type="button" style="width:min(420px,92vw);border:none;border-radius:999px;padding:14px 18px 12px;cursor:pointer;background:linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98));box-shadow:0 0 18px rgba(255,126,185,.35),0 0 30px rgba(255,209,102,.25);">
+      <span style="display:block;font-weight:900;font-size:20px;color:#000;">スタート！</span>
+      <span style="display:block;font-weight:900;font-size:14px;color:#000;opacity:.9;margin-top:2px;">START!</span>
+    </button>
+
+    <div style="margin-top:10px;font-size:12px;opacity:.9;">※ タップするとBGMがはじまります</div>
+    <div style="margin-top:2px;font-size:11px;opacity:.75;">BGM starts when you tap</div>
+  </div>
+</div>
+  
 
 <script>
 (() => {
@@ -398,8 +428,6 @@ let spawnedThisStep = 0;
 let killedThisStep = 0;
 let spawnTimer = 0;
 
-let candiesThisWave = 0;   // your candy cap per wave still works
-let stageTime = 0;
 
 // ✅ Spicy multiplier starts AFTER 20 quizzes
 function dottyMultiplier(){
@@ -554,6 +582,8 @@ function advanceWaveStep(){
 // Update  ✅ candy interval + candy-powered shots after 10 quizzes
 // -----------------------
 let last = 0;
+let started = false;
+  
 
 // Candy interval timer
 let candyTimer = 10; // first drop happens ~10s in (tweak if you want)
@@ -777,6 +807,8 @@ if(!bl.dead && player.hitIFrames <= 0){
       // ✅ BOOST STACKS (persist until hit)
       // 1 candy = +1 stack, 2 candies = +2 stacks, capped at 3
       player.boost = clamp((player.boost || 0) + 1, 0, 3);
+      new Audio("candy-get.mp3").play().catch(()=>{});
+
 
       // small restore (keep this)
       player.energy = Math.min(100, player.energy + 30);
@@ -1156,7 +1188,7 @@ function answerQuiz(index){
     const dt = Math.min(0.033, (t - last) || 0);
     last = t;
 
-    if(player.energy > 0 && !quizOpen){
+   if(started && player.energy > 0 && !quizOpen){
       update(dt);
       updateFiring(dt);
       updateProjectiles(dt);
@@ -1253,9 +1285,30 @@ function resetGame(){
       console.warn(err);
     }
 
-    resetGame();
-    requestAnimationFrame(tick);
-  })();
+   const startBtn = document.getElementById("startBtn");
+
+let bgm = null;
+function startBGM(){
+  if(bgm) return;
+  bgm = new Audio("invaders-bgm.mp3"); // same folder as index.html
+  bgm.loop = true;
+  bgm.volume = 0.6;
+  bgm.play().catch(()=>{});
+}
+    
+
+startBtn.addEventListener("click", ()=>{
+  started = true;
+  document.getElementById("startOverlay").style.display = "none";
+
+  startBGM();
+});
+
+
+resetGame();
+requestAnimationFrame(tick);
+})();
+
 
 })();
 </script>
