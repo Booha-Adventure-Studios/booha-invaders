@@ -97,6 +97,35 @@ HEAD + STYLE
   color: #ffffff !important;
 }
 
+/* === FINAL OVERLAY COLOR LOCK + CLEANUP === */
+
+/* Kill the BGM info completely */
+#startOverlay .noteJP,
+#startOverlay .noteEN{
+  display:none !important;
+}
+
+/* English = unified Booha green everywhere */
+#startOverlay *{
+  color: #ffffff; /* default JP */
+}
+
+#startOverlay .titleEN,
+#startOverlay .missionEN,
+#startOverlay .howEN,
+#startOverlay li div,
+#startOverlay button span:last-child{
+  color: #b9ffcf !important;
+}
+
+/* Japanese = pure white */
+#startOverlay .titleJP,
+#startOverlay .missionJP,
+#startOverlay .howJP,
+#startOverlay li b,
+#startOverlay button span:first-child{
+  color:#ffffff !important;
+}
   
 </style>
 </head>
