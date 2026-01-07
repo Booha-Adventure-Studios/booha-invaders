@@ -68,6 +68,36 @@ HEAD + STYLE
       0 0 18px rgba(255, 90, 170, .45),
       0 0 40px rgba(255, 90, 170, .22);
   }
+/* FORCE JP / EN COLORS IN START OVERLAY */
+
+#startOverlay *{
+  color: inherit;
+}
+
+/* Japanese = white */
+#startOverlay{
+  color: #ffffff;
+}
+
+/* English lines = light green */
+#startOverlay .titleEN,
+#startOverlay .missionEN,
+#startOverlay .howEN,
+#startOverlay li div,
+#startOverlay .noteEN{
+  color: #b9ffcf !important;
+}
+
+/* Japanese emphasis */
+#startOverlay .titleJP,
+#startOverlay .missionJP,
+#startOverlay .howJP,
+#startOverlay li b,
+#startOverlay .noteJP{
+  color: #ffffff !important;
+}
+
+  
 </style>
 </head>
 
