@@ -24,21 +24,22 @@ HEAD + STYLE
     touch-action:none;
   }
 
- /* =========================
-   Booha Invaders — Start Overlay (FINAL)
+/* =========================
+   Booha Invaders — Start Overlay (CLEAN)
    Black + Pink glow
-   JP: white
-   EN: light green
-   Keep START button gradient + black text
+   JP: white / EN: light green
+   START button: gradient + BLACK text
+   Everything centered + tighter spacing
    ========================= */
 
 #startOverlay{
   background: rgba(0,0,0,.82);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  color:#ffffff; /* JP default */
 }
 
-/* main panel (your inner <div>) */
+/* panel (inner div) */
 #startOverlay > div{
   background: rgba(0,0,0,.78);
   border: 1px solid rgba(255, 90, 170, .45);
@@ -46,31 +47,47 @@ HEAD + STYLE
     0 0 22px rgba(255, 90, 170, .35),
     0 0 65px rgba(255, 90, 170, .18);
   text-align: center;
+  padding: 18px 16px 14px; /* tighter bottom */
 }
 
-/* lists */
+/* tighten title spacing (JP title + EN title) */
+#startOverlay > div > div:nth-child(1){
+  margin: 0;
+  line-height: 1.15;
+}
+#startOverlay > div > div:nth-child(2){
+  margin-top: 6px;
+  line-height: 1.15;
+}
+
+/* mission card (3rd child in your overlay panel) */
+#startOverlay > div > div:nth-child(3){
+  max-width: 520px;
+  margin: 12px auto 14px;
+  padding: 12px 14px;
+  text-align: center;
+}
+
+/* list centered + no indent */
 #startOverlay ul{
   list-style:none;
   padding:0;
   margin:10px 0 0;
+  text-align:center;
 }
-#startOverlay li{ margin:10px 0; }
+#startOverlay li{
+  margin: 10px 0;
+}
 
-/* --- COLOR RULES --- */
-/* Default: Japanese white */
-#startOverlay{ color:#ffffff; }
-#startOverlay *{ color:inherit; }
+/* Japanese bullet headers (b) */
+#startOverlay li b{
+  display:block;
+  color:#ffffff !important;
+}
 
-/* English lines: in your HTML the EN lines all have inline opacity styles.
-   So we target those safely (EXCEPT the START button). */
+/* English lines: your EN lines use inline opacity styles */
 #startOverlay [style*="opacity"]{
   color:#b9ffcf !important;
-}
-
-/* Japanese bullet headers (b) always white */
-#startOverlay li b{
-  color:#ffffff !important;
-  display:block;
 }
 
 /* Remove the old BGM info lines (if still present) */
@@ -79,8 +96,7 @@ HEAD + STYLE
   display:none !important;
 }
 
-/* --- START BUTTON: KEEP IT PRETTY --- */
-/* Force the gradient + keep text black (so it never turns white/green) */
+/* START button: keep gradient + force BLACK text */
 #startBtn{
   background: linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98)) !important;
   box-shadow:
@@ -88,31 +104,17 @@ HEAD + STYLE
     0 0 40px rgba(255, 90, 170, .22) !important;
 }
 
-#startOverlay [style*="opacity"]:not(#startBtn span){
-  color:#b9ffcf !important;
-}
-/* === Overlay layout polish: center text + smaller card === */
-
-/* Center ALL text inside overlay panel */
-#startOverlay > div{
-  text-align: center;
+#startBtn span{
+  color:#000 !important; /* JP + EN inside button always black */
+  opacity: 1 !important; /* prevents the EN span opacity from dimming/greening */
 }
 
-/* Make the inner text card smaller + tighter */
-#startOverlay > div > div{
-  max-width: 520px;
-  margin: 12px auto;
-  padding: 12px 14px;
+/* bottom line spacing (your "So many Dotty!") — pull closer */
+#startOverlay > div > div:last-child{
+  margin-top: 10px !important;
+  line-height: 1.2;
 }
 
-/* Center list text and remove left-indent feel */
-#startOverlay ul{
-  text-align: center;
-}
-
-#startOverlay li{
-  margin: 8px 0;
-}
 
 
   
