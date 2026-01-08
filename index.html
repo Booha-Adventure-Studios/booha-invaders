@@ -204,7 +204,13 @@ BODY + SCRIPT (PART 1)
 
   // GLOBALS START HERE//
 let booFireTimer = 0;
-let tapShootQueued = false;   // ✅ add this
+let tapShootQueued = false;
+
+// true globals (do NOT put these on player)
+let booAutoCD = 0;   // normal mode cadence
+let booPinkCD = 0;   // sugar cadence
+
+  
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
@@ -232,58 +238,58 @@ function updateFiring(dt){
   if(player.energy <= 0) return;
   if(quizOpen) return;
 
+  // tick cooldowns
+  booAutoCD = Math.max(0, booAutoCD - dt);
+  booPinkCD = Math.max(0, booPinkCD - dt);
+
   const isPink = (player.sugar && player.sugar > 0);
 
- // -------------------------
-// TAP SHOT (priority)
-// -------------------------
-if(tapShootQueued){
-  if(!isPink){
-    if(canFireNormal()){
-      fireBooShot(false);
-      booFireTimer = 0.12;
+  // -------------------------
+  // TAP SHOT (priority) — works even while moving
+  // -------------------------
+  if(tapShootQueued){
+    tapShootQueued = false;
+
+    if(!isPink){
+      if(canFireNormal()){
+        fireBooShot(false);
+        booFireTimer = 0.12;
+        booAutoCD = 0.18; // small guard so taps can't spam too hard
+      }
+      return;
     }
-  } else {
-    if(player._pinkCD == null) player._pinkCD = 0;
-    if(player._pinkCD <= 0){
+
+    // sugar tap (rate-limited)
+    if(booPinkCD <= 0){
       fireBooShot(true);
       booFireTimer = 0.12;
-      player._pinkCD = 0.10;
+      booPinkCD = 0.10;
     }
+    return;
   }
-  tapShootQueued = false; // ✅ clear the tap
-  return;
-}
 
   // -------------------------
-  // AUTO FIRE (only when settled)
+  // AUTO FIRE — only when settled
   // -------------------------
   if(playerMoving || shootResumeDelay > 0) return;
 
   if(!isPink){
-    // one-shot-at-a-time + gentle cadence (prevents “hose”)
     if(!canFireNormal()) return;
-
-    if(player._autoCD == null) player._autoCD = 0;
-    player._autoCD = Math.max(0, player._autoCD - dt);
-    if(player._autoCD > 0) return;
+    if(booAutoCD > 0) return;
 
     fireBooShot(false);
     booFireTimer = 0.12;
-    player._autoCD = 0.22; // tweak: higher = slower auto
+    booAutoCD = 0.22; // ✅ this is the “no spray” knob
     return;
   }
 
-  // sugar auto (rapid but controlled)
-  if(player._pinkCD == null) player._pinkCD = 0;
-  player._pinkCD = Math.max(0, player._pinkCD - dt);
-  if(player._pinkCD > 0) return;
+  // sugar auto
+  if(booPinkCD > 0) return;
 
   fireBooShot(true);
   booFireTimer = 0.12;
-  player._pinkCD = 0.10;
+  booPinkCD = 0.10;
 }
-
 
   
   // -----------------------
@@ -544,13 +550,18 @@ if(quizOpen && quizQ){
   let pointerDown = false;
   let pointerX = null;
 
-  canvas.addEventListener("pointerdown", (e)=>{
-    // ✅ QUIZ: tap an answer (do not start dragging)
-    if(quizOpen){
-      const idx = quizHitTest(e.clientX, e.clientY);
-      if(idx >= 0) answerQuiz(idx);
-      return;
-    }
+canvas.addEventListener("pointerdown", (e)=>{
+  // ✅ QUIZ: tap an answer (do not start dragging)
+  if(quizOpen){
+    const idx = quizHitTest(e.clientX, e.clientY);
+    if(idx >= 0) answerQuiz(idx);
+    return;
+  }
+
+  // tap = shoot once (works even while moving)
+  tapShootQueued = true;
+
+
 
     e.preventDefault();
     pointerDown = true;
