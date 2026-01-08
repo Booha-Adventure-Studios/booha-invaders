@@ -822,7 +822,7 @@ function pickTargetSlot(bw, bh){
 }
 
   
-const DOTTY_SHIELD_POST = 0.7; // seconds AFTER arriving
+const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
 
   function spawnBug(){
     const lanes = 6;
@@ -1278,39 +1278,36 @@ SCRIPT (PART 2) + END
     }
 
     // bugs (glow while shooting)
-for(const b of bugs){
-  if(!b.alive) continue;
+// gold shield orb (filled, smaller, pulsing)
+if(b.shieldT > 0){
+  const t = performance.now()/1000;
+  const pulse = 0.5 + 0.5*Math.sin(t*6 + (b.bob||0));
+  const cx = b.x + b.w/2;
+  const cy = b.y + b.h/2;
+  const r  = b.w * (0.42 + 0.03*pulse); // smaller than before
 
-  if(b.glow > 0){
-    drawGlow(
-      b.x + b.w/2, b.y + b.h/2,
-      b.w*0.55,
-      (b.glow/0.18)*0.22,
-      "rgba(120,255,200,0.55)"
-    );
-  }
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
 
-  if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
+  // filled orb body
+  ctx.globalAlpha = 0.26 + 0.10*pulse;
+  ctx.fillStyle = "rgba(255, 209, 102, 1)";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
 
-  // gold shield bubble
-  if(b.shieldT > 0){
-    ctx.save();
-    ctx.globalAlpha = 0.85;
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = "#ffd166";
-    ctx.strokeStyle = "#ffd166";
-    ctx.lineWidth = Math.max(2, b.w * 0.06);
-    ctx.beginPath();
-    ctx.arc(
-      b.x + b.w/2,
-      b.y + b.h/2,
-      b.w * 0.62,
-      0,
-      Math.PI * 2
-    );
-    ctx.stroke();
-    ctx.restore();
-  }
+  // soft outer glow (not a ring)
+  ctx.globalAlpha = 0.10 + 0.06*pulse;
+  ctx.shadowBlur = 22 + 10*pulse;
+  ctx.shadowColor = "rgba(255, 209, 102, 1)";
+  ctx.fillStyle = "rgba(255, 209, 102, 1)";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r*1.10, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
 }
 
 
