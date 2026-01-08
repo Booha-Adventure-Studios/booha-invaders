@@ -1065,10 +1065,11 @@ if(playerMoving || shootResumeDelay > 0) return;
 
   // SHIELD: block the hit (shot disappears + sparkles)
   if(b.shieldT > 0){
-    s.dead = true;
-    addSpark(s.x, s.y, 10, "gold"); // shield pop sparkle (we'll polish later)
-    break;
-  }
+  s.dead = true;
+  addSpark(b.x + b.w/2, b.y + b.h/2, 24, "gold"); // BIG obvious burst
+  break;
+}
+
 
   // normal kill
   b.alive = false;
@@ -1235,19 +1236,42 @@ SCRIPT (PART 2) + END
     }
 
     // bugs (glow while shooting)
-    for(const b of bugs){
-      if(!b.alive) continue;
+for(const b of bugs){
+  if(!b.alive) continue;
 
-      if(b.glow > 0){
-        drawGlow(
-          b.x + b.w/2, b.y + b.h/2,
-          b.w*0.55,
-          (b.glow/0.18)*0.22,
-          "rgba(120,255,200,0.55)"
-        );
-      }
-      if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
-    }
+  if(b.glow > 0){
+    drawGlow(
+      b.x + b.w/2, b.y + b.h/2,
+      b.w*0.55,
+      (b.glow/0.18)*0.22,
+      "rgba(120,255,200,0.55)"
+    );
+  }
+
+  if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
+
+  // gold shield bubble
+  if(b.shieldT > 0){
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#ffd166";
+    ctx.strokeStyle = "#ffd166";
+    ctx.lineWidth = Math.max(2, b.w * 0.06);
+    ctx.beginPath();
+    ctx.arc(
+      b.x + b.w/2,
+      b.y + b.h/2,
+      b.w * 0.62,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+
 
     // bug shots (green glowing slime blobs)
     for(const bl of bugShots){
@@ -1334,6 +1358,7 @@ SCRIPT (PART 2) + END
       drawGlow(px, py, player.w*0.45, 0.12, "rgba(255,214,102,0.55)");
     }
 
+    
     // player sprite (shoot pose if a shot just fired recently)
     const isShootingPose = (booFireTimer > 0 && booFireTimer < 0.10);
     const pimg = isShootingPose ? IMG.booShoot : IMG.booIdle;
