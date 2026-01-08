@@ -905,12 +905,6 @@ let playerMoving = false;
 let shootResumeDelay = 0; // seconds
 
 
-// BOOHA SHOOT FIX
-  let lastPlayerX = 0;
-  let playerMoving = false;
-
-  
-
 // Candy interval timer
 let candyTimer = 10; // first drop happens ~10s in (tweak if you want)
 
@@ -1621,15 +1615,20 @@ function resetGame(){
   }
 
   // START button (wire once)
-  const startBtn = document.getElementById("startBtn");
-  startBtn.addEventListener("click", ()=>{
-    started = true;
-    quizOpen = false;
-    document.getElementById("startOverlay").style.display = "none";
+startBtn.addEventListener("click", ()=>{
+  started = true;
+  quizOpen = false;
 
-    startWave(1);     // ✅ only place wave 1 begins
-    startBGM();
-  });
+  // ✅ reset shooting movement state
+  lastPlayerX = player.x;
+  playerMoving = false;
+  shootResumeDelay = 0;
+
+  document.getElementById("startOverlay").style.display = "none";
+
+  startWave(1);
+  startBGM();
+});
 
    // start the game loop
   requestAnimationFrame(tick);
