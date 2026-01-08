@@ -960,6 +960,8 @@ if(candyTimer <= 0 && candies.length === 0){
   // bugs update (enter + drift + shooting)
   for(const b of bugs){
     if(!b.alive) continue;
+    b.shieldT = Math.max(0, b.shieldT - dt);
+
 
     b.glow = Math.max(0, b.glow - dt*2.0);
     b.bob += dt;
@@ -987,6 +989,8 @@ if(candyTimer <= 0 && candies.length === 0){
       const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
       let base = 3.4 - fireRamp*1.6;
       if(player.boost >= 3) base *= 0.6;
+
+      if(b.shieldT > 0) continue; //THIS IS DOTTY SHIELD/PREVENT SHOOTING
 
       b.fireCD -= dt;
       if(b.fireCD <= 0){
