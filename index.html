@@ -195,9 +195,11 @@ BODY + SCRIPT (PART 1)
   </div>
 </div>
 
-  
+</div> <!-- close panel -->
+</div> <!-- close startOverlay -->
 
 <script>
+
 (() => {
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d", { alpha:false });
@@ -785,6 +787,9 @@ function pickTargetSlot(bw, bh){
   // Spawning DOTTY (20% larger)
   // -----------------------
   function spawnBug(){
+    const lanes = 6;
+    const laneW = innerWidth / lanes;
+
     const bw = clamp(innerWidth * 0.078, 54, 78); // ~20% larger than earlier
     const bh = bw;
 
@@ -931,13 +936,6 @@ if(candyTimer <= 0 && candies.length === 0){
 }
 
 
-  // spawn DOTTY for this step (SEQUENTIAL)
-  spawnTimer -= dt;
-  if(spawnedThisStep < bugsThisStep && spawnTimer <= 0){
-    spawnBug();
-    spawnedThisStep++;
-    spawnTimer = 0.85;
-  }
 
   // bugs update (enter + drift + shooting)
   for(const b of bugs){
@@ -1152,17 +1150,7 @@ if(!bl.dead && player.hitIFrames <= 0){
     }
   }
 
-  function maybeAdvanceRound(){
-    // Only advance when:
-    // 1) we’ve killed the target for this step AND
-    // 2) there are no living DOTTY left on screen
-    if(killedThisStep >= bugsThisStep){
-      const anyAlive = bugs.some(b => b.alive);
-      if(!anyAlive){
-        advanceWaveStep();
-      }
-    }
-  }
+
 
   /* =========================
   END CHUNK 2 / 3
@@ -1501,7 +1489,8 @@ function tick(ts){
     updateProjectiles(dt);
     updateCandy(dt);
     updateParticles(dt);
-    maybeAdvanceRound();
+
+  
 
     // 🔑 wave system must be frozen with the game
     updateWaveSystem(dt);
