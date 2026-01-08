@@ -1599,8 +1599,21 @@ startBtn.addEventListener("click", ()=>{
 
 
 
-resetGame();
+resetGame();              // prepare clean state ONCE
+
+const startBtn = document.getElementById("startBtn");
+
+startBtn.addEventListener("click", ()=>{
+  started = true;
+  quizOpen = false;
+  document.getElementById("startOverlay").style.display = "none";
+
+  startWave(1);
+  startBGM();
+});
+
 requestAnimationFrame(tick);
+
 })();
 
 
