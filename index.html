@@ -201,6 +201,20 @@ BODY + SCRIPT (PART 1)
 <script>
 
 (() => {
+(() => {
+
+  // GLOBALS START HERE//
+  let booFireTimer = 0;
+  const bugs = [];
+  const booShots = [];
+  const bugShots = [];
+  const player = { ... };
+
+  function update(dt){ ... }
+  function draw(){ ... }
+
+})(); // ✅ GLOBALS END HERE
+  
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d", { alpha:false });
 
