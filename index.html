@@ -899,6 +899,11 @@ const ty = slot.ty;
 // -----------------------
 let last = 0;
 let started = false;
+
+// BOOHA SHOOT FIX
+  let lastPlayerX = 0;
+  let playerMoving = false;
+
   
 
 // Candy interval timer
@@ -908,6 +913,11 @@ function update(dt){
   if(player.energy <= 0) return;
 
   stageTime += dt;
+  // BOOHA SHOOT FIX
+  // detect movement (for shooting lock)
+playerMoving = (Math.abs(player.x - lastPlayerX) > 0.2);
+lastPlayerX = player.x;
+
 
   // drift ramps slowly (gentle -> faster)
   const driftBase = 10;
@@ -983,6 +993,10 @@ let booFireTimer = 0;
 
 function updateFiring(dt){
   booFireTimer -= dt;
+   // BOOHA SHOOT FIX
+  // ✅ No shooting while moving
+if(playerMoving) return;
+
 
   // ✅ Boost stacks (persistent until hit)
   // If you haven't added these yet, add to player object:
