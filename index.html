@@ -1468,28 +1468,31 @@ function answerQuiz(index){
     }
   }, { passive:false });
 
-  // -----------------------
-  // Main loop
-  // -----------------------
-  function tick(ts){
-    const t = ts/1000;
-    const dt = Math.min(0.033, (t - last) || 0);
-    last = t;
+// -----------------------
+// Main loop
+// -----------------------
+function tick(ts){
+  const t = ts / 1000;
+  const dt = Math.min(0.033, (t - last) || 0);
+  last = t;
 
-   if(started && player.energy > 0 && !quizOpen){
-      update(dt);
-      updateFiring(dt);
-      updateProjectiles(dt);
-      updateCandy(dt);
-      updateParticles(dt);
-      maybeAdvanceRound();
-    }
+  // ONLY run game logic when actually playing
+  if(started && player.energy > 0 && !quizOpen){
+    update(dt);
+    updateFiring(dt);
+    updateProjectiles(dt);
+    updateCandy(dt);
+    updateParticles(dt);
+    maybeAdvanceRound();
 
-   updateWaveSystem(dt);
-draw();
-requestAnimationFrame(tick);
-
+    // 🔑 wave system must be frozen with the game
+    updateWaveSystem(dt);
   }
+
+  draw();
+  requestAnimationFrame(tick);
+}
+
 
 
 // -----------------------
