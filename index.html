@@ -800,6 +800,10 @@ const ty = slot.ty;
     const startY = -bh - rand(30, 130);
 
        bugs.push({
+       //THIS IS FOR THE SHIELD  
+         const b = bugs[bugs.length - 1];
+         b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
+
       x: startX,
       y: startY,
       w: bw,
