@@ -1550,84 +1550,67 @@ function resetGame(){
   stageTime = 0;
 }
 
+// -----------------------
+// Boot
+// -----------------------
+(async function boot(){
+  resize();
 
-  
-  // -----------------------
-  // Boot
-  // -----------------------
-  (async function boot(){
-    resize();
+  try{
+    const [bg, b1, b2, bug, candy, r1,r2,r3,r4] = await Promise.all([
+      loadImg(ASSETS.bg),
+      loadImg(ASSETS.booIdle),
+      loadImg(ASSETS.booShoot),
+      loadImg(ASSETS.bug),
+      loadImg(ASSETS.candy),
+      loadImg(ASSETS.rocks[0]),
+      loadImg(ASSETS.rocks[1]),
+      loadImg(ASSETS.rocks[2]),
+      loadImg(ASSETS.rocks[3])
+    ]);
 
-    try{
-      const [
-        bg, b1, b2, bug, candy,
-        r1,r2,r3,r4
-      ] = await Promise.all([
-        loadImg(ASSETS.bg),
-        loadImg(ASSETS.booIdle),
-        loadImg(ASSETS.booShoot),
-        loadImg(ASSETS.bug),
-        loadImg(ASSETS.candy),
-        loadImg(ASSETS.rocks[0]),
-        loadImg(ASSETS.rocks[1]),
-        loadImg(ASSETS.rocks[2]),
-        loadImg(ASSETS.rocks[3])
-      ]);
+    IMG.bg = bg;
+    IMG.booIdle = b1;
+    IMG.booShoot = b2;
+    IMG.bug = bug;
+    IMG.candy = candy;
+    IMG.rocks = [r1,r2,r3,r4];
+  } catch(err){
+    console.warn(err);
+  }
 
-      IMG.bg = bg;
-      IMG.booIdle = b1;
-      IMG.booShoot = b2;
-      IMG.bug = bug;
-      IMG.candy = candy;
-      IMG.rocks = [r1,r2,r3,r4];
-    } catch(err){
-      console.warn(err);
-    }
+  // prepare clean state ONCE (do NOT start waves here)
+  resetGame();
 
-   const startBtn = document.getElementById("startBtn");
+  // BGM (create once)
+  let bgm = null;
+  function startBGM(){
+    if(bgm) return;
+    bgm = new Audio("invaders-bgm.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.6;
+    bgm.play().catch(()=>{});
+  }
 
-let bgm = null;
-function startBGM(){
-  if(bgm) return;
-  bgm = new Audio("invaders-bgm.mp3"); // same folder as index.html
-  bgm.loop = true;
-  bgm.volume = 0.6;
-  bgm.play().catch(()=>{});
-}
-    
+  // START button (wire once)
+  const startBtn = document.getElementById("startBtn");
+  startBtn.addEventListener("click", ()=>{
+    started = true;
+    quizOpen = false;
+    document.getElementById("startOverlay").style.display = "none";
 
-startBtn.addEventListener("click", ()=>{
-  started = true;
-  quizOpen = false;              // make sure game is not frozen
-  document.getElementById("startOverlay").style.display = "none";
+    startWave(1);     // ✅ only place wave 1 begins
+    startBGM();
+  });
 
-  startWave(1);                  // 🔑 START WAVE 1
+   // start the game loop
+  requestAnimationFrame(tick);
+})();              // closes boot()
 
-  startBGM();
-});
-
-
-
-resetGame();              // prepare clean state ONCE
-
-const startBtn = document.getElementById("startBtn");
-
-startBtn.addEventListener("click", ()=>{
-  started = true;
-  quizOpen = false;
-  document.getElementById("startOverlay").style.display = "none";
-
-  startWave(1);
-  startBGM();
-});
-
-requestAnimationFrame(tick);
-
-})();
-
-
-})();
+})();              // closes the outer (()=>{ ... }) wrapper
 </script>
 </body>
 </html>
 
+  
+ 
