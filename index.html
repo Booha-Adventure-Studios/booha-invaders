@@ -1589,10 +1589,14 @@ function startBGM(){
 
 startBtn.addEventListener("click", ()=>{
   started = true;
+  quizOpen = false;              // make sure game is not frozen
   document.getElementById("startOverlay").style.display = "none";
+
+  startWave(1);                  // 🔑 START WAVE 1
 
   startBGM();
 });
+
 
 
 resetGame();
