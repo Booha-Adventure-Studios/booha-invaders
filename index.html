@@ -784,16 +784,6 @@ function pickTargetSlot(bw, bh){
   
 const DOTTY_SHIELD_POST = 0.7; // seconds AFTER arriving
 
-// -----------------------
-// Spawning DOTTY (20% larger)
-// -----------------------
-function spawnBug(){
-  const lanes = 6;
-  const laneW = innerWidth / lanes;
-
-  // -----------------------
-  // Spawning DOTTY (20% larger)
-  // -----------------------
   function spawnBug(){
     const lanes = 6;
     const laneW = innerWidth / lanes;
@@ -1181,7 +1171,6 @@ if(!bl.dead && player.hitIFrames <= 0){
       if(sparkles[i].life >= sparkles[i].ttl) sparkles.splice(i,1);
     }
   }
-
 
 
   /* =========================
@@ -1644,7 +1633,7 @@ startBtn.addEventListener("click", ()=>{
   requestAnimationFrame(tick);
 })();              // closes boot()
 
-//})();              // closes the outer (()=>{ ... }) wrapper
+})();              // closes the outer (()=>{ ... }) wrapper
 </script>
 </body>
 </html>
