@@ -782,6 +782,14 @@ function pickTargetSlot(bw, bh){
 }
 
   
+const DOTTY_SHIELD_POST = 0.7; // seconds AFTER arriving
+
+// -----------------------
+// Spawning DOTTY (20% larger)
+// -----------------------
+function spawnBug(){
+  const lanes = 6;
+  const laneW = innerWidth / lanes;
 
   // -----------------------
   // Spawning DOTTY (20% larger)
@@ -801,7 +809,7 @@ const ty = slot.ty;
     const startX = tx + rand(-laneW*0.35, laneW*0.35);
     const startY = -bh - rand(30, 130);
 
-    bugs.push({
+       bugs.push({
       x: startX,
       y: startY,
       w: bw,
@@ -811,16 +819,18 @@ const ty = slot.ty;
       // elegant entry
       enterT: 0,
       enterDur: rand(0.9, 1.3),
+      shieldT: 0,   // ← add this line
       sx: startX,
       sy: startY,
       tx, ty,
 
       bob: rand(0, 10),
-     driftSpeed: waveDriftSpeed(WaveState.wave),
-     fireCD: rand(
+      driftSpeed: waveDriftSpeed(WaveState.wave),
+      fireCD: rand(
         waveFireCooldown(WaveState.wave) * 0.75,
         waveFireCooldown(WaveState.wave) * 1.10
-),
+      ),
+
 
       glow: 0
     });
