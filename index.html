@@ -645,33 +645,56 @@ function nextWave(){
 
 // Call this every frame (dt in seconds)
 function updateWaveSystem(dt){
+  // --- dt safety (prevents NaN freezing your whole game) ---
+  dt = Number(dt);
+  if(!Number.isFinite(dt) || dt <= 0) dt = 1/60;       // fallback
+  if(dt > 0.05) dt = 0.05;                              // clamp huge frame jumps
+
+  // --- lazy init: if nothing started yet, start Wave 1 ---
+  if(!WaveState || !WAVE_SCALE) return;
+  if(WaveState.wave == null || WaveState.wave < 1) WaveState.wave = 1;
+  if(WaveState.phase == null) WaveState.phase = "intro";
+  if(!Number.isFinite(WaveState.phaseT)) WaveState.phaseT = 0;
+
+  // Ensure the very first group has a targetCount set
+  if((WaveState.targetCount == null || WaveState.targetCount <= 0) && WaveState.phase !== "quiz"){
+    if(typeof beginGroup === "function") beginGroup();
+  }
+
   WaveState.phaseT += dt;
 
+  // --- intro: wait after start click ---
   if(WaveState.phase === "intro"){
     if(WaveState.phaseT >= WAVE_SCALE.introDelaySec){
       WaveState.phase = "card";
       WaveState.phaseT = 0;
-      // TODO: showWaveCard(WaveState.wave)
+      // showWaveCard(WaveState.wave)
     }
     return;
   }
 
+  // --- card: show “WAVE N — get ready!” ---
   if(WaveState.phase === "card"){
     if(WaveState.phaseT >= WAVE_SCALE.waveCardSec){
       WaveState.phase = "run";
       WaveState.phaseT = 0;
-      WaveState.spawnTimer = 0;
-      // TODO: hideWaveCard()
+      WaveState.spawnTimer = 0; // spawn immediately when run begins
+      // hideWaveCard()
     }
     return;
   }
 
+  // --- quiz: pause spawns until quiz closes ---
   if(WaveState.phase === "quiz"){
-    // wait here until quiz closes
+    // When your quiz closes, set quizOpen = false.
+    // This will auto-continue to the next wave.
+    if(typeof quizOpen !== "undefined" && quizOpen === false){
+      if(typeof nextWave === "function") nextWave();
+    }
     return;
   }
 
-  // phase === "run"
+  // --- run: spawn this group, then wait until it’s cleared ---
   if(WaveState.spawned < WaveState.targetCount){
     WaveState.spawnTimer -= dt;
     if(WaveState.spawnTimer <= 0){
@@ -681,10 +704,12 @@ function updateWaveSystem(dt){
     }
   }
 
+  // group cleared → advance to next group or quiz
   if(WaveState.killed >= WaveState.targetCount){
     advanceGroupOrQuiz();
   }
 }
+
 
 // -----------------------
 // DOTTY placement (NO OVERLAP)
