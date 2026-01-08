@@ -1062,13 +1062,23 @@ if(playerMoving || shootResumeDelay > 0) return;
       for(const b of bugs){
         if(!b.alive) continue;
         if(aabb(s.x-5, s.y-10, 10, 18, b.x, b.y, b.w, b.h)){
-         b.alive = false;
-         s.dead = true;
-         WaveState.killed++;
 
-          addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
-          break;
-        }
+  // SHIELD: block the hit (shot disappears + sparkles)
+  if(b.shieldT > 0){
+    s.dead = true;
+    addSpark(s.x, s.y, 10, "gold"); // shield pop sparkle (we'll polish later)
+    break;
+  }
+
+  // normal kill
+  b.alive = false;
+  s.dead = true;
+  WaveState.killed++;
+
+  addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
+  break;
+}
+
       }
 
       // offscreen
