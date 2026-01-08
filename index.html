@@ -203,11 +203,14 @@ BODY + SCRIPT (PART 1)
 (() => {
 
   // GLOBALS START HERE//
-  let booFireTimer = 0;
-  const canvas = document.getElementById("c");
-  const ctx = canvas.getContext("2d", { alpha:false });
+let booFireTimer = 0;
+let tapShootQueued = false;   // ✅ add this
 
-  // -----------------------
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d", { alpha:false });
+
+
+  // 
   // DPR / resize
   // -----------------------
   const DPR_CAP = 2;
@@ -225,35 +228,60 @@ function updateFiring(dt){
   // keep booFireTimer alive for the draw() shooting pose
   booFireTimer = Math.max(0, booFireTimer - dt);
 
-  // if you have these guards in your project, keep them:
   if(!started) return;
   if(player.energy <= 0) return;
   if(quizOpen) return;
 
-  // If you’re using the “don’t shoot while moving / settling” system:
-  if(typeof playerMoving !== "undefined" && playerMoving) return;
-  if(typeof shootResumeDelay !== "undefined" && shootResumeDelay > 0) return;
-
-  // Decide shot mode (sugar = pink rapid, normal = gold one-at-a-time)
   const isPink = (player.sugar && player.sugar > 0);
 
-  // Normal mode: one shot at a time (your existing rule)
+ // -------------------------
+// TAP SHOT (priority)
+// -------------------------
+if(tapShootQueued){
   if(!isPink){
-    if(typeof canFireNormal === "function" && !canFireNormal()) return;
+    if(canFireNormal()){
+      fireBooShot(false);
+      booFireTimer = 0.12;
+    }
+  } else {
+    if(player._pinkCD == null) player._pinkCD = 0;
+    if(player._pinkCD <= 0){
+      fireBooShot(true);
+      booFireTimer = 0.12;
+      player._pinkCD = 0.10;
+    }
+  }
+  tapShootQueued = false; // ✅ clear the tap
+  return;
+}
+
+  // -------------------------
+  // AUTO FIRE (only when settled)
+  // -------------------------
+  if(playerMoving || shootResumeDelay > 0) return;
+
+  if(!isPink){
+    // one-shot-at-a-time + gentle cadence (prevents “hose”)
+    if(!canFireNormal()) return;
+
+    if(player._autoCD == null) player._autoCD = 0;
+    player._autoCD = Math.max(0, player._autoCD - dt);
+    if(player._autoCD > 0) return;
+
     fireBooShot(false);
-    booFireTimer = 0.12; // small window for shoot pose
+    booFireTimer = 0.12;
+    player._autoCD = 0.22; // tweak: higher = slower auto
     return;
   }
 
-  // Sugar mode: rapid shots (rate-limited)
-  // Uses a timer stored on player so it persists frame-to-frame
+  // sugar auto (rapid but controlled)
   if(player._pinkCD == null) player._pinkCD = 0;
   player._pinkCD = Math.max(0, player._pinkCD - dt);
   if(player._pinkCD > 0) return;
 
   fireBooShot(true);
   booFireTimer = 0.12;
-  player._pinkCD = 0.10; // tweak: smaller = faster
+  player._pinkCD = 0.10;
 }
 
 
