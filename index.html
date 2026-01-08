@@ -900,6 +900,11 @@ const ty = slot.ty;
 let last = 0;
 let started = false;
 
+let lastPlayerX = 0;
+let playerMoving = false;
+let shootResumeDelay = 0; // seconds
+
+
 // BOOHA SHOOT FIX
   let lastPlayerX = 0;
   let playerMoving = false;
@@ -913,10 +918,18 @@ function update(dt){
   if(player.energy <= 0) return;
 
   stageTime += dt;
-  // BOOHA SHOOT FIX
-  // detect movement (for shooting lock)
-playerMoving = (Math.abs(player.x - lastPlayerX) > 0.2);
+ // BOOHA SHOOT FIX — movement + settle delay
+const moved = (Math.abs(player.x - lastPlayerX) > 0.8); // kills micro-taps
 lastPlayerX = player.x;
+
+if(moved){
+  playerMoving = true;
+  shootResumeDelay = 0.18;   // pause before shooting resumes
+} else {
+  playerMoving = false;
+  shootResumeDelay = Math.max(0, shootResumeDelay - dt);
+}
+
 
 
   // drift ramps slowly (gentle -> faster)
@@ -994,8 +1007,9 @@ let booFireTimer = 0;
 function updateFiring(dt){
   booFireTimer -= dt;
    // BOOHA SHOOT FIX
-  // ✅ No shooting while moving
-if(playerMoving) return;
+  // ✅ No shooting while moving OR while settling after movement
+if(playerMoving || shootResumeDelay > 0) return;
+
 
 
   // ✅ Boost stacks (persistent until hit)
