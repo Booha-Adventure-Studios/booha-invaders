@@ -764,8 +764,12 @@ const ty = slot.ty;
       tx, ty,
 
       bob: rand(0, 10),
-      driftSpeed: 8,  // will ramp with stageTime
-      fireCD: rand(2.6, 4.0), // calm at start
+     driftSpeed: waveDriftSpeed(WaveState.wave),
+     fireCD: rand(
+        waveFireCooldown(WaveState.wave) * 0.75,
+        waveFireCooldown(WaveState.wave) * 1.10
+),
+
       glow: 0
     });
   }
@@ -984,9 +988,9 @@ function updateFiring(dt){
       for(const b of bugs){
         if(!b.alive) continue;
         if(aabb(s.x-5, s.y-10, 10, 18, b.x, b.y, b.w, b.h)){
-          b.alive = false;
-          s.dead = true;
-          killedThisStep++;
+         b.alive = false;
+         s.dead = true;
+         WaveState.killed++;
 
           addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
           break;
@@ -1457,8 +1461,10 @@ function answerQuiz(index){
       maybeAdvanceRound();
     }
 
-    draw();
-    requestAnimationFrame(tick);
+   updateWaveSystem(dt);
+draw();
+requestAnimationFrame(tick);
+
   }
 
 
