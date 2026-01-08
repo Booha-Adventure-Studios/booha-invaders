@@ -629,15 +629,19 @@ function beginGroup(){
 
 function advanceGroupOrQuiz(){
   WaveState.groupIdx++;
+
+  // After 4th group → open quiz and STOP
   if(WaveState.groupIdx >= 4){
-    // after 4th group -> quiz
     WaveState.phase = "quiz";
-    nextQuiz();
     quizOpen = true;
-    return;
+    nextQuiz();     // show quiz popup
+    return;         // freeze everything
   }
+
+  // Otherwise, start next group in the same wave
   beginGroup();
 }
+
 
 function nextWave(){
   startWave(WaveState.wave + 1);
@@ -1376,28 +1380,23 @@ function restoreRocksAndEnergy(){
 }
 
 function closeQuiz(){
-  quizCount++;           // ✅ drives difficulty
+  // track quiz progress / difficulty
+  quizCount++;
+
+  // close quiz (this unfreezes the game loop)
   quizOpen = false;
 
-  // reset quiz state for next time
+  // reset quiz UI/state
   quizSolved = false;
   quizFirstTry = true;
   quizTried = [false,false,false,false];
   quizMsg = "";
 
-  // get next question ready (but do NOT open it)
+  // prepare next question (but do NOT open it)
   nextQuiz();
 
-  // ✅ IMPORTANT: reset pacing so we don't instantly reopen the quiz
-  wave++;
-  stepInWave = 0;
-  candiesThisWave = 0;
-
-  killedThisStep = 0;
-  spawnedThisStep = 0;
-  spawnTimer = 0.6;
-
-  startWaveStep();
+  // --- START NEXT WAVE ---
+  startWave(WaveState.wave + 1);
 }
 
 
