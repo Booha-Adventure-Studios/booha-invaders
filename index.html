@@ -202,34 +202,40 @@ BODY + SCRIPT (PART 1)
 
 (() => {
 
-  // GLOBALS START HERE//
+ // =======================
+// CHUNK A — GLOBALS + RESIZE + FIRING (FINAL)
+// - NO tap shooting
+// - Auto fire ONLY when fully still
+// - Post-move penalty uses shootResumeDelay (set elsewhere)
+// =======================
+
+// globals
 let booFireTimer = 0;
-let tapShootQueued = false;
 
-// true globals (do NOT put these on player)
-let booAutoCD = 0;   // normal mode cadence
-let booPinkCD = 0;   // sugar cadence
-
-  
+// true globals (do NOT put on player)
+let booAutoCD = 0;   // normal cadence cooldown
+let booPinkCD = 0;   // sugar cadence cooldown
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
+// -----------------------
+// DPR / resize
+// -----------------------
+const DPR_CAP = 2;
+let DPR = 1;
 
-  // 
-  // DPR / resize
-  // -----------------------
-  const DPR_CAP = 2;
-  let DPR = 1;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+  canvas.width  = Math.floor(innerWidth * DPR);
+  canvas.height = Math.floor(innerHeight * DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
+}
+addEventListener("resize", resize);
 
-  function resize(){
-    DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-    canvas.width  = Math.floor(innerWidth * DPR);
-    canvas.height = Math.floor(innerHeight * DPR);
-    ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
-  }
-  addEventListener("resize", resize);
-
+// -----------------------
+// Auto firing (movement-locked)
+// -----------------------
 function updateFiring(dt){
   // keep booFireTimer alive for the draw() shooting pose
   booFireTimer = Math.max(0, booFireTimer - dt);
@@ -242,53 +248,37 @@ function updateFiring(dt){
   booAutoCD = Math.max(0, booAutoCD - dt);
   booPinkCD = Math.max(0, booPinkCD - dt);
 
+  // ✅ stand-still rule (hard lock)
+  if(playerMoving) return;
+  if(shootResumeDelay > 0) return;
+
   const isPink = (player.sugar && player.sugar > 0);
 
   // -------------------------
-  // TAP SHOT (priority) — works even while moving
+  // NORMAL (gold): one shot at a time, slow cadence
   // -------------------------
-  if(tapShootQueued){
-    tapShootQueued = false;
-
-    if(!isPink){
-      if(canFireNormal()){
-        fireBooShot(false);
-        booFireTimer = 0.12;
-        booAutoCD = 0.18; // small guard so taps can't spam too hard
-      }
-      return;
-    }
-
-    // sugar tap (rate-limited)
-    if(booPinkCD <= 0){
-      fireBooShot(true);
-      booFireTimer = 0.12;
-      booPinkCD = 0.10;
-    }
-    return;
-  }
-
-  // -------------------------
-  // AUTO FIRE — only when settled
-  // -------------------------
-  if(playerMoving || shootResumeDelay > 0) return;
-
   if(!isPink){
     if(!canFireNormal()) return;
     if(booAutoCD > 0) return;
 
     fireBooShot(false);
     booFireTimer = 0.12;
-    booAutoCD = 0.22; // ✅ this is the “no spray” knob
+
+    // ✅ main “no spray” knob
+    booAutoCD = 0.30;
     return;
   }
 
-  // sugar auto
+  // -------------------------
+  // SUGAR (pink): faster, BUT still stand-still + settle-locked
+  // -------------------------
   if(booPinkCD > 0) return;
 
   fireBooShot(true);
   booFireTimer = 0.12;
-  booPinkCD = 0.10;
+
+  // keep it fun, but not insane
+  booPinkCD = 0.14;
 }
 
   
