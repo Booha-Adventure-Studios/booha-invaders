@@ -202,11 +202,11 @@ BODY + SCRIPT (PART 1)
 
 (() => {
 
- // =======================
-// CHUNK A — GLOBALS + RESIZE + FIRING (FINAL)
+// =======================
+// CHUNK A — GLOBALS + RESIZE + FIRING (ANTI-SPRAY FINAL)
 // - NO tap shooting
 // - Auto fire ONLY when fully still
-// - Post-move penalty uses shootResumeDelay (set elsewhere)
+// - Boost shots are handled HERE (not inside update())
 // =======================
 
 // globals
@@ -214,7 +214,7 @@ let booFireTimer = 0;
 
 // true globals (do NOT put on player)
 let booAutoCD = 0;   // normal cadence cooldown
-let booPinkCD = 0;   // sugar cadence cooldown
+let booPinkCD = 0;   // boost cadence cooldown (pink)
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
@@ -234,7 +234,7 @@ function resize(){
 addEventListener("resize", resize);
 
 // -----------------------
-// Auto firing (movement-locked)
+// Auto firing (movement-locked) + boost lives here
 // -----------------------
 function updateFiring(dt){
   // keep booFireTimer alive for the draw() shooting pose
@@ -252,7 +252,9 @@ function updateFiring(dt){
   if(playerMoving) return;
   if(shootResumeDelay > 0) return;
 
-  const isPink = (player.sugar && player.sugar > 0);
+  // ✅ boost = pink mode (0..3)
+  const stack = clamp((player.boost || 0), 0, 3);
+  const isPink = (stack > 0);
 
   // -------------------------
   // NORMAL (gold): one shot at a time, slow cadence
@@ -270,16 +272,20 @@ function updateFiring(dt){
   }
 
   // -------------------------
-  // SUGAR (pink): faster, BUT still stand-still + settle-locked
+  // BOOST (pink): still locked to stand-still + settle
+  // and limited max shots so it can't flood the screen
   // -------------------------
+  const maxPinkShots = [0, 1, 2, 3][stack];      // ✅ hard cap
+  const cdPink = clamp(0.22 - 0.03*(stack-1), 0.14, 0.30);
+
   if(booPinkCD > 0) return;
+  if(booShots.length >= maxPinkShots) return;
 
   fireBooShot(true);
   booFireTimer = 0.12;
-
-  // keep it fun, but not insane
-  booPinkCD = 0.14;
+  booPinkCD = cdPink;
 }
+
 
   
   // -----------------------
@@ -981,7 +987,7 @@ let candyTimer = 10; // first drop happens ~10s in (tweak if you want)
 function update(dt){
   if(player.energy <= 0) return;
 
- stageTime += dt;
+stageTime += dt;
 
 // ✅ movement lock (must run AFTER movement is applied this frame)
 const dx = Math.abs(player.x - lastPlayerX);
@@ -995,7 +1001,6 @@ if(moved){
   playerMoving = false;
   shootResumeDelay = Math.max(0, shootResumeDelay - dt);
 }
-
 
 
 
