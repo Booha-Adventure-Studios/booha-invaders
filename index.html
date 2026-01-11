@@ -976,6 +976,7 @@ b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
 // -----------------------
 let last = 0;
 let started = false;
+let stageTime = 0;
 
 let lastPlayerX = 0;
 let playerMoving = false;
@@ -1099,8 +1100,10 @@ for(const b of bugs){
 }
 
  
+} // ✅ CLOSE update(dt) — this was missing
 
-  function updateProjectiles(dt){
+function updateProjectiles(dt){
+
     // boo shots
     for(const s of booShots){
       if(s.dead) continue;
