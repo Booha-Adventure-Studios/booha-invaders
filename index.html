@@ -997,14 +997,18 @@ function update(dt){
 
   stageTime += dt;
  // BOOHA SHOOT FIX — movement + settle delay
-const moved = (Math.abs(player.x - lastPlayerX) > 0.8); // kills micro-taps
-lastPlayerX = player.x;
+// BOOHA SHOOT FIX — input-based movement lock (stable)
+const leftHeld  = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
+const rightHeld = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
 
-if(moved){
-  playerMoving = true;
-  shootResumeDelay = 0.18;   // pause before shooting resumes
+// If you still allow drag-move, treat dragging as "moving"
+const dragging = (pointerDown && pointerX !== null);
+
+playerMoving = leftHeld || rightHeld || dragging;
+
+if(playerMoving){
+  shootResumeDelay = 0.18;               // keep resetting while moving
 } else {
-  playerMoving = false;
   shootResumeDelay = Math.max(0, shootResumeDelay - dt);
 }
 
@@ -1016,14 +1020,27 @@ if(moved){
   const driftNow  = driftBase + driftRamp * 28;
 
   // movement
-  if(pointerX !== null){
-    player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
-  } else {
-    if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
-    if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
-    player.x = clamp(player.x, 10, innerWidth - player.w - 10);
-  }
+ // movement (keyboard only)
+if(keys.has("ArrowLeft") || keys.has("a") || keys.has("A"))  player.x -= 420*dt;
+if(keys.has("ArrowRight")|| keys.has("d") || keys.has("D"))  player.x += 420*dt;
+player.x = clamp(player.x, 10, innerWidth - player.w - 10);
 
+// -----------------------
+// BOOHA MOVEMENT LOCK (AUTHORITATIVE)
+// -----------------------
+const leftHeld  = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
+const rightHeld = keys.has("ArrowRight")|| keys.has("d") || keys.has("D");
+
+// movement state = INPUT, not position
+playerMoving = leftHeld || rightHeld;
+
+if(playerMoving){
+  shootResumeDelay = 0.18;           // reset while moving
+} else {
+  shootResumeDelay = Math.max(0, shootResumeDelay - dt);
+}
+
+  
   // timers
 player.glow = Math.max(0, player.glow - dt*2.2);
 player.sugar = Math.max(0, player.sugar - dt); // legacy (ok to leave)
@@ -1094,36 +1111,6 @@ for(const b of bugs){
   }
 }
 
-  // ✅ Boost stacks (persistent until hit)
-  // If you haven't added these yet, add to player object:
-  // boost: 0
-  const boost = player.boost || 0;   // 0..cap
-
-  if(boost > 0){
-    // Boosted shots (pink)
-    // Stack 1 = stronger, Stack 2 = even more, Stack 3 = capped max
-    const stack = clamp(boost, 1, 3);
-
-    // fire rate gets a bit faster per stack (capped)
-    const cooldown = Math.max(0.07, 0.12 - 0.015*(stack-1));
-
-    // max simultaneous shots increases with stacks (capped)
-    const maxPinkShots = [0, 3, 6, 9][stack];
-
-    if(booFireTimer <= 0 && booShots.length < maxPinkShots){
-      fireBooShot(true);
-      booFireTimer = cooldown;
-    }
-
-  } else {
-    // Normal (gold), one-at-a-time
-    const cooldown = 0.12;
-    if(booFireTimer <= 0 && canFireNormal()){
-      fireBooShot(false);
-      booFireTimer = cooldown;
-    }
-  }
-}
 
 
   function updateProjectiles(dt){
