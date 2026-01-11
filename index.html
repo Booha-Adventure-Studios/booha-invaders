@@ -995,18 +995,21 @@ let candyTimer = 10; // first drop happens ~10s in (tweak if you want)
 function update(dt){
   if(player.energy <= 0) return;
 
-  stageTime += dt;
- // BOOHA SHOOT FIX — movement + settle delay
-const moved = (Math.abs(player.x - lastPlayerX) > 0.8); // kills micro-taps
+ stageTime += dt;
+
+// ✅ movement lock (must run AFTER movement is applied this frame)
+const dx = Math.abs(player.x - lastPlayerX);
+const moved = (dx > 0.35);      // catches tap-move spam
 lastPlayerX = player.x;
 
 if(moved){
   playerMoving = true;
-  shootResumeDelay = 0.18;   // pause before shooting resumes
+  shootResumeDelay = 0.30;      // ✅ “0.3ish cooldown” after ANY movement
 } else {
   playerMoving = false;
   shootResumeDelay = Math.max(0, shootResumeDelay - dt);
 }
+
 
 
 
