@@ -1310,7 +1310,7 @@ else{
 p = clamp(p, 0, 1);
 
 
-  const text = `WAVE ${WaveState.wave}`;
+  const text = "WAVE " + WaveState.wave;
   const sub = "ドッティが くるよ！";
 
 
@@ -1320,10 +1320,10 @@ p = clamp(p, 0, 1);
   const bigSize = clamp(innerWidth * 0.10, 52, 110);
   const subSize = clamp(innerWidth * 0.035, 16, 28);
 
-  ctx.font = `900 ${bigSize}px system-ui, -apple-system, sans-serif`;
+  ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
   const tw = ctx.measureText(text).width;
 
-  ctx.font = `900 ${subSize}px system-ui, -apple-system, sans-serif`;
+  ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
   const sw = ctx.measureText(sub).width;
 
   // roll from right → left (offscreen to offscreen)
