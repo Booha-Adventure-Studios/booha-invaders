@@ -675,6 +675,21 @@ const WaveState = {
   phaseT: 0
 };
 
+const BOSS_EVERY_N_WAVES = 5;
+
+function isBossWave(w){
+  return (w % BOSS_EVERY_N_WAVES) === 0;
+}
+
+const BossState = {
+  active: false,
+  hp: 0,
+  maxHp: 0,
+  enterT: 0,
+  phaseT: 0
+};
+  
+
 function tierForWave(n){
   for(const t of WAVE_TIERS){
     if(n >= t.from && n <= t.to) return t;
@@ -707,10 +722,28 @@ function waveShooterCap(wave){
 function startWave(n){
   WaveState.wave = n;
   WaveState.groupIdx = 0;
-  WaveState.phase = "intro";
   WaveState.phaseT = 0;
+
+  if(isBossWave(n)){
+    WaveState.phase = "boss";
+    BossState.active = true;
+    BossState.maxHp = 60;     // tweak later
+    BossState.hp = BossState.maxHp;
+    BossState.enterT = 0;
+    BossState.phaseT = 0;
+
+    // clear normal bugs/shots if you want a clean boss arena
+    bugs.length = 0;
+    bugShots.length = 0;
+    booShots.length = 0;
+
+    return; // do NOT beginGroup()
+  }
+
+  WaveState.phase = "intro";
   beginGroup();
 }
+
 
 function beginGroup(){
   WaveState.spawned = 0;
