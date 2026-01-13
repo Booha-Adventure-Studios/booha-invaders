@@ -839,11 +839,14 @@ if(WaveState.phase === "boss"){
     }
   }
 
-  // group cleared → advance to next group or quiz
-  if(WaveState.killed >= WaveState.targetCount){
-    advanceGroupOrQuiz();
-  }
-}
+ // group cleared → advance to next group or quiz
+// ✅ do NOT advance if targetCount is 0 (boss / pause states)
+if (WaveState.targetCount > 0 && WaveState.killed >= WaveState.targetCount){
+  advanceGroupOrQuiz();
+}   // ← closes the IF
+
+}   // ← closes updateWaveSystem(dt)
+
 
 
 // -----------------------
