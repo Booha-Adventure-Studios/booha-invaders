@@ -1360,6 +1360,60 @@ p = clamp(p, 0, 1);
   ctx.restore();
 }
 
+// -----------------------
+// WAVE BANNER (ROLL ACROSS) ✅ SIMPLE + SAFE
+// Shows ONLY during WaveState.phase === "card"
+// -----------------------
+function drawWaveBanner(){
+  if(!started) return;
+  if(!WaveState || WaveState.phase !== "card") return;
+
+  var dur = Math.max(0.001, (WAVE_SCALE && WAVE_SCALE.waveCardSec) ? WAVE_SCALE.waveCardSec : 1.25);
+  var p = clamp(WaveState.phaseT / dur, 0, 1);
+
+  var text = "WAVE " + WaveState.wave;
+  var sub  = "ドッティが くるよ！";
+
+  ctx.save();
+
+  var bigSize = clamp(innerWidth * 0.10, 52, 110);
+  var subSize = clamp(innerWidth * 0.035, 16, 28);
+
+  ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
+  var tw = ctx.measureText(text).width;
+
+  ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
+  var sw = ctx.measureText(sub).width;
+
+  var margin = Math.max(40, innerWidth * 0.08);
+  var travel = innerWidth + margin*2 + Math.max(tw, sw);
+  var x = innerWidth + margin - p * travel;
+
+  var y = innerHeight * 0.34;
+
+  ctx.globalCompositeOperation = "lighter";
+  drawGlow(x + tw/2, y - bigSize*0.35, bigSize*0.95, 0.22, "rgba(255,120,220,0.55)");
+  drawGlow(x + tw/2, y - bigSize*0.35, bigSize*0.85, 0.20, "rgba(255,214,102,0.55)");
+  ctx.globalCompositeOperation = "source-over";
+
+  ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "rgba(0,0,0,0.55)";
+  ctx.strokeText(text, x, y);
+
+  ctx.fillStyle = "rgba(255,255,255,0.96)";
+  ctx.fillText(text, x, y);
+
+  ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(0,0,0,0.55)";
+  ctx.strokeText(sub, x + (tw - sw)/2, y + subSize*1.2);
+
+  ctx.fillStyle = "rgba(185,255,207,0.92)";
+  ctx.fillText(sub, x + (tw - sw)/2, y + subSize*1.2);
+
+  ctx.restore();
+}
 
   
   function draw(){
