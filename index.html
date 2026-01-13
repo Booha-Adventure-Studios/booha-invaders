@@ -1286,7 +1286,33 @@ function drawWaveBanner(){
 
   // progress 0..1 across the card duration
   const dur = Math.max(0.001, WAVE_SCALE.waveCardSec || 4.5);
-  const p = clamp(WaveState.phaseT / dur, 0, 1);
+ // --- timing slices ---
+const pauseSec = 0.3;                 // ⬅ center pause duration
+const moveSec  = Math.max(0.001, dur - pauseSec);
+
+// normalized time
+const t = clamp(WaveState.phaseT, 0, dur);
+
+// movement progress 0..1 (excluding pause)
+let p;
+
+// first half: move in
+if(t < moveSec * 0.5){
+  p = (t / (moveSec * 0.5)) * 0.5;
+}
+// middle: pause
+else if(t < moveSec * 0.5 + pauseSec){
+  p = 0.5;
+}
+// second half: move out
+else{
+  const tt = (t - moveSec * 0.5 - pauseSec) / (moveSec * 0.5);
+  p = 0.5 + tt * 0.5;
+}
+
+// safety clamp
+p = clamp(p, 0, 1);
+
 
   const text = `WAVE ${WaveState.wave}`;
   const sub = "ドッティが くるよ！";
