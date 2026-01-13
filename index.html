@@ -903,7 +903,7 @@ b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
     
   }
 
-  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function easeInCubic(t){ return t*t*t; }
   function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
 
   // -----------------------
@@ -1281,40 +1281,34 @@ SCRIPT (PART 2) + END
   // -------------------------
   const dur = Math.max(0.001, WAVE_SCALE.waveCardSec || 4.5);
 
-  const pauseSec = 1.0;                 // ✅ center pause duration
-  const moveSec  = Math.max(0.001, dur - pauseSec);
+const pauseSec = 1.0;
+const moveSec  = Math.max(0.001, dur - pauseSec);
 
-  // ✅ allocate more time to entrance than exit
-  const enterFrac = 0.78;               // 78% of movement time = entrance (slow)
-  const exitFrac  = 1.0 - enterFrac;    // 22% of movement time = exit (fast)
+const enterFrac = 0.85;                 // slower entrance
+const enterSec  = Math.max(0.001, moveSec * enterFrac);
+const exitSec   = Math.max(0.001, moveSec * (1 - enterFrac));
 
-  const enterSec = Math.max(0.001, moveSec * enterFrac);
-  const exitSec  = Math.max(0.001, moveSec * exitFrac);
+const t = clamp(WaveState.phaseT, 0, dur);
 
-  const t = clamp(WaveState.phaseT, 0, dur);
+let p;
 
-  // easing helpers (local, simple)
-  const easeOutCubic = (x)=> 1 - Math.pow(1 - x, 3);  // fast→slow (nice for arriving)
-  const easeInCubic  = (x)=> x*x*x;                   // slow→fast (nice for exiting)
+// ENTER: p 0 → 0.5 (slow arrival)
+if(t < enterSec){
+  const u = clamp(t / enterSec, 0, 1);
+  p = 0.5 * easeOutCubic(u);
+}
+// PAUSE: center
+else if(t < enterSec + pauseSec){
+  p = 0.5;
+}
+// EXIT: p 0.5 → 1 (fast exit)
+else{
+  const u = clamp((t - enterSec - pauseSec) / exitSec, 0, 1);
+  p = 0.5 + 0.5 * easeInCubic(u);
+}
 
-  let p;
+p = clamp(p, 0, 1);
 
-  // segment 1: ENTER (p: 0 -> 0.5)
-  if(t < enterSec){
-    const u = clamp(t / enterSec, 0, 1);
-    p = 0.5 * easeOutCubic(u);
-  }
-  // segment 2: PAUSE at center (p = 0.5)
-  else if(t < enterSec + pauseSec){
-    p = 0.5;
-  }
-  // segment 3: EXIT (p: 0.5 -> 1)
-  else{
-    const u = clamp((t - enterSec - pauseSec) / exitSec, 0, 1);
-    p = 0.5 + 0.5 * easeInCubic(u);
-  }
-
-  p = clamp(p, 0, 1);
 
 
 
