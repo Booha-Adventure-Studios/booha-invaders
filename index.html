@@ -906,6 +906,11 @@ b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
   function easeInCubic(t){ return t*t*t; }
   function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
 
+
+  function easeOutCubic(t){
+  return 1 - Math.pow(1 - t, 3);
+}
+
   // -----------------------
   // FX
   // -----------------------
