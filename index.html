@@ -1285,11 +1285,12 @@ function drawWaveBanner(){
   if(!WaveState || WaveState.phase !== "card") return;
 
   // progress 0..1 across the card duration
-  const dur = Math.max(0.001, WAVE_SCALE.waveCardSec || 1.25);
+  const dur = Math.max(0.001, WAVE_SCALE.waveCardSec || 3.0);
   const p = clamp(WaveState.phaseT / dur, 0, 1);
 
   const text = `WAVE ${WaveState.wave}`;
-  const sub  = "GET READY!";
+  const sub = "ドッティが くるよ！";
+
 
   ctx.save();
 
