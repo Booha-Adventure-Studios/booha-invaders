@@ -786,11 +786,17 @@ function updateWaveSystem(dt){
   if(!Number.isFinite(WaveState.phaseT)) WaveState.phaseT = 0;
 
   // Ensure the very first group has a targetCount set
-  if((WaveState.targetCount == null || WaveState.targetCount <= 0) && WaveState.phase !== "quiz"){
-    if(typeof beginGroup === "function") beginGroup();
-  }
+ if(WaveState.phase === "run" && (WaveState.targetCount == null || WaveState.targetCount <= 0)){
+  beginGroup();
+}
+
 
   WaveState.phaseT += dt;
+
+  // ✅ BOSS PHASE: wave system should not spawn groups or trigger quiz
+if(WaveState.phase === "boss"){
+  return;
+}
 
   // --- intro: wait after start click ---
   if(WaveState.phase === "intro"){
