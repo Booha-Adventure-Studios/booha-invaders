@@ -645,7 +645,7 @@ const WAVE_TIERS = [
 // Difficulty scaling knobs (EDIT THESE)
 const WAVE_SCALE = {
   introDelaySec: 2.0,     // after start click, before WAVE 1 card
-  waveCardSec: 1.25,      // how long “WAVE N — get ready!” shows
+  waveCardSec: 4.8,      // how long “WAVE N — get ready!” shows
 
   spawnIntervalBase: 0.60,
   spawnIntervalMin:  0.12,
@@ -1292,28 +1292,48 @@ function drawWaveBanner(){
   if(!started) return;
   if(!WaveState || WaveState.phase !== "card") return;
 
-  var dur = Math.max(0.001, (WAVE_SCALE && WAVE_SCALE.waveCardSec) ? WAVE_SCALE.waveCardSec : 1.25);
-  var p = clamp(WaveState.phaseT / dur, 0, 1);
+  // total duration of the card phase
+  const dur = Math.max(0.001, (WAVE_SCALE && WAVE_SCALE.waveCardSec) ? WAVE_SCALE.waveCardSec : 4.8);
 
-  var text = "WAVE " + WaveState.wave;
-  var sub  = "ドッティが くるよ！";
+  // timing: slow entrance + pause + fast exit
+  const pauseSec = 1.0;                         // ← center pause length
+  const moveSec  = Math.max(0.001, dur - pauseSec);
+  const enterSec = moveSec * 0.72;              // ← slower entrance
+  const exitSec  = Math.max(0.001, moveSec - enterSec); // ← faster exit
+
+  const t = clamp(WaveState.phaseT, 0, dur);
+
+  // p = 0..1 travel progress
+  let p = 0;
+
+  if(t < enterSec){
+    const u = clamp(t / enterSec, 0, 1);
+    p = 0.5 * easeOutCubic(u);                  // arrive into center
+  } else if(t < enterSec + pauseSec){
+    p = 0.5;                                    // hold in center
+  } else {
+    const u = clamp((t - enterSec - pauseSec) / exitSec, 0, 1);
+    p = 0.5 + 0.5 * easeInCubic(u);             // exit quickly
+  }
+
+  const text = "WAVE " + WaveState.wave;
+  const sub  = "ドッティが くるよ！";
 
   ctx.save();
 
-  var bigSize = clamp(innerWidth * 0.10, 52, 110);
-  var subSize = clamp(innerWidth * 0.035, 16, 28);
+  const bigSize = clamp(innerWidth * 0.10, 52, 110);
+  const subSize = clamp(innerWidth * 0.035, 16, 28);
 
   ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
-  var tw = ctx.measureText(text).width;
+  const tw = ctx.measureText(text).width;
 
   ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
-  var sw = ctx.measureText(sub).width;
+  const sw = ctx.measureText(sub).width;
 
-  var margin = Math.max(40, innerWidth * 0.08);
-  var travel = innerWidth + margin*2 + Math.max(tw, sw);
-  var x = innerWidth + margin - p * travel;
-
-  var y = innerHeight * 0.34;
+  const margin = Math.max(40, innerWidth * 0.08);
+  const travel = innerWidth + margin*2 + Math.max(tw, sw);
+  const x = innerWidth + margin - p * travel;
+  const y = innerHeight * 0.34;
 
   ctx.globalCompositeOperation = "lighter";
   drawGlow(x + tw/2, y - bigSize*0.35, bigSize*0.95, 0.22, "rgba(255,120,220,0.55)");
@@ -1324,7 +1344,6 @@ function drawWaveBanner(){
   ctx.lineWidth = 6;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   ctx.strokeText(text, x, y);
-
   ctx.fillStyle = "rgba(255,255,255,0.96)";
   ctx.fillText(text, x, y);
 
@@ -1332,12 +1351,12 @@ function drawWaveBanner(){
   ctx.lineWidth = 4;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   ctx.strokeText(sub, x + (tw - sw)/2, y + subSize*1.2);
-
   ctx.fillStyle = "rgba(185,255,207,0.92)";
   ctx.fillText(sub, x + (tw - sw)/2, y + subSize*1.2);
 
   ctx.restore();
 }
+
 
   
   function draw(){
