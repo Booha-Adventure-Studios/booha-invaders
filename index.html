@@ -1297,17 +1297,17 @@ const t = clamp(WaveState.phaseT, 0, dur);
 let p;
 
 // first half: move in
-if(t < moveSec * 0.5){
-  p = (t / (moveSec * 0.5)) * 0.5;
+if(t < moveSec * 0.8){
+  p = (t / (moveSec * 0.8)) * 0.8;
 }
 // middle: pause
-else if(t < moveSec * 0.5 + pauseSec){
-  p = 0.5;
+else if(t < moveSec * 1.0 + pauseSec){
+  p = 1.0;
 }
 // second half: move out
 else{
-  const tt = (t - moveSec * 0.5 - pauseSec) / (moveSec * 0.5);
-  p = 0.5 + tt * 0.5;
+  const tt = (t - moveSec * 0.8 - pauseSec) / (moveSec * 0.8);
+  p = 0.8 + tt * 0.8;
 }
 
 // safety clamp
