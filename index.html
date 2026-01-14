@@ -692,6 +692,24 @@ const WaveState = {
   phaseT: 0
 };
 
+// -----------------------
+// DOTTY BOSS (Step 1: spawn + audio + basic stats)
+// -----------------------
+const BOSS_BASE_HP = 25;
+const BOSS_SIZE_BONUS = 0.15;     // +15% for first boss
+const BOSS_HP_GAIN = 10;          // +10 HP each boss
+const BOSS_GROWTH = 0.10;         // +10% bigger each boss
+const BOSS_BASE_SHOT_DMG = 2;     // Step 1: store it; we’ll apply later
+
+let bossSfxPlayed = false;
+
+function bossIndexForWave(w){
+  // wave 5 => 1, wave 10 => 2, ...
+  return Math.floor(w / BOSS_EVERY_N_WAVES);
+}
+
+
+  
 const BOSS_EVERY_N_WAVES = 5;
 
 function isBossWave(w){
@@ -741,21 +759,28 @@ function startWave(n){
   WaveState.groupIdx = 0;
   WaveState.phaseT = 0;
 
-  if(isBossWave(n)){
-    WaveState.phase = "boss";
-    BossState.active = true;
-    BossState.maxHp = 60;     // tweak later
-    BossState.hp = BossState.maxHp;
-    BossState.enterT = 0;
-    BossState.phaseT = 0;
+ if(isBossWave(n)){
+  WaveState.phase = "run";     // ✅ do NOT dead-end
+  bossSfxPlayed = false;       // ✅ allow sound for this boss
 
-    // clear normal bugs/shots if you want a clean boss arena
-    bugs.length = 0;
-    bugShots.length = 0;
-    booShots.length = 0;
+  // clear arena
+  bugs.length = 0;
+  bugShots.length = 0;
+  booShots.length = 0;
 
-    return; // do NOT beginGroup()
-  }
+  // spawn boss
+  spawnBossDotty();
+
+  // treat it like a “group” of 1, so your wave system can progress later
+  WaveState.groupIdx = 0;
+  WaveState.spawned = 1;
+  WaveState.killed = 0;
+  WaveState.targetCount = 1;
+  WaveState.spawnTimer = 999;
+
+  return;
+}
+
 
   WaveState.phase = "intro";
   beginGroup();
@@ -973,6 +998,60 @@ b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
   return 1 - Math.pow(1 - t, 3);
 }
 
+function spawnBossDotty(){
+  // base dotty size
+  const baseW = clamp(innerWidth * 0.078, 54, 78);
+  const k = bossIndexForWave(WaveState.wave); // 1,2,3...
+
+  // size growth: first boss +15%, then +10% per boss after that
+  const scale = 1 + BOSS_SIZE_BONUS + (k-1)*BOSS_GROWTH;
+  const bw = baseW * scale;
+  const bh = bw;
+
+  // enter from top center, target a bit above mid-screen
+  const tx = innerWidth/2 - bw/2;
+  const ty = clamp(innerHeight*0.18, 90, 170);
+
+  const startX = innerWidth/2 - bw/2;   // centered
+  const startY = -bh - 40;
+
+  // play boss sound once per boss spawn
+  if(!bossSfxPlayed){
+    bossSfxPlayed = true;
+    try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
+  }
+
+  const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
+  const shotDmg = BOSS_BASE_SHOT_DMG + (k-1)*1; // +1 per boss (we apply later)
+
+  bugs.push({
+    x: startX, y: startY,
+    w: bw, h: bh,
+    alive: true,
+
+    isBoss: true,         // ✅ boss flag
+    hp: hp,
+    maxHp: hp,
+    shotDmg: shotDmg,
+
+    enterT: 0,
+    enterDur: 1.25,       // slightly dramatic
+    shieldT: 9999,        // ✅ starts shielded (we’ll decide when to drop it in Step 2)
+    hasShotOnce: false,
+
+    sx: startX, sy: startY,
+    tx, ty,
+
+    bob: rand(0, 10),
+    driftSpeed: waveDriftSpeed(WaveState.wave),
+    fireCD: 0.6,          // will fire often later
+    glow: 0
+  });
+}
+
+
+
+  
   // -----------------------
   // FX
   // -----------------------
