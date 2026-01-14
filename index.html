@@ -812,8 +812,11 @@ function updateWaveSystem(dt){
 
   // ✅ BOSS PHASE: wave system should not spawn groups or trigger quiz
 if(WaveState.phase === "boss"){
-  return;
+  // ✅ TEMP: do not let the wave engine dead-end.
+  // Treat boss like a normal run phase until boss logic exists.
+  WaveState.phase = "run";
 }
+
 
   // --- intro: wait after start click ---
   if(WaveState.phase === "intro"){
