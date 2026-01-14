@@ -692,6 +692,8 @@ const WaveState = {
   phaseT: 0
 };
 
+let bossAlive = false;
+  
 // -----------------------
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
@@ -797,17 +799,32 @@ function beginGroup(){
 function advanceGroupOrQuiz(){
   WaveState.groupIdx++;
 
-  // After 4th group → open quiz and STOP
+  // After 4th group → BOSS before quiz
   if(WaveState.groupIdx >= 4){
+
+    // If boss not spawned yet, spawn it and switch to boss phase
+    if(!bossAlive){
+      WaveState.phase = "boss";
+
+      // clean arena for boss entrance
+      bugs.length = 0;
+      bugShots.length = 0;
+      booShots.length = 0;
+
+      spawnBossDotty();
+      return;
+    }
+
+    // If boss is already defeated → quiz
     WaveState.phase = "quiz";
     quizOpen = true;
-    nextQuiz();     // show quiz popup
-    return;         // freeze everything
+    nextQuiz();
+    return;
   }
 
-  // Otherwise, start next group in the same wave
   beginGroup();
 }
+
 
 
 function nextWave(){
@@ -835,11 +852,16 @@ function updateWaveSystem(dt){
 
   WaveState.phaseT += dt;
 
-  // ✅ BOSS PHASE: wave system should not spawn groups or trigger quiz
+  // ✅ BOSS PHASE: pause wave spawning; wait for boss to die → then quiz
 if(WaveState.phase === "boss"){
-  // ✅ TEMP: do not let the wave engine dead-end.
-  // Treat boss like a normal run phase until boss logic exists.
-  WaveState.phase = "run";
+  const boss = bugs.find(b => b.alive && b.isBoss);
+  if(!boss){
+    bossAlive = false;       // allow next wave’s boss spawn
+    WaveState.phase = "quiz";
+    quizOpen = true;
+    nextQuiz();
+  }
+  return; // IMPORTANT: do not run intro/card/run spawns during boss
 }
 
 
@@ -985,6 +1007,43 @@ const ty = slot.ty;
 });
 
 
+function spawnBossDotty(){
+  const baseW = clamp(innerWidth * 0.078, 54, 78);
+  const bw = baseW * 1.15; // +15%
+  const bh = bw;
+
+  const tx = innerWidth/2 - bw/2;
+  const ty = clamp(innerHeight * 0.18, 90, 170);
+
+  const startX = innerWidth/2 - bw/2;
+  const startY = -bh - 60;
+
+  bossAlive = true;
+
+  try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
+
+  bugs.push({
+    x:startX, y:startY, w:bw, h:bh,
+    alive:true,
+    isBoss:true,
+
+    enterT:0,
+    enterDur:1.25,
+    sx:startX, sy:startY,
+    tx, ty,
+
+    shieldT: 9999,          // stays shielded for now (Step 2 will refine)
+    hasShotOnce:false,
+
+    bob: rand(0,10),
+    driftSpeed: waveDriftSpeed(WaveState.wave),
+    fireCD: 0.8,
+    glow: 0
+  });
+}
+
+
+    
 const b = bugs[bugs.length - 1];
 b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
     
