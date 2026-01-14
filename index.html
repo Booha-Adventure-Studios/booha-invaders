@@ -1755,29 +1755,53 @@ function answerQuiz(index){
 // -----------------------
 // Main loop
 // -----------------------
-function tick(ts){
-  const t = ts / 1000;
-  const dt = Math.min(0.033, (t - last) || 0);
-  last = t;
 
-  // ONLY run game logic when actually playing
-  if(started && player.energy > 0 && !quizOpen){
-    update(dt);
-    updateFiring(dt);
-    updateProjectiles(dt);
-    updateCandy(dt);
-    updateParticles(dt);
-
+////TRYING TO FIX THE BOOS
   
-
-    // 🔑 wave system must be frozen with the game
-    updateWaveSystem(dt);
-  }
-
-  draw();
+function tick(ts){
+  // ✅ Schedule next frame FIRST so the loop cannot die
   requestAnimationFrame(tick);
+
+  try{
+    const t = ts / 1000;
+    const dt = Math.min(0.033, (t - last) || 0);
+    last = t;
+
+    // ONLY run game logic when actually playing
+    if(started && player.energy > 0 && !quizOpen){
+      update(dt);
+      updateFiring(dt);
+      updateProjectiles(dt);
+      updateCandy(dt);
+      updateParticles(dt);
+      updateWaveSystem(dt);
+    }
+
+    draw();
+  } catch(err){
+    // ✅ Don’t kill the loop — just show the error and keep going
+    console.warn(err);
+
+    // Optional: show a small on-screen error badge
+    // (keeps it visible even if Safari console is flaky)
+    try{
+      const msg = (err && err.stack) ? err.stack : String(err);
+      let box = document.getElementById("boohaErrBox");
+      if(!box){
+        box = document.createElement("div");
+        box.id = "boohaErrBox";
+        box.style.cssText =
+          "position:fixed;left:12px;right:12px;bottom:12px;z-index:999999;" +
+          "background:#000c;color:#fff;padding:10px;border-radius:12px;" +
+          "font:12px/1.35 system-ui;white-space:pre-wrap";
+        document.body.appendChild(box);
+      }
+      box.textContent = "ERROR (loop survived):\n" + msg;
+    } catch(_) {}
+  }
 }
 
+/////TRYING TO FIX THE BOSS  
 
 
 // -----------------------
