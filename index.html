@@ -965,46 +965,47 @@ function pickTargetSlot(bw, bh){
   
 const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
 
-  function spawnBug(){
-    const lanes = 6;
-    const laneW = innerWidth / lanes;
+ function spawnBug(){
+  const lanes = 6;
+  const laneW = innerWidth / lanes;
 
-    const bw = clamp(innerWidth * 0.078, 54, 78); // ~20% larger than earlier
-    const bh = bw;
+  const bw = clamp(innerWidth * 0.078, 54, 78);
+  const bh = bw;
 
- const slot = pickTargetSlot(bw, bh);
-const tx = slot.tx;
-const ty = slot.ty;
+  const slot = pickTargetSlot(bw, bh);
+  const tx = slot.tx;
+  const ty = slot.ty;
 
+  const startX = tx + rand(-laneW*0.35, laneW*0.35);
+  const startY = -bh - rand(30, 130);
 
-    const startX = tx + rand(-laneW*0.35, laneW*0.35);
-    const startY = -bh - rand(30, 130);
+  bugs.push({
+    x: startX,
+    y: startY,
+    w: bw,
+    h: bh,
+    alive: true,
 
-   bugs.push({
-  x: startX,
-  y: startY,
-  w: bw,
-  h: bh,
-  alive: true,
+    enterT: 0,
+    enterDur: rand(0.9, 1.3),
+    shieldT: 0,
+    hasShotOnce: false,
 
-  // elegant entry
-  enterT: 0,
-  enterDur: rand(0.9, 1.3),
-  shieldT: 0,
-  hasShotOnce: false,   // ← ADD THIS
-  sx: startX,
-  sy: startY,
-  tx, ty,
+    sx: startX,
+    sy: startY,
+    tx, ty,
 
-  bob: rand(0, 10),
-  driftSpeed: waveDriftSpeed(WaveState.wave),
-  fireCD: rand(
-    waveFireCooldown(WaveState.wave) * 0.75,
-    waveFireCooldown(WaveState.wave) * 1.10
-  ),
+    bob: rand(0, 10),
+    driftSpeed: waveDriftSpeed(WaveState.wave),
+    fireCD: rand(
+      waveFireCooldown(WaveState.wave) * 0.75,
+      waveFireCooldown(WaveState.wave) * 1.10
+    ),
 
-  glow: 0
-});
+    glow: 0
+  });
+
+} // ✅ THIS brace was missing
 
 
 function spawnBossDotty(){
@@ -2061,7 +2062,7 @@ if(startBtn){
 })();              // closes boot()
 
 
-*/  // TEMP CUT END
+
 
 </script>
 </body>
