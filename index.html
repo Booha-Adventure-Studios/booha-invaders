@@ -1018,17 +1018,16 @@ function spawnBossDotty(){
   const startX = innerWidth/2 - bw/2;
   const startY = -bh - 60;
 
-  bossAlive = true;
+ bossAlive = true;
 
-  try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
+try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
 
- const enterDur = 1.25;
+const enterDur = 1.25;
 
 bugs.push({
   x: startX, y: startY,
   w: bw, h: bh,
   alive: true,
-
   isBoss: true,
 
   enterT: 0,
@@ -1044,10 +1043,7 @@ bugs.push({
   glow: 0
 });
 
-}
-
-
-    
+ 
 const b = bugs[bugs.length - 1];
 enterDur: 1.25,
 shieldT: 1.25 + DOTTY_SHIELD_POST,  // ✅ shield drops after entry + post delay
