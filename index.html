@@ -2035,26 +2035,29 @@ function resetGame(){
   }
 
   // START button (wire once)
-startBtn.addEventListener("click", ()=>{
-  started = true;
-  quizOpen = false;
+const startBtn = document.getElementById("startBtn");
+if(startBtn){
+  startBtn.addEventListener("click", ()=>{
+    started = true;
+    quizOpen = false;
 
-  // ✅ reset shooting movement state
-  lastPlayerX = player.x;
-  playerMoving = false;
-  shootResumeDelay = 0;
+    lastPlayerX = player.x;
+    playerMoving = false;
+    shootResumeDelay = 0;
 
-  document.getElementById("startOverlay").style.display = "none";
+    document.getElementById("startOverlay").style.display = "none";
 
-  startWave(1);
-  startBGM();
-});
+    startWave(1);
+    startBGM();
+  });
+} // ← THIS one
+
 
    // start the game loop
   requestAnimationFrame(tick);
 })();              // closes boot()
 
-}  // <-- this exists
+
 
 </script>
 </body>
