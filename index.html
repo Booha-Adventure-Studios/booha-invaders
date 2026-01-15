@@ -1022,30 +1022,35 @@ function spawnBossDotty(){
 
   try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
 
-  bugs.push({
-    x:startX, y:startY, w:bw, h:bh,
-    alive:true,
-    isBoss:true,
+ const enterDur = 1.25;
 
-    enterT:0,
-    enterDur:1.25,
-    sx:startX, sy:startY,
-    tx, ty,
+bugs.push({
+  x: startX, y: startY,
+  w: bw, h: bh,
+  alive: true,
 
-    shieldT: 9999,          // stays shielded for now (Step 2 will refine)
-    hasShotOnce:false,
+  isBoss: true,
 
-    bob: rand(0,10),
-    driftSpeed: waveDriftSpeed(WaveState.wave),
-    fireCD: 0.8,
-    glow: 0
-  });
+  enterT: 0,
+  enterDur: enterDur,
+  shieldT: enterDur + DOTTY_SHIELD_POST,
+
+  sx: startX, sy: startY,
+  tx, ty,
+
+  bob: rand(0,10),
+  driftSpeed: waveDriftSpeed(WaveState.wave),
+  fireCD: 0.6,
+  glow: 0
+});
+
 }
 
 
     
 const b = bugs[bugs.length - 1];
-b.shieldT = b.enterDur + DOTTY_SHIELD_POST;
+enterDur: 1.25,
+shieldT: 1.25 + DOTTY_SHIELD_POST,  // ✅ shield drops after entry + post delay
     
   }
 
