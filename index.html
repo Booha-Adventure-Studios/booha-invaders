@@ -1044,12 +1044,6 @@ bugs.push({
 });
 } // end spawnBossDotty
 
- 
-const b = bugs[bugs.length - 1];
-enterDur: 1.25,
-shieldT: 1.25 + DOTTY_SHIELD_POST,  // ✅ shield drops after entry + post delay
-    
-  }
 
   function easeInCubic(t){ return t*t*t; }
   function easeInOutSine(t){ return -(Math.cos(Math.PI * t) - 1) / 2; }
@@ -1076,6 +1070,8 @@ function spawnBossDotty(){
   const startX = innerWidth/2 - bw/2;   // centered
   const startY = -bh - 40;
 
+  bossAlive = true;
+
   // play boss sound once per boss spawn
   if(!bossSfxPlayed){
     bossSfxPlayed = true;
@@ -1085,19 +1081,21 @@ function spawnBossDotty(){
   const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
   const shotDmg = BOSS_BASE_SHOT_DMG + (k-1)*1; // +1 per boss (we apply later)
 
+  const enterDur = 1.25;
+
   bugs.push({
     x: startX, y: startY,
     w: bw, h: bh,
     alive: true,
 
-    isBoss: true,         // ✅ boss flag
+    isBoss: true,         // boss flag
     hp: hp,
     maxHp: hp,
     shotDmg: shotDmg,
 
     enterT: 0,
-    enterDur: 1.25,       // slightly dramatic
-    shieldT: 9999,        // ✅ starts shielded (we’ll decide when to drop it in Step 2)
+    enterDur: enterDur,                       // ✅ entry animation duration
+    shieldT: enterDur + DOTTY_SHIELD_POST,    // ✅ shield drops after arriving + post delay
     hasShotOnce: false,
 
     sx: startX, sy: startY,
@@ -1105,11 +1103,10 @@ function spawnBossDotty(){
 
     bob: rand(0, 10),
     driftSpeed: waveDriftSpeed(WaveState.wave),
-    fireCD: 0.6,          // will fire often later
+    fireCD: 0.6,
     glow: 0
   });
 }
-
 
 
   
