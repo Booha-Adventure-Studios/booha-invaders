@@ -1050,10 +1050,22 @@ function spawnBossDotty(){
   const startX = innerWidth/2 - bw/2;   // centered
   const startY = -bh - 40;
 
-  bossAlive = true;
+bossAlive = true;
 
+// 🔊 start / loop boss music (every boss spawn)
+try{
+  if(bossBgm){
+    bossBgm.pause();
+    bossBgm.currentTime = 0;
+  }
+  bossBgm = new Audio("dotty-boss.mp3");
+  bossBgm.loop = true;
+  bossBgm.volume = 0.9;
+  bossBgm.play().catch(()=>{});
+} catch(_) {}
 
-  const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
+const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
+
   const shotDmg = BOSS_BASE_SHOT_DMG + (k-1)*1; // +1 per boss (we apply later)
 
   const enterDur = 1.25;
