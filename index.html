@@ -228,6 +228,9 @@ window.addEventListener("unhandledrejection", (e)=>{
 // globals
 let booFireTimer = 0;
 
+let bossBgm = null;
+  
+
 // true globals (do NOT put on player)
 let booAutoCD = 0;   // normal cadence cooldown
 let booPinkCD = 0;   // boost cadence cooldown (pink)
@@ -852,17 +855,27 @@ function updateWaveSystem(dt){
 
   WaveState.phaseT += dt;
 
-  // ✅ BOSS PHASE: pause wave spawning; wait for boss to die → then quiz
+// ✅ BOSS PHASE: pause wave spawning; wait for boss to die → then quiz
 if(WaveState.phase === "boss"){
   const boss = bugs.find(b => b.alive && b.isBoss);
   if(!boss){
-    bossAlive = false;       // allow next wave’s boss spawn
+    // 🛑 stop boss music
+    try{
+      if(bossBgm){
+        bossBgm.pause();
+        bossBgm.currentTime = 0;
+        bossBgm = null;
+      }
+    } catch(_) {}
+
+    bossAlive = false;
     WaveState.phase = "quiz";
     quizOpen = true;
     nextQuiz();
   }
   return; // IMPORTANT: do not run intro/card/run spawns during boss
 }
+
 
 
   // --- intro: wait after start click ---
@@ -1039,11 +1052,22 @@ function spawnBossDotty(){
 
   bossAlive = true;
 
-  // play boss sound once per boss spawn
-  if(!bossSfxPlayed){
-    bossSfxPlayed = true;
-    try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
-  }
+ if(!boss){
+  // 🛑 stop boss music
+  try{
+    if(bossBgm){
+      bossBgm.pause();
+      bossBgm.currentTime = 0;
+      bossBgm = null;
+    }
+  } catch(_) {}
+
+  bossAlive = false;
+  WaveState.phase = "quiz";
+  quizOpen = true;
+  nextQuiz();
+}
+
 
   const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
   const shotDmg = BOSS_BASE_SHOT_DMG + (k-1)*1; // +1 per boss (we apply later)
