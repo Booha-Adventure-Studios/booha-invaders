@@ -700,11 +700,11 @@ let bossAlive = false;
 // -----------------------
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
-const BOSS_BASE_HP = 25;
-const BOSS_SIZE_BONUS = 0.40;     // +15% for first boss
-const BOSS_HP_GAIN = 20;          // +10 HP each boss
-const BOSS_GROWTH = 0.20;         // +10% bigger each boss
-const BOSS_BASE_SHOT_DMG = 2;     // Step 1: store it; we’ll apply later
+const BOSS_BASE_HP = 30;
+const BOSS_SIZE_BONUS = 0.45;     // +15% for first boss
+const BOSS_HP_GAIN = 25;          // +10 HP each boss
+const BOSS_GROWTH = 0.25;         // +10% bigger each boss
+const BOSS_BASE_SHOT_DMG = 3;     // Step 1: store it; we’ll apply later
 
 let bossSfxPlayed = false;
 
@@ -764,27 +764,6 @@ function startWave(n){
   WaveState.groupIdx = 0;
   WaveState.phaseT = 0;
 
- if(isBossWave(n)){
-  WaveState.phase = "run";     // ✅ do NOT dead-end
-  bossSfxPlayed = false;       // ✅ allow sound for this boss
-
-  // clear arena
-  bugs.length = 0;
-  bugShots.length = 0;
-  booShots.length = 0;
-
-  // spawn boss
-  spawnBossDotty();
-
-  // treat it like a “group” of 1, so your wave system can progress later
-  WaveState.groupIdx = 0;
-  WaveState.spawned = 1;
-  WaveState.killed = 0;
-  WaveState.targetCount = 1;
-  WaveState.spawnTimer = 999;
-
-  return;
-}
 
 
   WaveState.phase = "intro";
