@@ -698,7 +698,7 @@ let bossAlive = false;
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
 const BOSS_BASE_HP = 25;
-const BOSS_SIZE_BONUS = 0.15;     // +15% for first boss
+const BOSS_SIZE_BONUS = 0.30;     // +15% for first boss
 const BOSS_HP_GAIN = 10;          // +10 HP each boss
 const BOSS_GROWTH = 0.10;         // +10% bigger each boss
 const BOSS_BASE_SHOT_DMG = 2;     // Step 1: store it; we’ll apply later
@@ -1335,13 +1335,30 @@ function updateProjectiles(dt){
 }
 
 
-  // normal kill
-  b.alive = false;
-  s.dead = true;
-  WaveState.killed++;
+ // ✅ BOSS: take HP instead of dying instantly
+if(b.isBoss){
+  const dmg = s.isPink ? 2 : 1;          // tweak later if you want
+  b.hp = (b.hp ?? 25) - dmg;             // fallback just in case
 
+  s.dead = true;
   addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
+
+  // only die when HP is gone
+  if(b.hp <= 0){
+    b.alive = false;
+    WaveState.killed++;
+  }
   break;
+}
+
+// normal kill (regular Dotty)
+b.alive = false;
+s.dead = true;
+WaveState.killed++;
+
+addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
+break;
+
 }
 
       }
