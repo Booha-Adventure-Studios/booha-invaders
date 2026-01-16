@@ -978,32 +978,34 @@ const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
 
   const startX = tx + rand(-laneW*0.35, laneW*0.35);
   const startY = -bh - rand(30, 130);
+const enterDur = rand(0.9, 1.3);
 
-  bugs.push({
-    x: startX,
-    y: startY,
-    w: bw,
-    h: bh,
-    alive: true,
+bugs.push({
+  x: startX,
+  y: startY,
+  w: bw,
+  h: bh,
+  alive: true,
 
-    enterT: 0,
-    enterDur: rand(0.9, 1.3),
-    shieldT: 0,
-    hasShotOnce: false,
+  enterT: 0,
+  enterDur: enterDur,
+  shieldT: enterDur + DOTTY_SHIELD_POST,
+  hasShotOnce: false,
 
-    sx: startX,
-    sy: startY,
-    tx, ty,
+  sx: startX,
+  sy: startY,
+  tx, ty,
 
-    bob: rand(0, 10),
-    driftSpeed: waveDriftSpeed(WaveState.wave),
-    fireCD: rand(
-      waveFireCooldown(WaveState.wave) * 0.75,
-      waveFireCooldown(WaveState.wave) * 1.10
-    ),
+  bob: rand(0, 10),
+  driftSpeed: waveDriftSpeed(WaveState.wave),
+  fireCD: rand(
+    waveFireCooldown(WaveState.wave) * 0.75,
+    waveFireCooldown(WaveState.wave) * 1.10
+  ),
 
-    glow: 0
-  });
+  glow: 0
+});
+
 
 } // ✅ THIS brace was missing
 
