@@ -1229,8 +1229,6 @@ for(const b of bugs){
   b.shakeT = Math.max(0, (b.shakeT || 0) - dt);
 
   b.bob += dt;
-}
-
 
   // entry
   if(b.enterT < b.enterDur){
@@ -1279,8 +1277,6 @@ for(const b of bugs){
   }
 }
 
- 
-} // ✅ CLOSE update(dt) — this was missing
 
 function updateProjectiles(dt){
 
