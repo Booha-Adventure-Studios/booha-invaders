@@ -1059,6 +1059,10 @@ const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
     maxHp: hp,
     shotDmg: shotDmg,
 
+    shakeT: 0,  //Boss shake
+    shakeMag: 0,  //Boss shake
+
+
     enterT: 0,
     enterDur: enterDur,                       // ✅ entry animation duration
     shieldT: enterDur + DOTTY_SHIELD_POST,    // ✅ shield drops after arriving + post delay
@@ -1220,6 +1224,10 @@ for(const b of bugs){
   b.shieldT = Math.max(0, b.shieldT - dt);
 
   b.glow = Math.max(0, b.glow - dt*2.0);
+
+    // 🔥 SHAKE TIMER DECAY (visual only)
+  b.shakeT = Math.max(0, (b.shakeT || 0) - dt);
+
   b.bob += dt;
 
   // entry
@@ -1298,11 +1306,14 @@ function updateProjectiles(dt){
   break;
 }
 
-
- // ✅ BOSS: take HP instead of dying instantly
+// ✅ BOSS: take HP instead of dying instantly
 if(b.isBoss){
-  const dmg = s.isPink ? 2 : 1;          // tweak later if you want
-  b.hp = (b.hp ?? 25) - dmg;             // fallback just in case
+  const dmg = s.isPink ? 2 : 1;
+  b.hp = (b.hp ?? 25) - dmg;
+
+  // 🔥 HIT SHAKE (boss)
+  b.shakeT = 0.16;
+  b.shakeMag = 7;
 
   s.dead = true;
   addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
@@ -1314,6 +1325,8 @@ if(b.isBoss){
   }
   break;
 }
+
+
 
 // normal kill (regular Dotty)
 b.alive = false;
@@ -1598,18 +1611,62 @@ function drawWaveBanner(){
       if(img) ctx.drawImage(img, r.x, r.y, r.w, r.h);
     }
 
- // bugs (glow while shooting)
+// bugs (glow while shooting)
 for(const b of bugs){
   if(!b.alive) continue;
 
+  // 🔥 SHAKE OFFSET (visual only)
+  let sx = 0, sy = 0;
+  if(b.shakeT > 0){
+    const m = b.shakeMag || 5;
+    sx = rand(-m, m);
+    sy = rand(-m, m);
+  }
+
+  const bx = b.x + sx;
+  const by = b.y + sy;
+
+  // glow
   if(b.glow > 0){
     drawGlow(
-      b.x + b.w/2, b.y + b.h/2,
-      b.w*0.55,
-      (b.glow/0.18)*0.22,
+      bx + b.w/2, by + b.h/2,
+      b.w * 0.55,
+      (b.glow / 0.18) * 0.22,
       "rgba(120,255,200,0.55)"
     );
   }
+
+  // sprite
+  if(IMG.bug) ctx.drawImage(IMG.bug, bx, by, b.w, b.h);
+
+  // shield orb
+  if(b.shieldT > 0){
+    const t = performance.now()/1000;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 6 + (b.bob || 0));
+    const cx = bx + b.w/2;
+    const cy = by + b.h/2;
+    const r  = b.w * (0.42 + 0.03 * pulse);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    ctx.globalAlpha = 0.26 + 0.10 * pulse;
+    ctx.fillStyle = "rgba(255, 209, 102, 1)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha = 0.10 + 0.06 * pulse;
+    ctx.shadowBlur = 22 + 10 * pulse;
+    ctx.shadowColor = "rgba(255, 209, 102, 1)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 1.10, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
 
   if(IMG.bug) ctx.drawImage(IMG.bug, b.x, b.y, b.w, b.h);
 
@@ -1760,7 +1817,7 @@ drawBossHpBar();
 
     ctx.font = "700 13px system-ui, -apple-system, sans-serif";
     ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.fillText("BOOHA INVADERS — STAGE 1 DOTTY", 16, 44);
+    ctx.fillText("BOOHA", 16, 44);
 
     // =========================
 // QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
