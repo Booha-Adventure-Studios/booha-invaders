@@ -227,7 +227,8 @@ window.addEventListener("unhandledrejection", (e)=>{
 
 // globals
 let booFireTimer = 0;
-let bossBgm = null;
+let bgm = null;      // ✅ main game BGM (global)
+let bossBgm = null;  // ✅ boss BGM (you already have this)
 console.log("bossBgm exists?", typeof bossBgm, bossBgm);
 
 
@@ -835,17 +836,12 @@ function updateWaveSystem(dt){
   WaveState.phaseT += dt;
 
 // ✅ BOSS PHASE: pause wave spawning; wait for boss to die → then quiz
+// ✅ BOSS PHASE: pause wave spawning; wait for boss to die → then quiz
 if(WaveState.phase === "boss"){
   const boss = bugs.find(b => b.alive && b.isBoss);
   if(!boss){
-    // 🛑 stop boss music
-    try{
-      if(bossBgm){
-        bossBgm.pause();
-        bossBgm.currentTime = 0;
-        bossBgm = null;
-      }
-    } catch(_) {}
+    // 🛑 stop boss music + resume main
+    setBossMusic(false);
 
     bossAlive = false;
     WaveState.phase = "quiz";
@@ -854,6 +850,7 @@ if(WaveState.phase === "boss"){
   }
   return; // IMPORTANT: do not run intro/card/run spawns during boss
 }
+
 
 
 
@@ -1031,17 +1028,8 @@ function spawnBossDotty(){
 
 bossAlive = true;
 
-// 🔊 start / loop boss music (every boss spawn)
-try{
-  if(bossBgm){
-    bossBgm.pause();
-    bossBgm.currentTime = 0;
-  }
-  bossBgm = new Audio("dotty-boss.mp3");
-  bossBgm.loop = true;
-  bossBgm.volume = 0.9;
-  bossBgm.play().catch(()=>{});
-} catch(_) {}
+setBossMusic(true);
+
 
 const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
 
@@ -2045,6 +2033,49 @@ function resetGame(){
   stageTime = 0;
 }
 
+function startMainBGM(){
+  try{
+    if(!bgm){
+      bgm = new Audio("invaders-bgm.mp3");
+      bgm.loop = true;
+      bgm.volume = 0.6;
+    }
+    bgm.play().catch(()=>{});
+  } catch(_) {}
+}
+
+function setBossMusic(on){
+  try{
+    if(on){
+      // pause main
+      if(bgm){
+        bgm.pause();
+      }
+      // start boss
+      if(!bossBgm){
+        bossBgm = new Audio("dotty-boss.mp3");
+        bossBgm.loop = true;
+        bossBgm.volume = 0.9;
+      } else {
+        // restart boss track cleanly
+        bossBgm.currentTime = 0;
+      }
+      bossBgm.play().catch(()=>{});
+    } else {
+      // stop boss
+      if(bossBgm){
+        bossBgm.pause();
+        bossBgm.currentTime = 0;
+      }
+      // resume main
+      if(bgm){
+        bgm.play().catch(()=>{});
+      }
+    }
+  } catch(_) {}
+}
+
+  
 // -----------------------
 // Boot
 // -----------------------
@@ -2077,15 +2108,11 @@ function resetGame(){
   // prepare clean state ONCE (do NOT start waves here)
   resetGame();
 
-  // BGM (create once)
-  let bgm = null;
-  function startBGM(){
-    if(bgm) return;
-    bgm = new Audio("invaders-bgm.mp3");
-    bgm.loop = true;
-    bgm.volume = 0.6;
-    bgm.play().catch(()=>{});
-  }
+  // BGM and Dotty Boss
+function startBGM(){
+  startMainBGM();
+}
+
 
   // START button (wire once)
 const startBtn = document.getElementById("startBtn");
