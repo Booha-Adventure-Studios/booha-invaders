@@ -1225,10 +1225,12 @@ for(const b of bugs){
 
   b.glow = Math.max(0, b.glow - dt*2.0);
 
-    // 🔥 SHAKE TIMER DECAY (visual only)
+  // 🔥 SHAKE TIMER DECAY (visual only)
   b.shakeT = Math.max(0, (b.shakeT || 0) - dt);
 
   b.bob += dt;
+}
+
 
   // entry
   if(b.enterT < b.enterDur){
