@@ -698,17 +698,17 @@ let bossAlive = false;
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
 const BOSS_BASE_HP = 25;
-const BOSS_SIZE_BONUS = 0.30;     // +15% for first boss
-const BOSS_HP_GAIN = 10;          // +10 HP each boss
-const BOSS_GROWTH = 0.10;         // +10% bigger each boss
+const BOSS_SIZE_BONUS = 0.40;     // +15% for first boss
+const BOSS_HP_GAIN = 20;          // +10 HP each boss
+const BOSS_GROWTH = 0.20;         // +10% bigger each boss
 const BOSS_BASE_SHOT_DMG = 2;     // Step 1: store it; we’ll apply later
 
 let bossSfxPlayed = false;
 
 function bossIndexForWave(w){
-  // wave 5 => 1, wave 10 => 2, ...
-  return Math.floor(w / BOSS_EVERY_N_WAVES);
+  return Math.floor((w - 1) / BOSS_EVERY_N_WAVES) + 1;
 }
+
 
 
   
@@ -1010,41 +1010,6 @@ bugs.push({
 } // ✅ THIS brace was missing
 
 
-function spawnBossDotty(){
-  const baseW = clamp(innerWidth * 0.078, 54, 78);
-  const bw = baseW * 1.15; // +15%
-  const bh = bw;
-
-  const tx = innerWidth/2 - bw/2;
-  const ty = clamp(innerHeight * 0.18, 90, 170);
-
-  const startX = innerWidth/2 - bw/2;
-  const startY = -bh - 60;
-
- bossAlive = true;
-
-try { new Audio("dotty-boss.mp3").play().catch(()=>{}); } catch(_) {}
-
-const enterDur = 1.25;
-
-bugs.push({
-  x: startX,
-  y: startY,
-  w: bw,
-  h: bh,
-  alive: true,
-  isBoss: true,
-  enterT: 0,
-  enterDur: enterDur,
-  shieldT: enterDur + DOTTY_SHIELD_POST,
-  sx: startX, sy: startY,
-  tx, ty,
-  bob: rand(0,10),
-  driftSpeed: waveDriftSpeed(WaveState.wave),
-  fireCD: 0.6,
-  glow: 0
-});
-} // end spawnBossDotty
 
 
   function easeInCubic(t){ return t*t*t; }
