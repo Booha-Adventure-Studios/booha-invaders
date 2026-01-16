@@ -701,9 +701,9 @@ let bossAlive = false;
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
 const BOSS_BASE_HP = 30;
-const BOSS_SIZE_BONUS = 0.45;     // +15% for first boss
+const BOSS_SIZE_BONUS = 0.50;     // +15% for first boss
 const BOSS_HP_GAIN = 25;          // +10 HP each boss
-const BOSS_GROWTH = 0.25;         // +10% bigger each boss
+const BOSS_GROWTH = 0.35;         // +10% bigger each boss
 const BOSS_BASE_SHOT_DMG = 3;     // Step 1: store it; we’ll apply later
 
 let bossSfxPlayed = false;
@@ -1453,16 +1453,55 @@ SCRIPT (PART 2) + END
 // -----------------------
 
 
-  function drawGlow(x,y,r,alpha,color){
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
+ function drawGlow(x,y,r,alpha,color){
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// 🔴 BOSS HP BAR
+function drawBossHpBar(){
+  const boss = bugs.find(b => b.alive && b.isBoss);
+  if(!boss) return;
+
+  const maxHp = Math.max(1, boss.maxHp || boss.hp || 1);
+  const hp    = Math.max(0, Math.min(maxHp, boss.hp ?? maxHp));
+  const p     = hp / maxHp;
+
+  const w = clamp(innerWidth * 0.62, 260, 560);
+  const h = 14;
+  const x = innerWidth/2 - w/2;
+  const y = 14;
+
+  ctx.save();
+
+  // label
+  ctx.font = "900 14px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.textAlign = "center";
+  ctx.fillText("Dotty Boss", innerWidth/2, y + 2);
+
+  // bg
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fillRect(x, y + 10, w, h);
+
+  // fill
+  ctx.fillStyle = "rgba(255,120,220,0.92)";
+  ctx.fillRect(x, y + 10, w * p, h);
+
+  // outline
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y + 10, w, h);
+
+  ctx.restore();
+}
+
 
   
 
@@ -1602,6 +1641,9 @@ for(const b of bugs){
     ctx.restore();
   }
 } // <-- closes the bugs loop
+
+drawBossHpBar();
+    
 
     // bug shots (green glowing slime blobs)
     for(const bl of bugShots){
