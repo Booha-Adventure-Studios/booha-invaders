@@ -1052,22 +1052,6 @@ function spawnBossDotty(){
 
   bossAlive = true;
 
- if(!boss){
-  // 🛑 stop boss music
-  try{
-    if(bossBgm){
-      bossBgm.pause();
-      bossBgm.currentTime = 0;
-      bossBgm = null;
-    }
-  } catch(_) {}
-
-  bossAlive = false;
-  WaveState.phase = "quiz";
-  quizOpen = true;
-  nextQuiz();
-}
-
 
   const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
   const shotDmg = BOSS_BASE_SHOT_DMG + (k-1)*1; // +1 per boss (we apply later)
