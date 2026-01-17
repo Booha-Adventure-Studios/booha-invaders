@@ -591,36 +591,29 @@ if(quizOpen && quizQ){
 } // ✅ closes: function drawQuizOverlay()
 
 
-
-  // -----------------------
-  // Input (universal)
-  // -----------------------
-  let pointerDown = false;
-  let pointerX = null;
+// -----------------------
+// Input (universal)
+// -----------------------
+let pointerDown = false;
+let pointerX = null;
 
 canvas.addEventListener("pointerdown", (e)=>{
 
-  // =========================
   // PAUSE: click anywhere resumes
-  // =========================
   if(paused){
     e.preventDefault();
     setPaused(false);
     return;
   }
 
-  // =========================
   // QUIZ: tap an answer (do not start dragging)
-  // =========================
   if(quizOpen){
     const idx = quizHitTest(e.clientX, e.clientY);
     if(idx >= 0) answerQuiz(idx);
     return;
   }
 
-  // =========================
   // PAUSE: tap pause button (only during play)
-  // =========================
   if(started && player.energy > 0){
     if(hitPauseBtn(e.clientX, e.clientY)){
       e.preventDefault();
@@ -629,9 +622,7 @@ canvas.addEventListener("pointerdown", (e)=>{
     }
   }
 
-  // =========================
   // Normal pointer control
-  // =========================
   e.preventDefault();
   pointerDown = true;
   pointerX = e.clientX;
@@ -639,44 +630,35 @@ canvas.addEventListener("pointerdown", (e)=>{
 
 }, { passive:false });
 
+canvas.addEventListener("pointermove", (e)=>{
+  if(!pointerDown) return;
+  e.preventDefault();
+  pointerX = e.clientX;
+}, { passive:false });
 
- 
-    e.preventDefault();
-    pointerDown = true;
-    pointerX = e.clientX;
-    try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
-  }, { passive:false });
+canvas.addEventListener("pointerup", (e)=>{
+  pointerDown = false;
+  pointerX = null;
+  try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+});
 
-  canvas.addEventListener("pointermove", (e)=>{
-    if(!pointerDown) return;
-    e.preventDefault();
-    pointerX = e.clientX;
-  }, { passive:false });
+canvas.addEventListener("pointercancel", (e)=>{
+  pointerDown = false;
+  pointerX = null;
+  try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+});
 
-  canvas.addEventListener("pointerup", (e)=>{
-    pointerDown = false;
-    pointerX = null;
-    try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
-  });
+addEventListener("mousemove", (e)=>{
+  // Desktop: ignore mouse unless dragging
+  if(!pointerDown) return;
+  pointerX = e.clientX;
+});
 
-  canvas.addEventListener("pointercancel", (e)=>{
-    pointerDown = false;
-    pointerX = null;
-    try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
-  });
+const keys = new Set();
 
-  addEventListener("mousemove", (e)=>{
-    // Desktop: ignore mouse unless dragging
-    if(!pointerDown) return;
-    pointerX = e.clientX;
-  });
+addEventListener("keydown", (e)=>{
 
-  const keys = new Set();
-  addEventListener("keydown", (e)=>{
-
-  // =========================
   // PAUSE toggle (P) - only during play, not during quiz, not game over
-  // =========================
   if(started && player.energy > 0 && !quizOpen){
     if(e.key === "p" || e.key === "P"){
       e.preventDefault();
@@ -690,14 +672,17 @@ canvas.addEventListener("pointerdown", (e)=>{
 
   if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
     e.preventDefault();
-    pointerX = null; // ✅ keyboard takes control
+    pointerX = null; // keyboard takes control
   }
   keys.add(e.key);
 
-}, {passive:false});
+}, { passive:false });
 
-  addEventListener("keyup", (e)=>keys.delete(e.key));
+addEventListener("keyup", (e)=>keys.delete(e.key));
 
+
+
+  
   // -----------------------
   // Entities
   // -----------------------
