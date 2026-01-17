@@ -2045,24 +2045,37 @@ drawBossHpBar();
 
     
 function drawPauseButton(){
-  // ✅ update position every frame (so it always stays top-right)
-  PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 16;
+  try{
+    if(!started) return;
+    if(!ctx) return;
+    if(typeof PAUSE_BTN === "undefined" || !PAUSE_BTN) return;
 
-  ctx.save();
-  ctx.globalAlpha = 0.95;
+    // keep position synced
+    PAUSE_BTN.w = PAUSE_BTN.w || 44;
+    PAUSE_BTN.h = PAUSE_BTN.h || 44;
+    PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
+    PAUSE_BTN.y = 16;
 
-  ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(PAUSE_BTN.x, PAUSE_BTN.y, PAUSE_BTN.w, PAUSE_BTN.h);
+    ctx.save();
+    ctx.globalAlpha = 0.95;
 
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  const px = PAUSE_BTN.x + 16;
-  const py = PAUSE_BTN.y + 12;
-  ctx.fillRect(px, py, 5, 20);
-  ctx.fillRect(px + 9, py, 5, 20);
+    // button base
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(PAUSE_BTN.x, PAUSE_BTN.y, PAUSE_BTN.w, PAUSE_BTN.h);
 
-  ctx.restore();
+    // pause icon
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    const px = PAUSE_BTN.x + 16;
+    const py = PAUSE_BTN.y + 12;
+    ctx.fillRect(px, py, 5, 20);
+    ctx.fillRect(px + 9, py, 5, 20);
+
+    ctx.restore();
+  } catch(err){
+    console.warn("drawPauseButton failed:", err);
+  }
 }
+
 
 function drawPauseOverlay(){
   ctx.save();
