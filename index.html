@@ -231,6 +231,8 @@ let booFireTimer = 0;
 let bgm = null;      // main game BGM
 let bossBgm = null;  // boss BGM
 let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
+let dottyKills = 0;
+  
 
 // =========================
 // PAUSE (Step 1)
@@ -368,6 +370,10 @@ function updateFiring(dt){
   }
 
   const IMG = {};
+// Dotty icon for HUD
+loadImg("assets/bug-1.png").then(img=>{
+  IMG.dotty = img;
+}).catch(console.warn);
 
   // -----------------------
   // Helpers
@@ -1551,8 +1557,6 @@ if(b.isBoss){
 }
 
 
-
-
 // NORMAL DOTTY HP (not boss)
 if(!b.isBoss && (b.hp ?? 1) > 1){
   b.hp -= (s.isPink ? 2 : 1);
@@ -1567,6 +1571,7 @@ if(!b.isBoss && (b.hp ?? 1) > 1){
   if(b.hp <= 0){
     b.alive = false;
     WaveState.killed++;
+    dottyKills++; // ✅ add this
     addSpark(b.x+b.w/2, b.y+b.h/2, 14, "gold");
   }
   break;
@@ -1576,6 +1581,7 @@ if(!b.isBoss && (b.hp ?? 1) > 1){
 b.alive = false;
 s.dead = true;
 WaveState.killed++;
+dottyKills++; // ✅ add this
 addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
 break;
 
@@ -2045,7 +2051,7 @@ drawBossHpBar();
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.fillText("Booha", 16, 44);
     drawPauseButton();
-
+    drawDottyKills(); 
 
     
 function drawPauseButton(){
@@ -2084,6 +2090,7 @@ function drawPauseButton(){
 
   ctx.restore();
 }
+    
 
 
 function drawPauseOverlay(){
@@ -2170,6 +2177,43 @@ function drawPauseOverlay(){
     "rgba(255, 230, 120, 0.95)", "rgba(255, 230, 120, 0.70)", 14, 0.90
   );
 
+  ctx.restore();
+}
+
+function drawDottyKills(){
+  if(!started) return;
+
+  const y = 124; // below pause button
+  const icon = 44;
+  const padR = 16;
+
+  // right-side anchor
+  const cx = innerWidth - padR - icon/2;
+  const cy = y;
+
+  // faint Dotty icon
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  if(IMG.dotty){
+    ctx.drawImage(
+      IMG.dotty,
+      cx - icon/2,
+      cy - icon/2,
+      icon,
+      icon
+    );
+  }
+  ctx.restore();
+
+  // red counter text (right-aligned, grows left)
+  ctx.save();
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+  ctx.shadowColor = "rgba(0,0,0,0.85)";
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = "rgba(255,80,80,0.98)";
+  ctx.fillText(String(dottyKills), cx - icon/2 - 10, cy);
   ctx.restore();
 }
 
