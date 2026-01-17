@@ -232,6 +232,9 @@ let bgm = null;      // main game BGM
 let bossBgm = null;  // boss BGM
 let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
 let dottyKills = 0;
+let dottyGold = false;   // becomes true after first 1000
+let dottyPop = 0;        // 0..1 bounce amount
+
   
 
 // =========================
@@ -1568,20 +1571,36 @@ if(!b.isBoss && (b.hp ?? 1) > 1){
   s.dead = true;
   addSpark(b.x+b.w/2, b.y+b.h/2, 10, s.isPink ? "pink":"gold");
 
-  if(b.hp <= 0){
-    b.alive = false;
-    WaveState.killed++;
-    dottyKills++; // ✅ add this
-    addSpark(b.x+b.w/2, b.y+b.h/2, 14, "gold");
+ if(b.hp <= 0){
+  b.alive = false;
+  WaveState.killed++;
+
+  dottyKills++;
+  dottyPop = 1;
+  if(dottyKills >= 1000){
+    dottyGold = true;
+    dottyKills = 0;
+    dottyPop = 1;
   }
-  break;
+
+  addSpark(b.x+b.w/2, b.y+b.h/2, 14, "gold");
+}
+break;
 }
 
 // otherwise: 1 HP dotty dies as before
 b.alive = false;
 s.dead = true;
 WaveState.killed++;
-dottyKills++; // ✅ add this
+
+dottyKills++;
+dottyPop = 1;
+if(dottyKills >= 1000){
+  dottyGold = true;
+  dottyKills = 0;
+  dottyPop = 1;
+}
+
 addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
 break;
 
@@ -1692,6 +1711,11 @@ if(c.type === "blue"){
   }
 }
 
+  function updateHud(dt){
+  if(dottyPop > 0){
+    dottyPop = Math.max(0, dottyPop - dt * 8); // bounce decay speed
+  }
+}
 
   function updateParticles(dt){
     for(const p of sparkles){
@@ -2183,42 +2207,61 @@ function drawPauseOverlay(){
 function drawDottyKills(){
   if(!started) return;
 
-  // place under pause button, aligned right
-  var r = 16;                // circle radius
-  var gap = 10;              // space under pause button
-  var cx = innerWidth - 12 - r;
-  var cy = PAUSE_BTN.y + PAUSE_BTN.h + gap + r;
+  // under pause button, aligned to right
+  const gap = 10;
+  const rBase = 16;
 
+  const cx = innerWidth - 12 - rBase;
+  const cy = PAUSE_BTN.y + PAUSE_BTN.h + gap + rBase;
+
+  // bounce (scale 1.0 -> 1.15 -> 1.0)
+  const k = dottyPop; // 0..1
+  const scale = 1 + 0.18 * Math.sin(k * Math.PI);
+
+  // colors
+  const fillNum = dottyGold ? "rgba(255, 210, 80, 1)" : "rgba(255, 80, 90, 1)";
+  const ringCol = dottyGold ? "rgba(255, 220, 120, 0.80)" : "rgba(255,255,255,0.70)";
+  const circleFill = dottyGold ? "rgba(255, 220, 120, 0.20)" : "rgba(255,255,255,0.22)";
+  const circleGlow = dottyGold ? "rgba(255, 200, 80, 0.70)" : "rgba(255,255,255,0.55)";
+
+  // circle
   ctx.save();
-
-  // white glow circle
   ctx.shadowBlur = 14;
-  ctx.shadowColor = "rgba(255,255,255,0.55)";
-  ctx.globalAlpha = 0.95;
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.shadowColor = circleGlow;
+  ctx.fillStyle = circleFill;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.arc(cx, cy, rBase, 0, Math.PI*2);
   ctx.fill();
 
-  // bright rim
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(255,255,255,0.70)";
+  ctx.strokeStyle = ringCol;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(cx, cy, r-1, 0, Math.PI*2);
+  ctx.arc(cx, cy, rBase - 1, 0, Math.PI*2);
   ctx.stroke();
+  ctx.restore();
 
-  // red number centered
+  // outlined number (no glow)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "900 18px system-ui, -apple-system, sans-serif";
-  ctx.shadowBlur = 10;
-  ctx.shadowColor = "rgba(0,0,0,0.85)";
-  ctx.fillStyle = "rgba(255,80,90,0.98)";
-  ctx.fillText(String(dottyKills), cx, cy+0.5);
+
+  // outline
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(0,0,0,0.90)";
+  ctx.strokeText(String(dottyKills), 0, 0.5);
+
+  // fill
+  ctx.fillStyle = fillNum;
+  ctx.fillText(String(dottyKills), 0, 0.5);
 
   ctx.restore();
 }
+
 
 
     
@@ -2435,6 +2478,7 @@ function tick(ts){
       updateCandy(dt);
       updateParticles(dt);
       updateWaveSystem(dt);
+      updateHud(dt);
     }
 
     draw();
