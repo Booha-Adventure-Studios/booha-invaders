@@ -2049,23 +2049,38 @@ drawBossHpBar();
 
     
 function drawPauseButton(){
-  // top-right (dropped lower to avoid top HUD bars)
+  // position (top-right, safely below top HUD)
   PAUSE_BTN.w = 44;
   PAUSE_BTN.h = 44;
   PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 64; // ✅ was 16
+  PAUSE_BTN.y = 64;
+
+  const cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
+  const cy = PAUSE_BTN.y + PAUSE_BTN.h/2;
+  const r  = PAUSE_BTN.w/2;
 
   ctx.save();
-  ctx.globalAlpha = 0.95;
 
-  ctx.fillStyle = "rgba(0,0,0,0.45)";
-  ctx.fillRect(PAUSE_BTN.x, PAUSE_BTN.y, PAUSE_BTN.w, PAUSE_BTN.h);
+  // soft glow
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = "rgba(140,120,255,0.6)";
 
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  const px = PAUSE_BTN.x + 16;
-  const py = PAUSE_BTN.y + 12;
-  ctx.fillRect(px, py, 5, 20);
-  ctx.fillRect(px + 9, py, 5, 20);
+  // blue → purple gradient
+  const g = ctx.createRadialGradient(cx-6, cy-6, 6, cx, cy, r);
+  g.addColorStop(0,  "#8fd3ff"); // light blue
+  g.addColorStop(1,  "#7a5cff"); // purple
+
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
+
+  // pause icon (white)
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  const barW = 4, barH = 16, gap = 4;
+  ctx.fillRect(cx - gap - barW, cy - barH/2, barW, barH);
+  ctx.fillRect(cx + gap,        cy - barH/2, barW, barH);
 
   ctx.restore();
 }
