@@ -2108,11 +2108,13 @@ drawQuizOverlay();
   // =========================
   // PAUSE (HUD + Overlay)
   // =========================
+ if(started){
   drawPauseButton();
-
   if(paused){
     drawPauseOverlay();
   }
+}
+
 
     // Game Over overlay
     if(player.energy <= 0){
