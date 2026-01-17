@@ -2183,12 +2183,12 @@ function drawPauseOverlay(){
 function drawDottyKills(){
   if(!started) return;
 
-  const padR = 16;
-  const y = 124;          // top-right area, under pause
-  const icon = 44;
+  var padR = 16;
+  var y = 124;
+  var icon = 44;
 
   // anchor for the NUMBER (right edge)
-  const numRight = innerWidth - padR;
+  var numRight = innerWidth - padR;
 
   // draw the number first (right-aligned, grows left)
   ctx.save();
@@ -2204,14 +2204,14 @@ function drawDottyKills(){
   // measure the number width so we can center the icon under it
   ctx.save();
   ctx.font = "900 26px system-ui, -apple-system, sans-serif";
-  const w = ctx.measureText(String(dottyKills)).width;
+  var w = ctx.measureText(String(dottyKills)).width;
   ctx.restore();
 
   // center of the number block
-  const cx = numRight - w/2;
+  var cx = numRight - w/2;
 
   // faint Dotty icon UNDER the number
-  const cy = y + 34; // below the number
+  var cy = y + 34;
   ctx.save();
   ctx.globalAlpha = 0.22;
   if(IMG.dotty){
@@ -2219,6 +2219,7 @@ function drawDottyKills(){
   }
   ctx.restore();
 }
+
 
 
   // red counter text (right-aligned, grows left)
@@ -2278,7 +2279,7 @@ drawQuizOverlay();
       ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
       ctx.restore();
     }
-  //} // ✅ end draw()
+  } // ✅ end draw()
 
   // -----------------------
 // Quiz helpers (Multiple Choice runtime) ✅ feedback + retry + 1st-try reward
