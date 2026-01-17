@@ -1072,6 +1072,10 @@ const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
     maxHp: hp,
     shotDmg: shotDmg,
 
+    hitsTaken: 0,
+    phase: 1, // 1 = calm, 2 = enraged
+
+
     shakeT: 0,  //Boss shake
     shakeMag: 0,  //Boss shake
 
@@ -1158,6 +1162,35 @@ const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
     b.glow = 0.18;
   }
 
+
+function fireBossSpread(b){
+  const cx = b.x + b.w/2;
+  const cy = b.y + b.h;
+
+  const count = (b.phase === 2) ? 7 : 5;
+  const speed = (b.phase === 2) ? 360 : 300;
+  const angleSpan = Math.PI * 0.6; // wide arc
+
+  for(let i=0;i<count;i++){
+    const t = (count === 1) ? 0.5 : i / (count - 1);
+    const a = -angleSpan/2 + t * angleSpan;
+
+    bugShots.push({
+      x: cx,
+      y: cy,
+      vx: Math.sin(a) * speed,
+      vy: Math.cos(a) * speed,
+      r: 9,
+      t: 0,
+      dead:false
+    });
+  }
+
+  b.glow = 0.35;
+}
+
+
+  
  // -----------------------
 // Update  ✅ candy interval + candy-powered shots after 10 quizzes
 // -----------------------
@@ -1245,8 +1278,14 @@ for(const b of bugs){
   // 🔥 SHAKE TIMER DECAY (visual only)
   b.shakeT = Math.max(0, (b.shakeT || 0) - dt);
 
+  if(b.isBoss && b.phase === 1 && b.hp <= b.maxHp * 0.5){
+  b.phase = 2;
+  b.glow = 0.45;
+}
+
   b.bob += dt;
 
+  
   // entry
   if(b.enterT < b.enterDur){
     b.enterT += dt;
@@ -1258,6 +1297,41 @@ for(const b of bugs){
 
   } else {
 
+    // =====================
+// BOSS MOVEMENT
+// =====================
+if(b.isBoss){
+
+  // Phase 1: calm hover (keep old behavior)
+  if(b.phase === 1){
+    b.x = b.tx + Math.sin(b.bob*0.8) * b.driftSpeed;
+    b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
+  }
+
+  // Phase 2: aggressive side sweeps
+  else {
+    b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
+
+    b.x += b.moveDir * b.moveSpeed * dt;
+    b.y = b.ty + Math.sin(b.bob*1.6) * 14;
+
+    // bounce off screen edges
+    const pad = 24;
+    if(b.x < pad){
+      b.x = pad;
+      b.moveDir = 1;
+    }
+    if(b.x + b.w > innerWidth - pad){
+      b.x = innerWidth - pad - b.w;
+      b.moveDir = -1;
+    }
+  }
+
+  // 🔒 boss handled — skip normal Dotty drift
+  continue;
+}
+
+
     // drift (gentle, then faster) + Boost 3 reaction
     let driftMult = 1;
     if(player.boost >= 3) driftMult = 1.6;
@@ -1265,6 +1339,7 @@ for(const b of bugs){
     b.driftSpeed = driftNow * driftMult;
     b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
     b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+
 
     // firing (starts calm, ramps with time) + Boost 3 reaction
     const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
@@ -1285,7 +1360,15 @@ for(const b of bugs){
     if(b.shieldT > 0 || !b.hasShotOnce) continue;
 
     // normal cadence
-    b.fireCD -= dt;
+    let fireDt = dt;
+
+// 🔥 boss enraged fires faster
+if(b.isBoss && b.phase === 2){
+  fireDt *= 1.6; // adjust this knob
+}
+
+b.fireCD -= fireDt;
+
     if(b.fireCD <= 0){
       fireBugShot(b);
       b.fireCD = rand(base, base + 1.0);
@@ -1324,22 +1407,31 @@ function updateProjectiles(dt){
 // ✅ BOSS: take HP instead of dying instantly
 if(b.isBoss){
   const dmg = s.isPink ? 2 : 1;
-  b.hp = (b.hp ?? 25) - dmg;
+  b.hp -= dmg;
 
-  // 🔥 HIT SHAKE (boss)
+  // count hits (per impact, not per frame)
+  b.hitsTaken = (b.hitsTaken || 0) + 1;
+
+  // 🔥 retaliate every 3 hits
+  if(b.hitsTaken % 3 === 0){
+    fireBossSpread(b);
+  }
+
+  // hit feedback
   b.shakeT = 0.16;
   b.shakeMag = 7;
 
   s.dead = true;
-  addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
+  addSpark(b.x + b.w/2, b.y + b.h/2, 14, s.isPink ? "pink" : "gold");
 
-  // only die when HP is gone
+  // death check
   if(b.hp <= 0){
     b.alive = false;
     WaveState.killed++;
   }
   break;
 }
+
 
 
 
