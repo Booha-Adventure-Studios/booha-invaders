@@ -738,6 +738,13 @@ function tierForWave(n){
   return WAVE_TIERS[WAVE_TIERS.length - 1];
 }
 
+function tierProgress01(w){
+  const t = tierForWave(w);                 // {from,to,groups}
+  const span = Math.max(1, (t.to - t.from)); // avoid /0
+  return clamp((w - t.from) / span, 0, 1);   // 0..1 inside this tier
+}
+  
+
 function groupCountForWave(wave, groupIdx){
   const tier = tierForWave(wave);
   return tier.groups[groupIdx] ?? tier.groups[tier.groups.length-1];
@@ -967,14 +974,32 @@ const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
 
   const startX = tx + rand(-laneW*0.35, laneW*0.35);
   const startY = -bh - rand(30, 130);
-const enterDur = rand(0.9, 1.3);
+  const enterDur = rand(0.9, 1.3);
 
+  const tp = tierProgress01(WaveState.wave);
+
+let hp = 1;
+
+if(tp > 0.20) hp = 2;
+if(tp > 0.45) hp = 3;
+if(tp > 0.70) hp = 4;
+
+// later groups hit harder
+if(WaveState.groupIdx >= 2) hp += 1;
+
+hp = clamp(hp, 1, 5);
+
+  
+   
 bugs.push({
   x: startX,
   y: startY,
   w: bw,
   h: bh,
   alive: true,
+
+  hp: hp,
+  maxHp: hp,
 
   enterT: 0,
   enterDur: enterDur,
@@ -1157,6 +1182,10 @@ stageTime += dt;
 const driftBase = 10;
 const driftRamp = clamp((stageTime - 18) / 40, 0, 1);
 const driftNow  = driftBase + driftRamp * 28;
+const tp = tierProgress01(WaveState.wave);
+const tierDriftMult = 1 + tp * 1.6;  // ✅ adjust this knob (1.2 = strong ramp)
+
+  
 
 // --------------------
 // MOVEMENT (first)
@@ -1314,11 +1343,29 @@ if(b.isBoss){
 
 
 
-// normal kill (regular Dotty)
+// NORMAL DOTTY HP (not boss)
+if(!b.isBoss && (b.hp ?? 1) > 1){
+  b.hp -= (s.isPink ? 2 : 1);
+
+  // tiny hit feedback (optional)
+  b.shakeT = 0.10;
+  b.shakeMag = 4;
+
+  s.dead = true;
+  addSpark(b.x+b.w/2, b.y+b.h/2, 10, s.isPink ? "pink":"gold");
+
+  if(b.hp <= 0){
+    b.alive = false;
+    WaveState.killed++;
+    addSpark(b.x+b.w/2, b.y+b.h/2, 14, "gold");
+  }
+  break;
+}
+
+// otherwise: 1 HP dotty dies as before
 b.alive = false;
 s.dead = true;
 WaveState.killed++;
-
 addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
 break;
 
