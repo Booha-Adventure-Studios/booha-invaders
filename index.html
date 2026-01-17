@@ -2184,13 +2184,14 @@ function drawDottyKills(){
   if(!started) return;
 
   var padR = 16;
-  var y = 124;
+  var numY = 110;   // number Y
+  var iconY = 146;  // icon UNDER number
   var icon = 44;
 
-  // anchor for the NUMBER (right edge)
+  // right edge anchor for number
   var numRight = innerWidth - padR;
 
-  // draw the number first (right-aligned, grows left)
+  // ---- NUMBER ----
   ctx.save();
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
@@ -2198,29 +2199,25 @@ function drawDottyKills(){
   ctx.shadowColor = "rgba(0,0,0,0.85)";
   ctx.shadowBlur = 10;
   ctx.fillStyle = "rgba(255,80,80,0.98)";
-  ctx.fillText(String(dottyKills), numRight, y);
+  ctx.fillText(String(dottyKills), numRight, numY);
   ctx.restore();
 
-  // measure the number width so we can center the icon under it
+  // measure number width to center icon
   ctx.save();
   ctx.font = "900 26px system-ui, -apple-system, sans-serif";
   var w = ctx.measureText(String(dottyKills)).width;
   ctx.restore();
 
-  // center of the number block
-  var cx = numRight - w/2;
+  var cx = numRight - w / 2;
 
-  // faint Dotty icon UNDER the number
-  var cy = y + 34;
+  // ---- DOTTY ICON UNDER NUMBER ----
   ctx.save();
-  ctx.globalAlpha = 0.22;
+  ctx.globalAlpha = 0.25;
   if(IMG.dotty){
-    ctx.drawImage(IMG.dotty, cx - icon/2, cy - icon/2, icon, icon);
+    ctx.drawImage(IMG.dotty, cx - icon/2, iconY - icon/2, icon, icon);
   }
   ctx.restore();
 }
-
-
 
   // red counter text (right-aligned, grows left)
   ctx.save();
