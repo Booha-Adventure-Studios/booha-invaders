@@ -2183,27 +2183,43 @@ function drawPauseOverlay(){
 function drawDottyKills(){
   if(!started) return;
 
-  const y = 124; // below pause button
-  const icon = 44;
   const padR = 16;
+  const y = 124;          // top-right area, under pause
+  const icon = 44;
 
-  // right-side anchor
-  const cx = innerWidth - padR - icon/2;
-  const cy = y;
+  // anchor for the NUMBER (right edge)
+  const numRight = innerWidth - padR;
 
-  // faint Dotty icon
+  // draw the number first (right-aligned, grows left)
   ctx.save();
-  ctx.globalAlpha = 0.25;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+  ctx.shadowColor = "rgba(0,0,0,0.85)";
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = "rgba(255,80,80,0.98)";
+  ctx.fillText(String(dottyKills), numRight, y);
+  ctx.restore();
+
+  // measure the number width so we can center the icon under it
+  ctx.save();
+  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+  const w = ctx.measureText(String(dottyKills)).width;
+  ctx.restore();
+
+  // center of the number block
+  const cx = numRight - w/2;
+
+  // faint Dotty icon UNDER the number
+  const cy = y + 34; // below the number
+  ctx.save();
+  ctx.globalAlpha = 0.22;
   if(IMG.dotty){
-    ctx.drawImage(
-      IMG.dotty,
-      cx - icon/2,
-      cy - icon/2,
-      icon,
-      icon
-    );
+    ctx.drawImage(IMG.dotty, cx - icon/2, cy - icon/2, icon, icon);
   }
   ctx.restore();
+}
+
 
   // red counter text (right-aligned, grows left)
   ctx.save();
