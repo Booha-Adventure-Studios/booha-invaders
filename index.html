@@ -225,11 +225,11 @@ window.addEventListener("unhandledrejection", (e)=>{
 // - Boost shots are handled HERE (not inside update())
 // =======================
 
-// globals
+//Globals
+//Globals  
 let booFireTimer = 0;
-let bgm = null;      // ✅ main game BGM (global)
-let bossBgm = null;  // ✅ boss BGM (you already have this)
-//console.log("bossBgm exists?", typeof bossBgm, bossBgm);
+let bgm = null;      // main game BGM
+let bossBgm = null;  // boss BGM
 let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
 
 // =========================
@@ -237,31 +237,33 @@ let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
 // =========================
 let paused = false;
 
-// track current music so we can pause/resume safely
-let MAIN_BGM = null;     // should point to the Audio used for main BGM
-let BOSS_BGM = null;     // should point to the Audio used for boss music (if any)
+// =========================
+// PAUSE BUTTON STATE
+// =========================
+const PAUSE_BTN = { x:0, y:0, w:44, h:44 };
 
+// Pause/resume music using YOUR actual audio vars (bgm / bossBgm)
 function pauseAllMusic(){
-  try { if(MAIN_BGM && !MAIN_BGM.paused) MAIN_BGM.pause(); } catch(_){}
-  try { if(BOSS_BGM && !BOSS_BGM.paused) BOSS_BGM.pause(); } catch(_){}
+  try { if(bgm && !bgm.paused) bgm.pause(); } catch(_){}
+  try { if(bossBgm && !bossBgm.paused) bossBgm.pause(); } catch(_){}
 }
 
 function resumeAllMusic(){
-  // resume whichever is "currently relevant"
-  // if boss is alive, prefer boss music; else main
   try{
-    if(typeof bossAlive !== "undefined" && bossAlive){
-      if(BOSS_BGM){
-        BOSS_BGM.play().catch(()=>{});
-        return;
-      }
+    if(typeof bossAlive !== "undefined" && bossAlive && bossBgm){
+      bossBgm.play().catch(()=>{});
+      return;
     }
   } catch(_){}
-  try { if(MAIN_BGM) MAIN_BGM.play().catch(()=>{}); } catch(_){}
+  try { if(bgm) bgm.play().catch(()=>{}); } catch(_){}
 }
-  
-  
 
+function setPaused(on){
+  if(paused === on) return;
+  paused = on;
+  if(paused) pauseAllMusic();
+  else resumeAllMusic();
+}
 
 // true globals (do NOT put on player)
 let booAutoCD = 0;   // normal cadence cooldown
