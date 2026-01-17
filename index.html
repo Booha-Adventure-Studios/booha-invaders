@@ -2055,41 +2055,41 @@ drawBossHpBar();
 
     
 function drawPauseButton(){
-  // position (top-right, safely below top HUD)
-  PAUSE_BTN.w = 44;
-  PAUSE_BTN.h = 44;
-  PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 64;
+  // smaller
+  PAUSE_BTN.w = 36;
+  PAUSE_BTN.h = 36;
+  PAUSE_BTN.x = innerWidth - 12 - PAUSE_BTN.w;
+  PAUSE_BTN.y = 12;
 
-  const cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
-  const cy = PAUSE_BTN.y + PAUSE_BTN.h/2;
-  const r  = PAUSE_BTN.w/2;
+  var cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
+  var cy = PAUSE_BTN.y + PAUSE_BTN.h/2;
+  var r  = PAUSE_BTN.w/2;
 
   ctx.save();
 
-  // soft glow
-  ctx.shadowBlur = 12;
-  ctx.shadowColor = "rgba(140,120,255,0.6)";
+  // subtle blue-purple glow
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "rgba(120,120,255,0.55)";
 
-  // blue → purple gradient
-  const g = ctx.createRadialGradient(cx-6, cy-6, 6, cx, cy, r);
-  g.addColorStop(0,  "#8fd3ff"); // light blue
-  g.addColorStop(1,  "#7a5cff"); // purple
+  var g = ctx.createRadialGradient(cx-5, cy-5, 6, cx, cy, r);
+  g.addColorStop(0, "#8fd3ff");
+  g.addColorStop(1, "#7a5cff");
 
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI*2);
   ctx.fill();
 
-  // pause icon (white)
+  // pause bars
   ctx.shadowBlur = 0;
   ctx.fillStyle = "rgba(255,255,255,0.95)";
-  const barW = 4, barH = 16, gap = 4;
+  var barW = 3, barH = 14, gap = 3;
   ctx.fillRect(cx - gap - barW, cy - barH/2, barW, barH);
   ctx.fillRect(cx + gap,        cy - barH/2, barW, barH);
 
   ctx.restore();
 }
+
     
 
 
@@ -2183,42 +2183,42 @@ function drawPauseOverlay(){
 function drawDottyKills(){
   if(!started) return;
 
-  var padR = 16;
-  var numY  = 110;  // number Y
-  var iconY = 146;  // icon UNDER number
-  var icon  = 44;
+  // place under pause button, aligned right
+  var r = 16;                // circle radius
+  var gap = 10;              // space under pause button
+  var cx = innerWidth - 12 - r;
+  var cy = PAUSE_BTN.y + PAUSE_BTN.h + gap + r;
 
-  // right edge anchor for number
-  var numRight = innerWidth - padR;
-
-  // ---- NUMBER ----
   ctx.save();
-  ctx.textAlign = "right";
+
+  // white glow circle
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = "rgba(255,255,255,0.55)";
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
+
+  // bright rim
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(255,255,255,0.70)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r-1, 0, Math.PI*2);
+  ctx.stroke();
+
+  // red number centered
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
-  ctx.shadowColor = "rgba(0,0,0,0.85)";
+  ctx.font = "900 18px system-ui, -apple-system, sans-serif";
   ctx.shadowBlur = 10;
-  ctx.fillStyle = "rgba(255,80,80,0.98)";
-  ctx.fillText(String(dottyKills), numRight, numY);
-  ctx.restore();
+  ctx.shadowColor = "rgba(0,0,0,0.85)";
+  ctx.fillStyle = "rgba(255,80,90,0.98)";
+  ctx.fillText(String(dottyKills), cx, cy+0.5);
 
-  // measure number width to center icon
-  ctx.save();
-  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
-  var w = ctx.measureText(String(dottyKills)).width;
-  ctx.restore();
-
-  var cx = numRight - w/2;
-
-  // ---- DOTTY ICON UNDER NUMBER ----
-  ctx.save();
-  ctx.globalAlpha = 0.25;
-  if(IMG.dotty){
-    ctx.drawImage(IMG.dotty, cx - icon/2, iconY - icon/2, icon, icon);
-  }
   ctx.restore();
 }
-
 
 
     
@@ -2294,9 +2294,11 @@ function quizHitTest(mx, my){
 // =========================
 // PAUSE hit test helper
 // =========================
-function hitPauseBtn(mx,my){
-  PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 64;
+function hitPauseBtn(mx, my){
+  PAUSE_BTN.w = 36;
+  PAUSE_BTN.h = 36;
+  PAUSE_BTN.x = innerWidth - 12 - PAUSE_BTN.w;
+  PAUSE_BTN.y = 12;
 
   return (
     mx >= PAUSE_BTN.x &&
@@ -2305,6 +2307,7 @@ function hitPauseBtn(mx,my){
     my <= PAUSE_BTN.y + PAUSE_BTN.h
   );
 }
+
   
 function restoreRocksAndEnergy(){
   // Energy restore
