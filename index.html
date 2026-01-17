@@ -655,13 +655,16 @@ canvas.addEventListener("pointerdown", (e)=>{
 // 4-group patterns per wave tier (EDIT THESE)
 const WAVE_TIERS = [
   { from:  1, to:  5,  groups: [ 1,  2,  4,  5] },
-  { from:  6, to: 15,  groups: [10, 12, 14, 16] },
-  { from: 16, to: 25,  groups: [18, 20, 22, 26] },
-  { from: 26, to: 35,  groups: [28, 30, 32, 36] },
-  { from: 36, to: 45,  groups: [38, 40, 42, 46] },
-  { from: 46, to: 55,  groups: [48, 50, 52, 58] },
+
+  { from:  6, to: 15,  groups: [ 3,  6,  9, 12] },
+  { from: 16, to: 25,  groups: [ 5, 10, 15, 20] },
+  { from: 26, to: 35,  groups: [ 8, 16, 24, 32] },
+  { from: 36, to: 45,  groups: [12, 20, 28, 36] },
+  { from: 46, to: 55,  groups: [17, 25, 33, 42] },
+
   // add more tiers anytime (50+ waves supported)
 ];
+
 
 // Difficulty scaling knobs (EDIT THESE)
 const WAVE_SCALE = {
@@ -704,7 +707,7 @@ let bossAlive = false;
 const BOSS_BASE_HP = 30;
 const BOSS_SIZE_BONUS = 0.50;     // +15% for first boss
 const BOSS_HP_GAIN = 25;          // +10 HP each boss
-const BOSS_GROWTH = 0.35;         // +10% bigger each boss
+const BOSS_GROWTH = 0.40;         // +10% bigger each boss
 const BOSS_BASE_SHOT_DMG = 3;     // Step 1: store it; we’ll apply later
 
 let bossSfxPlayed = false;
@@ -747,8 +750,28 @@ function tierProgress01(w){
 
 function groupCountForWave(wave, groupIdx){
   const tier = tierForWave(wave);
-  return tier.groups[groupIdx] ?? tier.groups[tier.groups.length-1];
+
+  // base counts from your tier table
+  const base = tier.groups[groupIdx] ?? tier.groups[tier.groups.length-1];
+
+  // 0..1 progress within the tier (wave 6 is low, wave 15 is high)
+  const span = Math.max(1, (tier.to - tier.from));
+  const tp = clamp((wave - tier.from) / span, 0, 1);
+
+  // ramp amount per tier (EDIT THESE KNOBS)
+  let addMax = 0; // waves 1-5 basically fixed
+  if(wave >= 6  && wave <= 15) addMax = 6;
+  if(wave >= 16 && wave <= 25) addMax = 10;
+  if(wave >= 26 && wave <= 35) addMax = 14;
+  if(wave >= 36 && wave <= 45) addMax = 18;
+  if(wave >= 46 && wave <= 55) addMax = 22;
+
+  // add 0..addMax across the tier (smooth increase)
+  const add = Math.round(tp * addMax);
+
+  return base + add;
 }
+
 
 function waveSpawnInterval(wave){
   const v = WAVE_SCALE.spawnIntervalBase - WAVE_SCALE.spawnIntervalDropPerWave*(wave-1);
