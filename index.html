@@ -2088,28 +2088,91 @@ function drawPauseButton(){
 
 function drawPauseOverlay(){
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.60)";
+
+  // Dim + soft vignette
+  ctx.fillStyle = "rgba(0,0,0,0.62)";
+  ctx.fillRect(0,0,innerWidth,innerHeight);
+  const vg = ctx.createRadialGradient(innerWidth/2, innerHeight/2, 50, innerWidth/2, innerHeight/2, Math.max(innerWidth,innerHeight)*0.75);
+  vg.addColorStop(0, "rgba(0,0,0,0.00)");
+  vg.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vg;
   ctx.fillRect(0,0,innerWidth,innerHeight);
 
-  ctx.fillStyle = "rgba(255,255,255,0.96)";
   ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
-  ctx.font = "900 28px system-ui, -apple-system, sans-serif";
-  ctx.fillText("PAUSED", innerWidth/2, innerHeight*0.30);
+  // Helper: glowing text
+  function glowText(text, x, y, size, weight, color, glowColor, blur, shadowA){
+    ctx.font = `${weight} ${size}px system-ui, -apple-system, sans-serif`;
 
-  ctx.font = "800 18px system-ui, -apple-system, sans-serif";
-  ctx.fillText("The game is paused because the player had a toilet emergency!!!", innerWidth/2, innerHeight*0.40);
-  ctx.fillText("Click anywhere to return to the game. I hope you washed your hands.", innerWidth/2, innerHeight*0.46);
+    // dark shadow (depth)
+    ctx.shadowColor = `rgba(0,0,0,${shadowA})`;
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    ctx.fillText(text, x, y+2);
 
-  // JP (no ruby in canvas). We'll do kid-friendly kana version here:
-  ctx.font = "900 18px system-ui, -apple-system, sans-serif";
-  ctx.fillText("トイレきんきゅう で いちじていし !!!", innerWidth/2, innerHeight*0.56);
+    // glow
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = blur;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  }
 
-  ctx.font = "800 16px system-ui, -apple-system, sans-serif";
-  ctx.fillText("どこでもクリックして もどってね。て あらった？", innerWidth/2, innerHeight*0.62);
+  const cx = innerWidth/2;
+
+  // Title (Booha pink)
+  glowText("PAUSED", cx, innerHeight*0.24, 40, 900,
+           "rgba(255, 120, 200, 0.98)", "rgba(255, 120, 200, 0.85)", 22, 0.85);
+
+  // Copy (EN then JP under each line)
+  const y0 = innerHeight*0.40;
+  const lineGap = 68;     // distance between the two English blocks
+  const jpOffset = 26;    // JP line sits under EN
+
+  // Line 1
+  glowText(
+    "The game is paused because the player had a toilet emergency!!!",
+    cx, y0, 18, 900,
+    "rgba(255, 140, 220, 0.98)", "rgba(255, 140, 220, 0.80)", 18, 0.85
+  );
+  glowText(
+    "トイレ きんきゅう で いちじていし ちゅう！！！",
+    cx, y0 + jpOffset, 18, 900,
+    "rgba(255, 230, 120, 0.98)", "rgba(255, 230, 120, 0.75)", 18, 0.90
+  );
+
+  // Line 2
+  const y1 = y0 + lineGap;
+  glowText(
+    "Click anywhere to return to the game. I hope you washed your hands.",
+    cx, y1, 18, 900,
+    "rgba(255, 140, 220, 0.98)", "rgba(255, 140, 220, 0.80)", 18, 0.85
+  );
+  glowText(
+    "どこでも クリックして もどってね。て、あらった？",
+    cx, y1 + jpOffset, 18, 900,
+    "rgba(255, 230, 120, 0.98)", "rgba(255, 230, 120, 0.75)", 18, 0.90
+  );
+
+  // Bottom hint
+  glowText(
+    "Tap / Click anywhere",
+    cx, innerHeight*0.78, 16, 800,
+    "rgba(255,255,255,0.92)", "rgba(255,255,255,0.55)", 14, 0.85
+  );
+  glowText(
+    "どこでも タップ！",
+    cx, innerHeight*0.78 + 22, 16, 900,
+    "rgba(255, 230, 120, 0.95)", "rgba(255, 230, 120, 0.70)", 14, 0.90
+  );
 
   ctx.restore();
 }
+
 
 
     
