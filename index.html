@@ -232,6 +232,35 @@ let bossBgm = null;  // ✅ boss BGM (you already have this)
 console.log("bossBgm exists?", typeof bossBgm, bossBgm);
 
 let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
+
+// =========================
+// PAUSE (Step 1)
+// =========================
+let paused = false;
+
+// track current music so we can pause/resume safely
+let MAIN_BGM = null;     // should point to the Audio used for main BGM
+let BOSS_BGM = null;     // should point to the Audio used for boss music (if any)
+
+function pauseAllMusic(){
+  try { if(MAIN_BGM && !MAIN_BGM.paused) MAIN_BGM.pause(); } catch(_){}
+  try { if(BOSS_BGM && !BOSS_BGM.paused) BOSS_BGM.pause(); } catch(_){}
+}
+
+function resumeAllMusic(){
+  // resume whichever is "currently relevant"
+  // if boss is alive, prefer boss music; else main
+  try{
+    if(typeof bossAlive !== "undefined" && bossAlive){
+      if(BOSS_BGM){
+        BOSS_BGM.play().catch(()=>{});
+        return;
+      }
+    }
+  } catch(_){}
+  try { if(MAIN_BGM) MAIN_BGM.play().catch(()=>{}); } catch(_){}
+}
+  
   
 
 
@@ -570,12 +599,46 @@ if(quizOpen && quizQ){
   let pointerX = null;
 
 canvas.addEventListener("pointerdown", (e)=>{
-  // ✅ QUIZ: tap an answer (do not start dragging)
+
+  // =========================
+  // PAUSE: click anywhere resumes
+  // =========================
+  if(paused){
+    e.preventDefault();
+    setPaused(false);
+    return;
+  }
+
+  // =========================
+  // QUIZ: tap an answer (do not start dragging)
+  // =========================
   if(quizOpen){
     const idx = quizHitTest(e.clientX, e.clientY);
     if(idx >= 0) answerQuiz(idx);
     return;
   }
+
+  // =========================
+  // PAUSE: tap pause button (only during play)
+  // =========================
+  if(started && player.energy > 0){
+    if(hitPauseBtn(e.clientX, e.clientY)){
+      e.preventDefault();
+      setPaused(true);
+      return;
+    }
+  }
+
+  // =========================
+  // Normal pointer control
+  // =========================
+  e.preventDefault();
+  pointerDown = true;
+  pointerX = e.clientX;
+  try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+
+}, { passive:false });
+
 
  
     e.preventDefault();
@@ -610,12 +673,28 @@ canvas.addEventListener("pointerdown", (e)=>{
 
   const keys = new Set();
   addEventListener("keydown", (e)=>{
-    if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
+
+  // =========================
+  // PAUSE toggle (P) - only during play, not during quiz, not game over
+  // =========================
+  if(started && player.energy > 0 && !quizOpen){
+    if(e.key === "p" || e.key === "P"){
       e.preventDefault();
-      pointerX = null; // ✅ keyboard takes control
+      setPaused(!paused);
+      return; // don't also add to keys
     }
-    keys.add(e.key);
-  }, {passive:false});
+  }
+
+  // If paused, ignore movement keys entirely
+  if(paused) return;
+
+  if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
+    e.preventDefault();
+    pointerX = null; // ✅ keyboard takes control
+  }
+  keys.add(e.key);
+
+}, {passive:false});
 
   addEventListener("keyup", (e)=>keys.delete(e.key));
 
@@ -1980,6 +2059,54 @@ drawBossHpBar();
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.fillText("BOOHA", 16, 44);
 
+    
+function drawPauseButton(){
+  // ✅ update position every frame (so it always stays top-right)
+  PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
+  PAUSE_BTN.y = 16;
+
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fillRect(PAUSE_BTN.x, PAUSE_BTN.y, PAUSE_BTN.w, PAUSE_BTN.h);
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  const px = PAUSE_BTN.x + 16;
+  const py = PAUSE_BTN.y + 12;
+  ctx.fillRect(px, py, 5, 20);
+  ctx.fillRect(px + 9, py, 5, 20);
+
+  ctx.restore();
+}
+
+function drawPauseOverlay(){
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.60)";
+  ctx.fillRect(0,0,innerWidth,innerHeight);
+
+  ctx.fillStyle = "rgba(255,255,255,0.96)";
+  ctx.textAlign = "center";
+
+  ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+  ctx.fillText("PAUSED", innerWidth/2, innerHeight*0.30);
+
+  ctx.font = "800 18px system-ui, -apple-system, sans-serif";
+  ctx.fillText("The game is paused because the player had a toilet emergency!!!", innerWidth/2, innerHeight*0.40);
+  ctx.fillText("Click anywhere to return to the game. I hope you washed your hands.", innerWidth/2, innerHeight*0.46);
+
+  // JP (no ruby in canvas). We'll do kid-friendly kana version here:
+  ctx.font = "900 18px system-ui, -apple-system, sans-serif";
+  ctx.fillText("トイレきんきゅう で いちじていし !!!", innerWidth/2, innerHeight*0.56);
+
+  ctx.font = "800 16px system-ui, -apple-system, sans-serif";
+  ctx.fillText("どこでもクリックして もどってね。て あらった？", innerWidth/2, innerHeight*0.62);
+
+  ctx.restore();
+}
+
+
+    
     // =========================
 // QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
 // =========================
@@ -1993,7 +2120,14 @@ drawWaveBanner();
 // =========================
 drawQuizOverlay();
 
+  // =========================
+  // PAUSE (HUD + Overlay)
+  // =========================
+  drawPauseButton();
 
+  if(paused){
+    drawPauseOverlay();
+  }
 
     // Game Over overlay
     if(player.energy <= 0){
@@ -2037,6 +2171,22 @@ function quizHitTest(mx, my){
   return -1;
 }
 
+
+// =========================
+// PAUSE hit test helper
+// =========================
+function hitPauseBtn(mx,my){
+  PAUSE_BTN.x = innerWidth - 16 - PAUSE_BTN.w;
+  PAUSE_BTN.y = 16;
+
+  return (
+    mx >= PAUSE_BTN.x &&
+    mx <= PAUSE_BTN.x + PAUSE_BTN.w &&
+    my >= PAUSE_BTN.y &&
+    my <= PAUSE_BTN.y + PAUSE_BTN.h
+  );
+}
+  
 function restoreRocksAndEnergy(){
   // Energy restore
   player.energy = Math.min(100, player.energy + 25);
@@ -2155,8 +2305,9 @@ function tick(ts){
     last = t;
 
     // ONLY run game logic when actually playing
-    if(started && player.energy > 0 && !quizOpen){
+   if(started && player.energy > 0 && !quizOpen && !paused){
       update(dt);
+
       updateFiring(dt);
       updateProjectiles(dt);
       updateCandy(dt);
@@ -2250,31 +2401,40 @@ function startMainBGM(){
   } catch(_) {}
 }
 
+//START BOSS BGM//  
 function setBossMusic(on){
   try{
     if(on){
-      // pause main
+      // stop main BGM
       if(bgm){
         bgm.pause();
+        bgm.currentTime = 0;
       }
-      // start boss
+
+      // create or reset boss BGM
       if(!bossBgm){
         bossBgm = new Audio("dotty-boss.mp3");
         bossBgm.loop = true;
         bossBgm.volume = 0.9;
       } else {
-        // restart boss track cleanly
+        bossBgm.pause();
         bossBgm.currentTime = 0;
       }
-      bossBgm.play().catch(()=>{});
+
+      // only play if not paused
+      if(!paused){
+        bossBgm.play().catch(()=>{});
+      }
+
     } else {
-      // stop boss
+      // stop boss BGM
       if(bossBgm){
         bossBgm.pause();
         bossBgm.currentTime = 0;
       }
-      // resume main
-      if(bgm){
+
+      // resume main BGM only if not paused
+      if(bgm && !paused){
         bgm.play().catch(()=>{});
       }
     }
@@ -2315,9 +2475,14 @@ function setBossMusic(on){
   resetGame();
 
   // BGM and Dotty Boss
-function startBGM(){
-  startMainBGM();
+function startMainBGM(){
+  const bgm = new Audio("bgm.mp3");
+  bgm.loop = true;
+  bgm.volume = 0.55;
+  MAIN_BGM = bgm;                 // ✅ register
+  bgm.play().catch(()=>{});
 }
+
 
 
   // START button (wire once)
