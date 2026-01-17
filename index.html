@@ -1233,6 +1233,8 @@ if(pointerX !== null){
   player.x = clamp(player.x, 10, innerWidth - player.w - 10);
 }
 
+
+
 // --------------------
 // MOVEMENT LOCK (after movement)
 // --------------------
@@ -1242,10 +1244,10 @@ const moved = (dx > 0.35);
 if(moved){
   playerMoving = true;
 
-  // 0.3ish penalty after ANY movement
+  // ~0.3s penalty after ANY movement
   shootResumeDelay = 0.30;
 
-  // also hard-penalize cooldowns (prevents tap-move spray)
+  // hard-penalize cooldowns (prevents tap-move spray)
   booAutoCD = Math.max(booAutoCD, 0.30);
   booPinkCD = Math.max(booPinkCD, 0.30);
 } else {
@@ -1253,7 +1255,9 @@ if(moved){
   shootResumeDelay = Math.max(0, shootResumeDelay - dt);
 }
 
-  // timers
+// --------------------
+// Timers
+// --------------------
 player.glow = Math.max(0, player.glow - dt*2.2);
 player.sugar = Math.max(0, player.sugar - dt); // legacy (ok to leave)
 player.hitIFrames = Math.max(0, player.hitIFrames - dt);
@@ -1262,31 +1266,28 @@ player.hitIFrames = Math.max(0, player.hitIFrames - dt);
 candyTimer -= dt;
 if(candyTimer <= 0 && candies.length === 0){
   dropCandy();
-  candyTimer = rand(8, 12); // next drop window
+  candyTimer = rand(8, 12);
 }
 
-
-// bugs update (enter + drift + shooting)
+// --------------------
+// Bugs update (enter + move + shoot)
+// --------------------
 for(const b of bugs){
   if(!b.alive) continue;
 
-  // shield timer counts down always
+  // timers
   b.shieldT = Math.max(0, b.shieldT - dt);
+  b.glow    = Math.max(0, b.glow - dt*2.0);
+  b.shakeT  = Math.max(0, (b.shakeT || 0) - dt);
+  b.bob    += dt;
 
-  b.glow = Math.max(0, b.glow - dt*2.0);
+  // 🔥 boss phase switch at 50% HP (runs once)
+  if(b.isBoss && b.phase === 1 && (b.hp <= (b.maxHp || b.hp) * 0.5)){
+    b.phase = 2;
+    b.glow  = 0.45;
+  }
 
-  // 🔥 SHAKE TIMER DECAY (visual only)
-  b.shakeT = Math.max(0, (b.shakeT || 0) - dt);
-
-  if(b.isBoss && b.phase === 1 && b.hp <= b.maxHp * 0.5){
-  b.phase = 2;
-  b.glow = 0.45;
-}
-
-  b.bob += dt;
-
-  
-  // entry
+  // entry animation
   if(b.enterT < b.enterDur){
     b.enterT += dt;
     const t = clamp(b.enterT / b.enterDur, 0, 1);
@@ -1294,91 +1295,83 @@ for(const b of bugs){
     const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
     b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
     b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
+    continue;
+  }
 
+  // --------------------
+  // Movement (post-entry)
+  // --------------------
+  // shared drift speed (needed for both boss + normal)
+  let driftMult = 1;
+  if(player.boost >= 3) driftMult = 1.6;
+  b.driftSpeed = driftNow * driftMult;
+
+  if(b.isBoss){
+    // Phase 1: calm hover
+    if(b.phase === 1){
+      b.x = b.tx + Math.sin(b.bob*0.8) * b.driftSpeed;
+      b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
+    } 
+    // Phase 2: aggressive side sweeps
+    else {
+      b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
+
+      b.x += (b.moveDir || 1) * b.moveSpeed * dt;
+      b.y = b.ty + Math.sin(b.bob*1.6) * 14;
+
+      const pad = 24;
+      if(b.x < pad){
+        b.x = pad;
+        b.moveDir = 1;
+      }
+      if(b.x + b.w > innerWidth - pad){
+        b.x = innerWidth - pad - b.w;
+        b.moveDir = -1;
+      }
+    }
   } else {
-
-    // =====================
-// BOSS MOVEMENT
-// =====================
-if(b.isBoss){
-
-  // Phase 1: calm hover (keep old behavior)
-  if(b.phase === 1){
-    b.x = b.tx + Math.sin(b.bob*0.8) * b.driftSpeed;
-    b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
-  }
-
-  // Phase 2: aggressive side sweeps
-  else {
-    b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
-
-    b.x += b.moveDir * b.moveSpeed * dt;
-    b.y = b.ty + Math.sin(b.bob*1.6) * 14;
-
-    // bounce off screen edges
-    const pad = 24;
-    if(b.x < pad){
-      b.x = pad;
-      b.moveDir = 1;
-    }
-    if(b.x + b.w > innerWidth - pad){
-      b.x = innerWidth - pad - b.w;
-      b.moveDir = -1;
-    }
-  }
-
-  // 🔒 boss handled — skip normal Dotty drift
-  continue;
-}
-
-
-    // drift (gentle, then faster) + Boost 3 reaction
-    let driftMult = 1;
-    if(player.boost >= 3) driftMult = 1.6;
-
-    b.driftSpeed = driftNow * driftMult;
+    // Normal Dotty drift
     b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
     b.y = b.ty + Math.cos(b.bob*1.1) * (b.driftSpeed*0.32);
+  }
 
+  // --------------------
+  // Firing (shared system)
+  // --------------------
+  const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
+  let base = 3.4 - fireRamp*1.6;
+  if(player.boost >= 3) base *= 0.6;
 
-    // firing (starts calm, ramps with time) + Boost 3 reaction
-    const fireRamp = clamp((stageTime - 12) / 40, 0, 1);
-    let base = 3.4 - fireRamp*1.6;
-    if(player.boost >= 3) base *= 0.6;
+  // shield ended → MUST shoot once
+  if(b.shieldT === 0 && !b.hasShotOnce){
+    fireBugShot(b);
+    b.hasShotOnce = true;
 
-    // ✅ shield ended → MUST shoot once
-    if(b.shieldT === 0 && !b.hasShotOnce){
-      fireBugShot(b);
-      b.hasShotOnce = true;
+    b.fireCD = rand(base, base + 1.0);
+    b.fireCD = Math.max(0.6, b.fireCD);
+  }
 
-      // schedule the next normal shot
-      b.fireCD = rand(base, base + 1.0);
-      b.fireCD = Math.max(0.6, b.fireCD);
-    }
+  // no firing while shielded / before first shot
+  if(b.shieldT > 0 || !b.hasShotOnce) continue;
 
-    // no normal firing while shielded / before first shot
-    if(b.shieldT > 0 || !b.hasShotOnce) continue;
+  // cadence tick (boss phase 2 fires faster)
+  let fireDt = dt;
+  if(b.isBoss && b.phase === 2){
+    fireDt *= 1.6; // adjust this knob
+  }
 
-    // normal cadence
-    let fireDt = dt;
-
-// 🔥 boss enraged fires faster
-if(b.isBoss && b.phase === 2){
-  fireDt *= 1.6; // adjust this knob
-}
-
-b.fireCD -= fireDt;
-
-    if(b.fireCD <= 0){
-      fireBugShot(b);
-      b.fireCD = rand(base, base + 1.0);
-      b.fireCD = Math.max(0.6, b.fireCD);
-    }
+  b.fireCD -= fireDt;
+  if(b.fireCD <= 0){
+    fireBugShot(b);
+    b.fireCD = rand(base, base + 1.0);
+    b.fireCD = Math.max(0.6, b.fireCD);
   }
 }
 
-}
+// (next code continues...)
 function updateProjectiles(dt){
+
+  
 
     // boo shots
     for(const s of booShots){
