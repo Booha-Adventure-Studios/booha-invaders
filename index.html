@@ -2178,16 +2178,15 @@ function drawPauseOverlay(){
   );
 
   ctx.restore();
-}
-}    
+}  
 
 function drawDottyKills(){
   if(!started) return;
 
   var padR = 16;
-  var numY = 110;   // number Y
+  var numY  = 110;  // number Y
   var iconY = 146;  // icon UNDER number
-  var icon = 44;
+  var icon  = 44;
 
   // right edge anchor for number
   var numRight = innerWidth - padR;
@@ -2209,7 +2208,7 @@ function drawDottyKills(){
   var w = ctx.measureText(String(dottyKills)).width;
   ctx.restore();
 
-  var cx = numRight - w / 2;
+  var cx = numRight - w/2;
 
   // ---- DOTTY ICON UNDER NUMBER ----
   ctx.save();
@@ -2217,18 +2216,6 @@ function drawDottyKills(){
   if(IMG.dotty){
     ctx.drawImage(IMG.dotty, cx - icon/2, iconY - icon/2, icon, icon);
   }
-  ctx.restore();
-}
-
-  // red counter text (right-aligned, grows left)
-  ctx.save();
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
-  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
-  ctx.shadowColor = "rgba(0,0,0,0.85)";
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = "rgba(255,80,80,0.98)";
-  ctx.fillText(String(dottyKills), cx - icon/2 - 10, cy);
   ctx.restore();
 }
 
@@ -2251,12 +2238,14 @@ drawQuizOverlay();
   // =========================
   // PAUSE (HUD + Overlay)
   // =========================
- if(started){
+if(started){
   drawPauseButton();
+  drawDottyKills();
   if(paused){
     drawPauseOverlay();
   }
 }
+
 
 
     // Game Over overlay
