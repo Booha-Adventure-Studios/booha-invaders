@@ -144,6 +144,18 @@ HEAD + STYLE
   opacity:1 !important;
 }
 
+<video id="endVideo" playsinline preload="auto"
+  style="
+    position:fixed; inset:0; width:100vw; height:100vh;
+    object-fit:cover;
+    opacity:0; pointer-events:none;
+    z-index:99998;
+    transition:opacity 900ms ease;
+    background:#000;
+  ">
+  <source src="b-i-endscreen.mp4" type="video/mp4">
+</video>
+  
 
   
 </style>
@@ -234,6 +246,9 @@ let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
 let dottyKills = 0;
 let dottyGold = false;   // becomes true after first 1000
 let dottyPop = 0;        // 0..1 bounce amount
+let endVideo = null;
+let endPlaying = false;     // lock so it triggers once
+let endFadeStarted = false; // optional extra safety
 
   
 
@@ -514,6 +529,36 @@ loadImg("assets/bug-1.png").then(img=>{
   // Chunk 3 will call drawQuizOverlay() from inside draw().
   // -----------------------
   function drawQuizOverlay(){
+
+
+ function triggerEndVideo(){
+  if(endPlaying) return;
+  endPlaying = true;
+
+  // stop music immediately
+  try{ pauseAllMusic(); } catch(_){}
+
+  // hide overlays that might cover video (quiz, etc.)
+  quizOpen = false;
+
+  // show video and fade it in
+  if(endVideo){
+    endVideo.style.pointerEvents = "auto";
+    endVideo.style.opacity = "0";
+
+    // iOS/Safari: playsinline helps, but play still requires user gesture in some cases.
+    // Because the player already clicked START earlier, this usually works.
+    endVideo.currentTime = 0;
+
+    // start play first (so audio/video pipeline is ready), then fade in
+    endVideo.play().catch(()=>{ /* if blocked, it will just stay black; still ok */ });
+
+    requestAnimationFrame(()=>{
+      endVideo.style.opacity = "1";
+    });
+  }
+}
+   
 // =========================
 // QUIZ OVERLAY (Multiple Choice) ✅ shows red/green + message
 // =========================
@@ -2292,7 +2337,7 @@ if(started){
 
 
     // Game Over overlay
-    if(player.energy <= 0){
+   if(player.energy <= 0 && !endPlaying){
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(0,0,innerWidth,innerHeight);
@@ -2481,7 +2526,15 @@ function tick(ts){
       updateHud(dt);
     }
 
-    draw();
+   // trigger end video once when HP hits 0
+// trigger end video once when Booha dies
+if(started && player.energy <= 0){
+  triggerEndVideo();
+}
+
+
+draw();
+
   } catch(err){
     // ✅ Don’t kill the loop — just show the error and keep going
     console.warn(err);
@@ -2674,6 +2727,31 @@ if(startBtn){
   });
 } // ← THIS one
 
+endVideo = document.getElementById("endVideo");
+
+if(endVideo){
+  endVideo.addEventListener("ended", ()=>{
+    // hide video
+    endVideo.pause();
+    endVideo.currentTime = 0;
+    endVideo.style.opacity = "0";
+    endVideo.style.pointerEvents = "none";
+
+    // reset flags
+    endPlaying = false;
+    endFadeStarted = false;
+
+    // show start overlay again
+    const so = document.getElementById("startOverlay");
+    if(so) so.style.display = "flex";
+
+    // reset game (your existing function)
+    resetGame();
+
+    // IMPORTANT: keep started false so it behaves like fresh boot
+    started = false;
+  });
+}
 
    // start the game loop
   requestAnimationFrame(tick);
