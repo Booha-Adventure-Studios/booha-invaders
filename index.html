@@ -524,16 +524,14 @@ loadImg("assets/bug-1.png").then(img=>{
   }
 
  // -----------------------
-// NOTE: Quiz overlay drawing DOES NOT belong in Chunk 2 update section.
-// Keeping your code (not deleting) but wrapping it so it doesn't run here.
-// Chunk 3 will call drawQuizOverlay() from inside draw().
-// -----------------------
-function drawQuizOverlay(){
-  // (intentionally empty here)
-  // Chunk 3 will draw the quiz UI from inside draw()
-}
+  // NOTE: Quiz overlay drawing DOES NOT belong in Chunk 2 update section.
+  // Keeping your code (not deleting) but wrapping it so it doesn't run here.
+  // Chunk 3 will call drawQuizOverlay() from inside draw().
+  // -----------------------
+  function drawQuizOverlay(){
 
-function triggerEndVideo(){
+
+ function triggerEndVideo(){
   if(endPlaying) return;
   endPlaying = true;
 
@@ -548,15 +546,19 @@ function triggerEndVideo(){
     endVideo.style.pointerEvents = "auto";
     endVideo.style.opacity = "0";
 
+    // iOS/Safari: playsinline helps, but play still requires user gesture in some cases.
+    // Because the player already clicked START earlier, this usually works.
     endVideo.currentTime = 0;
 
-    endVideo.play().catch(()=>{});
+    // start play first (so audio/video pipeline is ready), then fade in
+    endVideo.play().catch(()=>{ /* if blocked, it will just stay black; still ok */ });
 
     requestAnimationFrame(()=>{
       endVideo.style.opacity = "1";
     });
   }
 }
+   
 
 // =========================
 // QUIZ OVERLAY (Multiple Choice) ✅ shows red/green + message
