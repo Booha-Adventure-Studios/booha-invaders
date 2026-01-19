@@ -297,8 +297,8 @@ let endPlaying = false;     // lock so it triggers once
 let endFadeStarted = false; // optional extra safety
 let started = false;
 let paused = false;  
-
-const HUD_PAD = 12; // one global padding value
+let _needRotateLast = null;
+let _gateTimer = 0;  
   
 const rotateOverlay = document.getElementById("rotateOverlay");
 
@@ -341,27 +341,40 @@ addEventListener("orientationchange", updateSafeArea);
 function updateOrientationGate(){
   const needRotate = !isLandscape();
 
+  // ✅ prevent flicker: only act when state actually changes
+  if(needRotate === _needRotateLast) return;
+  _needRotateLast = needRotate;
+
   if(rotateOverlay){
     rotateOverlay.style.display = needRotate ? "flex" : "none";
   }
 
-  // If the game already started, freeze input + pause logic while in portrait.
-  // (We don't rely on your pause button; this is "forced pause".)
   if(started){
     if(needRotate){
-      paused = true;          // freeze tick updates (your tick checks !paused)
+      paused = true;
       pauseAllMusic();
     } else {
-      paused = false;         // resume automatically when landscape
+      paused = false;
       resumeAllMusic();
     }
   }
 }
 
+
+function scheduleOrientationGate(){
+  clearTimeout(_gateTimer);
+  _gateTimer = setTimeout(()=>{
+    updateSafeArea();          // ensure SAFE is fresh
+    updateOrientationGate();   // run once after resize/orientation settles
+  }, 120);
+}
+  
+  
 // run it once and whenever the screen changes
-addEventListener("resize", updateOrientationGate);
-addEventListener("orientationchange", updateOrientationGate);
-updateOrientationGate(); // ✅ establish correct state on load
+addEventListener("resize", scheduleOrientationGate);
+addEventListener("orientationchange", scheduleOrientationGate);
+scheduleOrientationGate(); // ✅ establish correct state on load
+
   
   
   
@@ -2517,8 +2530,9 @@ function quizHitTest(mx, my){
 function hitPauseBtn(mx, my){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
-  PAUSE_BTN.x = innerWidth - SAFE.right - PAD - PAUSE_BTN.w;
-  PAUSE_BTN.y = SAFE.top + PAD;
+
+  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+  PAUSE_BTN.y = SAFE.top + HUD_PAD;
 
   return (
     mx >= PAUSE_BTN.x &&
