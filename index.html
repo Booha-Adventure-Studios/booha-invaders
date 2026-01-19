@@ -291,6 +291,8 @@ let paused = false;
 
 const rotateOverlay = document.getElementById("rotateOverlay");
 
+function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
+  
 function isLandscape(){
   return window.innerWidth > window.innerHeight;
 }
@@ -1218,7 +1220,7 @@ const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
   const lanes = 6;
   const laneW = innerWidth / lanes;
 
-  const bw = clamp(innerWidth * 0.078, 54, 78);
+  const bw = clamp(U() * 0.16, 36, 72);
   const bh = bw;
 
   const slot = pickTargetSlot(bw, bh);
@@ -2690,10 +2692,13 @@ function resetGame(){
   resize();
 
   // player sizing
-  player.w = clamp(innerWidth * 0.11, 68, 92);
-  player.h = player.w;
-  player.x = innerWidth/2 - player.w/2;
-  player.y = innerHeight - player.h - 18;
+ player.w = clamp(U() * 0.22, 46, 86);
+ player.h = player.w;
+ player.x = innerWidth/2 - player.w/2;
+
+// keep Booha near bottom even on short screens
+const bottomPad = 14;
+player.y = innerHeight - player.h - bottomPad;
 
   player.energy = 100;
   player.glow = 0;
@@ -2703,10 +2708,15 @@ function resetGame(){
   // rocks
   rocks.length = 0;
   const count = 4;
-  const rockW = clamp(innerWidth*0.18, 110, 160);
+  const rockW = clamp(U() * 0.34, 84, 150);
   const rockH = rockW * 0.72;
-  const gap = (innerWidth - count*rockW) / (count+1);
-  const ry = player.y - rockH - 55;
+
+// keep 4 rocks fitting on tiny screens
+const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
+
+// push rocks lower (closer to Booha, arcade-style)
+const ry = player.y - rockH - clamp(U()*0.18, 26, 60);
+
 
   for(let i=0;i<count;i++){
     rocks.push({
