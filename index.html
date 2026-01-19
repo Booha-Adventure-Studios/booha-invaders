@@ -286,7 +286,8 @@ let dottyPop = 0;        // 0..1 bounce amount
 let endVideo = null;
 let endPlaying = false;     // lock so it triggers once
 let endFadeStarted = false; // optional extra safety
-
+let started = false;
+let paused = false;  
 
 const rotateOverlay = document.getElementById("rotateOverlay");
 
@@ -355,7 +356,7 @@ updateOrientationGate(); // ✅ establish correct state on load
 // =========================
 // PAUSE (Step 1)
 // =========================
-let paused = false;
+
 
 // =========================
 // PAUSE BUTTON STATE
@@ -1475,7 +1476,7 @@ function fireBossSpread(b){
 // Update  ✅ candy interval + candy-powered shots after 10 quizzes
 // -----------------------
 let last = 0;
-let started = false;
+
 let stageTime = 0;
 
 let lastPlayerX = 0;
