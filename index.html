@@ -178,6 +178,36 @@ BODY + SCRIPT (PART 1)
 <video id="endVideo" playsinline preload="auto">
   <source src="b-i-endscreen.mp4" type="video/mp4">
 </video>
+
+<div id="rotateOverlay" style="
+  position:fixed; inset:0;
+  z-index:99997;
+  display:none;
+  align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color:#fff;
+  text-align:center;
+  font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;
+  padding:18px;
+">
+  <div style="
+    width:min(560px,92vw);
+    border-radius:20px;
+    padding:18px 16px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.55);
+    box-shadow:0 0 22px rgba(255,126,185,.20), 0 0 60px rgba(255,209,102,.10);
+  ">
+    <div style="font-weight:900;font-size:22px;">よこ に してね！</div>
+    <div style="font-weight:800;font-size:14px;opacity:.9;margin-top:6px;">Rotate your phone to play</div>
+    <div style="margin-top:14px;font-size:12px;opacity:.85;line-height:1.5;">
+      縦（たて）では あそべません。<br>
+      横（よこ）にして スタート！
+    </div>
+  </div>
+</div>
   
   
 <div id="startOverlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(1200px 700px at 50% 35%, rgba(255,215,120,.18), rgba(0,0,0,.92));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
@@ -257,6 +287,39 @@ let endVideo = null;
 let endPlaying = false;     // lock so it triggers once
 let endFadeStarted = false; // optional extra safety
 
+
+const rotateOverlay = document.getElementById("rotateOverlay");
+
+function isLandscape(){
+  return window.innerWidth > window.innerHeight;
+}
+
+function updateOrientationGate(){
+  const needRotate = !isLandscape();
+
+  if(rotateOverlay){
+    rotateOverlay.style.display = needRotate ? "flex" : "none";
+  }
+
+  // If the game already started, freeze input + pause logic while in portrait.
+  // (We don't rely on your pause button; this is "forced pause".)
+  if(started){
+    if(needRotate){
+      paused = true;          // freeze tick updates (your tick checks !paused)
+      pauseAllMusic();
+    } else {
+      paused = false;         // resume automatically when landscape
+      resumeAllMusic();
+    }
+  }
+}
+
+// run it once and whenever the screen changes
+addEventListener("resize", updateOrientationGate);
+addEventListener("orientationchange", updateOrientationGate);
+updateOrientationGate(); // ✅ establish correct state on load
+  
+  
   
 
 // =========================
@@ -2749,6 +2812,7 @@ function startMainBGM(){
 const startBtn = document.getElementById("startBtn");
 if(startBtn){
   startBtn.addEventListener("click", ()=>{
+    updateOrientationGate();
     started = true;
     quizOpen = false;
 
