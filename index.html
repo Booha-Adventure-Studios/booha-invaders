@@ -309,6 +309,24 @@ function isLandscape(){
 }
 
 const HUD_PAD = 12;
+
+// =========================
+// GLOBAL GAME SCALE (desktop stays 1.0)
+// =========================
+let GAME_SCALE = 1;
+
+// phone landscape = shrink pieces, not canvas
+function computeGameScale(){
+  if(!isLandscape()) return 1;
+
+  const u = U(); // min(innerWidth, innerHeight)
+
+  // tune these thresholds once, then forget about it
+  if(u <= 430) return 0.58;  // tiny phones
+  if(u <= 520) return 0.62;  // normal phones
+  return 1;                  // tablets / desktop
+}
+  
   
 const SAFE = {
   top: 0,
@@ -341,6 +359,7 @@ addEventListener("orientationchange", updateSafeArea);
 
   
 function updateOrientationGate(){
+  GAME_SCALE = computeGameScale();
   const needRotate = !isLandscape();
 
   // ✅ prevent flicker: only act when state actually changes
@@ -1247,8 +1266,9 @@ const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
   const lanes = 6;
   const laneW = innerWidth / lanes;
 
-  const bw = clamp(U() * 0.16, 36, 72);
+  const bw = clamp(U() * 0.16, 36, 72) * GAME_SCALE;
   const bh = bw;
+
 
   const slot = pickTargetSlot(bw, bh);
   const tx = slot.tx;
@@ -2721,7 +2741,7 @@ function resetGame(){
   resize();
 
   // player sizing
- player.w = clamp(U() * 0.22, 46, 86);
+ player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
  player.h = player.w;
  player.x = innerWidth/2 - player.w/2;
 
@@ -2737,15 +2757,16 @@ player.y = innerHeight - player.h - bottomPad;
   // rocks
   rocks.length = 0;
   const count = 4;
-  const rockW = clamp(U() * 0.34, 84, 150);
+  const rockW = clamp(U() * 0.34, 84, 150) * GAME_SCALE;
   const rockH = rockW * 0.72;
+
 
 // keep 4 rocks fitting on tiny screens
 const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
 
 // push rocks lower (closer to Booha, arcade-style)
-const ry = player.y - rockH - clamp(U()*0.18, 26, 60);
-
+const ry = player.y - rockH - clamp(U()*0.18, 26, 60) * GAME_SCALE;
+  
 
   for(let i=0;i<count;i++){
     rocks.push({
