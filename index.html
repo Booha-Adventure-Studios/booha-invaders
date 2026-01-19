@@ -144,18 +144,18 @@ HEAD + STYLE
   opacity:1 !important;
 }
 
-<video id="endVideo" playsinline preload="auto"
-  style="
-    position:fixed; inset:0; width:100vw; height:100vh;
-    object-fit:cover;
-    opacity:0; pointer-events:none;
-    z-index:99998;
-    transition:opacity 900ms ease;
-    background:#000;
-  ">
-  <source src="b-i-endscreen.mp4" type="video/mp4">
-</video>
-  
+#endVideo{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  object-fit:cover;
+  opacity:0;
+  pointer-events:none;
+  z-index:99998;
+  transition:opacity 900ms ease;
+  background:#000;
+}
 
   
 </style>
@@ -173,6 +173,13 @@ BODY + SCRIPT (PART 1)
 
 <body>
 <canvas id="c"></canvas>
+
+
+<video id="endVideo" playsinline preload="auto">
+  <source src="b-i-endscreen.mp4" type="video/mp4">
+</video>
+  
+  
 <div id="startOverlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(1200px 700px at 50% 35%, rgba(255,215,120,.18), rgba(0,0,0,.92));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
   <div style="width:min(680px,92vw);border-radius:22px;padding:18px 16px 16px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.14);box-shadow:0 0 22px rgba(255,209,102,.20),0 0 60px rgba(255,126,185,.12);text-align:center;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;">
     <div style="font-weight:900;font-size:24px;">ようこそ！ブーハー・インベーダーズへ！</div>
@@ -535,6 +542,11 @@ loadImg("assets/bug-1.png").then(img=>{
   if(endPlaying) return;
   endPlaying = true;
 
+ setPaused(false);     // just in case
+ pointerDown = false;
+ pointerX = null;
+  
+
   // stop music immediately
   try{ pauseAllMusic(); } catch(_){}
 
@@ -545,7 +557,7 @@ loadImg("assets/bug-1.png").then(img=>{
   if(endVideo){
     endVideo.style.pointerEvents = "auto";
     endVideo.style.opacity = "0";
-
+    
     // iOS/Safari: playsinline helps, but play still requires user gesture in some cases.
     // Because the player already clicked START earlier, this usually works.
     endVideo.currentTime = 0;
@@ -2510,6 +2522,11 @@ function tick(ts){
   // ✅ Schedule next frame FIRST so the loop cannot die
   requestAnimationFrame(tick);
 
+if(endPlaying){
+  draw(); // optional: keeps last frame visible under video
+  return;
+}
+  
   try{
     const t = ts / 1000;
     const dt = Math.min(0.033, (t - last) || 0);
@@ -2527,14 +2544,14 @@ function tick(ts){
       updateHud(dt);
     }
 
-   // trigger end video once when HP hits 0
-// trigger end video once when Booha dies
+// END MODE: once Booha dies, switch to video and stop drawing the game
 if(started && player.energy <= 0){
   triggerEndVideo();
+  return; // ✅ stop draw() so canvas isn't repainting under/over the video
 }
 
-
 draw();
+  
 
   } catch(err){
     // ✅ Don’t kill the loop — just show the error and keep going
@@ -2666,6 +2683,27 @@ function setBossMusic(on){
   } catch(_) {}
 }
 
+function primeEndVideo(){
+  if(!endVideo) return;
+  try{
+    endVideo.pause();
+    endVideo.currentTime = 0;
+    endVideo.muted = false;
+
+    const p = endVideo.play();
+    if(p && p.catch) p.catch(()=>{});
+
+    // pause quickly (still counts as user-gesture initiated play)
+    setTimeout(()=>{
+      try{
+        endVideo.pause();
+        endVideo.currentTime = 0;
+      } catch(_){}
+    }, 60);
+  } catch(_){}
+}
+
+
   
 // -----------------------
 // Boot
@@ -2722,6 +2760,7 @@ if(startBtn){
     shootResumeDelay = 0;
 
     document.getElementById("startOverlay").style.display = "none";
+    primeEndVideo();
 
     startWave(1);
     startBGM();
