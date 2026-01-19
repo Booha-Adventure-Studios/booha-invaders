@@ -294,6 +294,36 @@ function isLandscape(){
   return window.innerWidth > window.innerHeight;
 }
 
+const SAFE = {
+  top: 0,
+  right: 0
+};
+
+function updateSafeArea(){
+  const s = getComputedStyle(document.documentElement);
+
+  SAFE.top   = parseInt(s.getPropertyValue("--safe-top"))   || 0;
+  SAFE.right = parseInt(s.getPropertyValue("--safe-right")) || 0;
+}
+
+// map CSS env() → JS-readable vars
+(function initSafeCSS(){
+  const style = document.createElement("style");
+  style.textContent = `
+    :root{
+      --safe-top: env(safe-area-inset-top);
+      --safe-right: env(safe-area-inset-right);
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+updateSafeArea();
+addEventListener("resize", updateSafeArea);
+addEventListener("orientationchange", updateSafeArea);
+  
+
+  
 function updateOrientationGate(){
   const needRotate = !isLandscape();
 
@@ -2200,8 +2230,10 @@ function drawPauseButton(){
   // smaller
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
-  PAUSE_BTN.x = innerWidth - 12 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 12;
+  const PAD = 12;
+  PAUSE_BTN.x = innerWidth - SAFE.right - PAD - PAUSE_BTN.w;
+  PAUSE_BTN.y = SAFE.top + PAD;
+
 
   var cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
   var cy = PAUSE_BTN.y + PAUSE_BTN.h/2;
@@ -2329,7 +2361,7 @@ function drawDottyKills(){
   const gap = 10;
   const rBase = 16;
 
-  const cx = innerWidth - 12 - rBase;
+  const cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
   const cy = PAUSE_BTN.y + PAUSE_BTN.h + gap + rBase;
 
   // bounce (scale 1.0 -> 1.15 -> 1.0)
@@ -2458,8 +2490,8 @@ function quizHitTest(mx, my){
 function hitPauseBtn(mx, my){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
-  PAUSE_BTN.x = innerWidth - 12 - PAUSE_BTN.w;
-  PAUSE_BTN.y = 12;
+  PAUSE_BTN.x = innerWidth - SAFE.right - PAD - PAUSE_BTN.w;
+  PAUSE_BTN.y = SAFE.top + PAD;
 
   return (
     mx >= PAUSE_BTN.x &&
