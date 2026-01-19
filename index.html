@@ -298,6 +298,8 @@ let endFadeStarted = false; // optional extra safety
 let started = false;
 let paused = false;  
 
+const HUD_PAD = 12; // one global padding value
+  
 const rotateOverlay = document.getElementById("rotateOverlay");
 
 function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
@@ -2255,8 +2257,9 @@ function drawPauseButton(){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
   const PAD = 12;
-  PAUSE_BTN.x = innerWidth - SAFE.right - PAD - PAUSE_BTN.w;
-  PAUSE_BTN.y = SAFE.top + PAD;
+  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+  PAUSE_BTN.y = SAFE.top + HUD_PAD;
+
 
 
   var cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
