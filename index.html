@@ -31,101 +31,7 @@ HEAD + STYLE
    START button: gradient + BLACK text
    Everything centered + tighter spacing
    ========================= */
-/* =========================
-   START OVERLAY (SLIDES)
-========================= */
-#startOverlay.ov-wrap{
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: radial-gradient(1200px 700px at 50% 35%, rgba(255,215,120,.18), rgba(0,0,0,.92));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
 
-#startOverlay .ov-card{
-  width: min(680px, 92vw);
-  border-radius: 22px;
-  padding: 18px 16px 16px;
-  background: rgba(0,0,0,.62);
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 0 22px rgba(255,209,102,.20), 0 0 60px rgba(255,126,185,.12);
-  text-align: center;
-  font-family: system-ui,-apple-system,'Noto Sans JP',sans-serif;
-  overflow: hidden; /* never scroll */
-}
-
-#startOverlay .ov-slide{ display:none; }
-#startOverlay .ov-slide.is-active{ display:block; }
-
-#startOverlay .ov-title{
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 1.15;
-}
-#startOverlay .ov-sub{
-  font-weight: 800;
-  font-size: 15px;
-  opacity: .9;
-  margin-top: 4px;
-}
-
-#startOverlay .ov-bullets{
-  margin: 14px auto 14px;
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  text-align: left;
-}
-
-#startOverlay .ov-b{ margin: 10px 0; }
-#startOverlay .ov-bJP{ font-weight: 900; font-size: 15px; }
-#startOverlay .ov-bEN{ font-weight: 800; font-size: 12px; opacity: .85; margin-top: 2px; }
-
-#startOverlay .ov-btn{
-  width: min(420px, 92vw);
-  border: none;
-  border-radius: 999px;
-  padding: 14px 18px 12px;
-  cursor: pointer;
-  background: linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98));
-  box-shadow: 0 0 18px rgba(255,126,185,.35), 0 0 30px rgba(255,209,102,.25);
-}
-
-#startOverlay .ov-btnJP{
-  display:block;
-  font-weight: 900;
-  font-size: 20px;
-  color:#000;
-}
-#startOverlay .ov-btnEN{
-  display:block;
-  font-weight: 900;
-  font-size: 14px;
-  color:#000;
-  opacity:.9;
-  margin-top: 2px;
-}
-
-#startOverlay .ov-foot{ margin-top: 10px; }
-#startOverlay .ov-smallJP{ font-size: 13px; font-weight: 700; }
-#startOverlay .ov-smallEN{ margin-top: 2px; font-size: 12px; opacity: .85; }
-
-@media (max-width: 820px){
-  #startOverlay .ov-card{
-    width: min(560px, 92vw);
-    max-height: 88svh;
-  }
-  #startOverlay .ov-title{ font-size: 22px; }
-}
-
-
-  
 #startOverlay{
   background: rgba(0,0,0,.82);
   backdrop-filter: blur(10px);
@@ -143,8 +49,8 @@ HEAD + STYLE
   padding: 18px;
 }
 
-  
-  
+ 
+ 
 /* panel (inner div) */
 #startOverlay > div{
   background: rgba(0,0,0,.78);
@@ -169,8 +75,8 @@ HEAD + STYLE
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
-  
-  
+ 
+ 
 /* tighten title spacing (JP title + EN title) */
 #startOverlay > div > div:nth-child(1){
   margin: 0;
@@ -217,8 +123,6 @@ HEAD + STYLE
   display:none !important;
 }
 
-
-
 /* START button: keep gradient + force BLACK text */
 #startBtn{
   background: linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98)) !important;
@@ -262,7 +166,7 @@ HEAD + STYLE
   background:#000;
 }
 
-  
+ 
 </style>
 </head>
 
@@ -313,88 +217,41 @@ BODY + SCRIPT (PART 1)
     </div>
   </div>
 </div>
-  
-<div id="startOverlay" class="ov-wrap">
-  <div class="ov-card">
+ 
+ 
+<div id="startOverlay" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(1200px 700px at 50% 35%, rgba(255,215,120,.18), rgba(0,0,0,.92));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+  <div style="width:min(680px,92vw);border-radius:22px;padding:18px 16px 16px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.14);box-shadow:0 0 22px rgba(255,209,102,.20),0 0 60px rgba(255,126,185,.12);text-align:center;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;">
+    <div style="font-weight:900;font-size:24px;">ようこそ！ブーハー・インベーダーズへ！</div>
+    <div style="font-weight:800;font-size:16px;opacity:.9;margin-top:2px;">WELCOME TO BOOHA INVADERS!</div>
 
-    <div class="ov-slides">
+    <div style="margin:14px auto 14px;padding:14px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);text-align:left;">
+      <div style="font-weight:900;font-size:18px;">ミッション１：ドッティ</div>
+      <div style="font-weight:800;font-size:14px;opacity:.9;margin-top:2px;">Mission 1: Dotty</div>
 
-      <!-- SLIDE 0: TITLE -->
-      <section class="ov-slide is-active" data-slide="0">
-        <div class="ov-title">ようこそ！ブーハー・インベーダーズへ！</div>
-        <div class="ov-sub">WELCOME TO BOOHA INVADERS!</div>
+      <div style="margin-top:10px;font-weight:900;">あそびかた</div>
+      <div style="font-weight:800;font-size:12px;opacity:.85;margin-top:1px;">How to Play</div>
 
-        <div class="ov-foot">
-          <div class="ov-smallJP">ドッティが多すぎる！</div>
-          <div class="ov-smallEN">So many Dotty!</div>
-        </div>
-
-        <button type="button" class="ov-btn js-next">
-          <span class="ov-btnJP">つづける</span>
-          <span class="ov-btnEN">NEXT</span>
-        </button>
-      </section>
-
-      <!-- SLIDE 1: MISSION -->
-      <section class="ov-slide" data-slide="1">
-        <div class="ov-title">ミッション１：ドッティ</div>
-        <div class="ov-sub">Mission 1: Dotty</div>
-
-        <button type="button" class="ov-btn js-next">
-          <span class="ov-btnJP">つぎへ</span>
-          <span class="ov-btnEN">NEXT</span>
-        </button>
-      </section>
-
-      <!-- SLIDE 2: CONTROLS -->
-      <section class="ov-slide" data-slide="2">
-        <div class="ov-title">あそびかた</div>
-        <div class="ov-sub">How to Play</div>
-
-        <div class="ov-bullets">
-          <div class="ov-b">
-            <div class="ov-bJP">・左右にうごかして よけよう！</div>
-            <div class="ov-bEN">Drag (mobile) / Arrow keys (desktop)</div>
-          </div>
-          <div class="ov-b">
-            <div class="ov-bJP">・ブーハーは じどうで うつ！</div>
-            <div class="ov-bEN">Booha shoots automatically</div>
-          </div>
-        </div>
-
-        <button type="button" class="ov-btn js-next">
-          <span class="ov-btnJP">つぎへ</span>
-          <span class="ov-btnEN">NEXT</span>
-        </button>
-      </section>
-
-      <!-- SLIDE 3: PROGRESS + ITEMS -->
-      <section class="ov-slide" data-slide="3">
-        <div class="ov-title">すすみかた</div>
-        <div class="ov-sub">Progress</div>
-
-        <div class="ov-bullets">
-          <div class="ov-b">
-            <div class="ov-bJP">・クイズに こたえて すすもう！</div>
-            <div class="ov-bEN">Answer questions to progress</div>
-          </div>
-          <div class="ov-b">
-            <div class="ov-bJP">・あめを とると パワーアップ！</div>
-            <div class="ov-bEN">Get candy to power up</div>
-          </div>
-        </div>
-
-        <button id="startBtn" type="button" class="ov-btn ov-btnStart">
-          <span class="ov-btnJP">スタート！</span>
-          <span class="ov-btnEN">START!</span>
-        </button>
-      </section>
-
+      <ul style="margin:10px 0 0;padding-left:18px;line-height:1.35;font-size:14px;">
+        <li style="margin:8px 0;"><b>左右にうごかして よけよう！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Drag (mobile) / Arrow keys (desktop)</div></li>
+        <li style="margin:8px 0;"><b>ブーハーは じどうで うつ！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Booha shoots automatically</div></li>
+        <li style="margin:8px 0;"><b>クイズに こたえて すすもう！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Answer questions to progress</div></li>
+        <li style="margin:8px 0;"><b>あめを とると パワーアップ！</b><div style="opacity:.85;font-size:12px;margin-top:2px;">Get candy to power up</div></li>
+      </ul>
     </div>
 
+    <button id="startBtn" type="button" style="width:min(420px,92vw);border:none;border-radius:999px;padding:14px 18px 12px;cursor:pointer;background:linear-gradient(90deg, rgba(255,126,185,.95), rgba(255,209,102,.98));box-shadow:0 0 18px rgba(255,126,185,.35),0 0 30px rgba(255,209,102,.25);">
+      <span style="display:block;font-weight:900;font-size:20px;color:#000;">スタート！</span>
+      <span style="display:block;font-weight:900;font-size:14px;color:#000;opacity:.9;margin-top:2px;">START!</span>
+    </button>
+
+  <div style="margin-top:6px;">
+  <div style="font-size:13px;font-weight:700;">
+    ドッティが多すぎる！
+  </div>
+  <div style="margin-top:2px;font-size:12px;opacity:.85;">
+    So many Dotty!
   </div>
 </div>
-  
 
 </div> <!-- close panel -->
 </div> <!-- close startOverlay -->
@@ -442,11 +299,11 @@ let started = false;
 let paused = false;  
 let _needRotateLast = null;
 let _gateTimer = 0;  
-  
+ 
 const rotateOverlay = document.getElementById("rotateOverlay");
 
 function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
-  
+ 
 function isLandscape(){
   return window.innerWidth > window.innerHeight;
 }
@@ -469,8 +326,8 @@ function computeGameScale(){
   if(u <= 520) return 0.62;  // normal phones
   return 1;                  // tablets / desktop
 }
-  
-  
+ 
+ 
 const SAFE = {
   top: 0,
   right: 0
@@ -498,9 +355,9 @@ function updateSafeArea(){
 updateSafeArea();
 addEventListener("resize", updateSafeArea);
 addEventListener("orientationchange", updateSafeArea);
-  
+ 
 
-  
+ 
 function updateOrientationGate(){
   GAME_SCALE = computeGameScale();
   const needRotate = !isLandscape();
@@ -532,16 +389,16 @@ function scheduleOrientationGate(){
     updateOrientationGate();   // run once after resize/orientation settles
   }, 120);
 }
-  
-  
+ 
+ 
 // run it once and whenever the screen changes
 addEventListener("resize", scheduleOrientationGate);
 addEventListener("orientationchange", scheduleOrientationGate);
 scheduleOrientationGate(); // ✅ establish correct state on load
 
-  
-  
-  
+ 
+ 
+ 
 
 // =========================
 // PAUSE (Step 1)
@@ -651,7 +508,7 @@ function updateFiring(dt){
 }
 
 
-  
+ 
   // -----------------------
   // Assets (folders)
   // -----------------------
@@ -1031,7 +888,7 @@ addEventListener("keyup", (e)=>keys.delete(e.key));
 
 
 
-  
+ 
   // -----------------------
   // Entities
   // -----------------------
@@ -1116,7 +973,7 @@ const WaveState = {
 };
 
 let bossAlive = false;
-  
+ 
 // -----------------------
 // DOTTY BOSS (Step 1: spawn + audio + basic stats)
 // -----------------------
@@ -1134,7 +991,7 @@ function bossIndexForWave(w){
 
 
 
-  
+ 
 const BOSS_EVERY_N_WAVES = 5;
 
 function isBossWave(w){
@@ -1148,7 +1005,7 @@ const BossState = {
   enterT: 0,
   phaseT: 0
 };
-  
+ 
 
 function tierForWave(n){
   for(const t of WAVE_TIERS){
@@ -1162,7 +1019,7 @@ function tierProgress01(w){
   const span = Math.max(1, (t.to - t.from)); // avoid /0
   return clamp((w - t.from) / span, 0, 1);   // 0..1 inside this tier
 }
-  
+ 
 
 function groupCountForWave(wave, groupIdx){
   const tier = tierForWave(wave);
@@ -1402,7 +1259,7 @@ function pickTargetSlot(bw, bh){
   return { tx: innerWidth*0.5 - bw*0.5, ty: rows[rows.length-1] };
 }
 
-  
+ 
 const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
 
  function spawnBug(){
@@ -1434,7 +1291,7 @@ if(WaveState.groupIdx >= 2) hp += 1;
 
 hp = clamp(hp, 1, 5);
 
-  
+ 
    
 bugs.push({
   x: startX,
@@ -1541,7 +1398,7 @@ const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
 }
 
 
-  
+ 
   // -----------------------
   // FX
   // -----------------------
@@ -1663,7 +1520,7 @@ function fireBossSpread(b){
 }
 
 
-  
+ 
  // -----------------------
 // Update  ✅ candy interval + candy-powered shots after 10 quizzes
 // -----------------------
@@ -1691,7 +1548,7 @@ const driftNow  = driftBase + driftRamp * 28;
 const tp = tierProgress01(WaveState.wave);
 const tierDriftMult = 1 + tp * 1.6;  // ✅ adjust this knob (1.2 = strong ramp)
 
-  
+ 
 
 // --------------------
 // MOVEMENT (first)
@@ -1784,7 +1641,7 @@ for(const b of bugs){
     if(b.phase === 1){
       b.x = b.tx + Math.sin(b.bob*0.8) * b.driftSpeed;
       b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
-    } 
+    }
     // Phase 2: aggressive side sweeps
     else {
       b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
@@ -1845,7 +1702,7 @@ for(const b of bugs){
 // (next code continues...)
 function updateProjectiles(dt){
 
-  
+ 
 
     // boo shots
     for(const s of booShots){
@@ -2033,7 +1890,7 @@ if(c.type === "blue"){
   else if(WaveState.wave >= 16) booWeaponLevel = Math.max(booWeaponLevel, 2);
 }
 
-      
+     
       // small restore (keep this)
       player.energy = Math.min(100, player.energy + 30);
 
@@ -2216,7 +2073,7 @@ function drawWaveBanner(){
 }
 
 
-  
+ 
   function draw(){
     // background
     if(IMG.bg) drawCover(IMG.bg);
@@ -2290,7 +2147,7 @@ for(const b of bugs){
   }
 }
 drawBossHpBar();
-    
+   
 
     // bug shots (green glowing slime blobs)
     for(const bl of bugShots){
@@ -2385,7 +2242,7 @@ drawBossHpBar();
       drawGlow(px, py, player.w*0.45, 0.12, "rgba(255,214,102,0.55)");
     }
 
-    
+   
     // player sprite (shoot pose if a shot just fired recently)
     const isShootingPose = (booFireTimer > 0 && booFireTimer < 0.10);
     const pimg = isShootingPose ? IMG.booShoot : IMG.booIdle;
@@ -2429,7 +2286,7 @@ drawPauseButton();
 drawDottyKills();
 
 
-    
+   
 function drawPauseButton(){
   // smaller
   PAUSE_BTN.w = 36;
@@ -2469,7 +2326,7 @@ function drawPauseButton(){
   ctx.restore();
 }
 
-    
+   
 
 
 function drawPauseOverlay(){
@@ -2619,7 +2476,7 @@ function drawDottyKills(){
 
 
 
-    
+   
     // =========================
 // QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
 // =========================
@@ -2707,7 +2564,7 @@ function hitPauseBtn(mx, my){
   );
 }
 
-  
+ 
 function restoreRocksAndEnergy(){
   // Energy restore
   player.energy = Math.min(100, player.energy + 25);
@@ -2814,8 +2671,8 @@ function answerQuiz(index){
 ////TRYING TO FIX THE BOOS
 
 /* TEMP CUT */
-    
-  
+   
+ 
 function tick(ts){
   // ✅ Schedule next frame FIRST so the loop cannot die
   requestAnimationFrame(tick);
@@ -2824,7 +2681,7 @@ if(endPlaying){
   draw(); // optional: keeps last frame visible under video
   return;
 }
-  
+ 
   try{
     const t = ts / 1000;
     const dt = Math.min(0.033, (t - last) || 0);
@@ -2849,7 +2706,7 @@ if(started && player.energy <= 0){
 }
 
 draw();
-  
+ 
 
   } catch(err){
     // ✅ Don’t kill the loop — just show the error and keep going
@@ -2909,7 +2766,7 @@ const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
 
 // push rocks lower (closer to Booha, arcade-style)
 const ry = player.y - rockH - clamp(U()*0.18, 26, 60) * GAME_SCALE;
-  
+ 
 
   for(let i=0;i<count;i++){
     rocks.push({
@@ -3011,7 +2868,7 @@ function primeEndVideo(){
 }
 
 
-  
+ 
 // -----------------------
 // Boot
 // -----------------------
@@ -3053,54 +2910,6 @@ function startMainBGM(){
   bgm.play().catch(()=>{});
 }
 
-// =========================
-// START OVERLAY SLIDES (MOBILE ONLY)
-// =========================
-let __startSlide = 0;
-
-function __isMobile(){
-  return matchMedia("(max-width: 820px)").matches || ("ontouchstart" in window);
-}
-
-function __setStartSlide(i){
-  const ov = document.getElementById("startOverlay");
-  if(!ov) return;
-  const slides = ov.querySelectorAll(".ov-slide");
-  const maxI = slides.length - 1;
-  __startSlide = Math.max(0, Math.min(maxI, i));
-  slides.forEach(s => s.classList.toggle("is-active", Number(s.dataset.slide) === __startSlide));
-}
-
-function __nextStartSlide(){
-  const ov = document.getElementById("startOverlay");
-  if(!ov) return;
-  const slides = ov.querySelectorAll(".ov-slide");
-  const maxI = slides.length - 1;
-  if(__startSlide < maxI) __setStartSlide(__startSlide + 1);
-}
-
-(function bindStartOverlaySlides(){
-  const ov = document.getElementById("startOverlay");
-  if(!ov) return;
-
-  // initialize to first slide
-  __setStartSlide(0);
-
-  // NEXT buttons
-  ov.querySelectorAll(".js-next").forEach(btn=>{
-    btn.addEventListener("click", (e)=>{
-      e.preventDefault();
-      __nextStartSlide();
-    });
-  });
-
-  // Tap empty overlay space -> next (mobile only)
-  ov.addEventListener("pointerdown", (e)=>{
-    if(!__isMobile()) return;
-    if(e.target.closest("button")) return;
-    __nextStartSlide();
-  });
-})();
 
 
   // START button (wire once)
@@ -3160,5 +2969,3 @@ if(endVideo){
 </body>
 </html>
 
-  
- 
