@@ -2205,26 +2205,25 @@ drawBossHpBar();
       ctx.fill();
     }
 
-    // boo shots (gold or pink)
-    for(const s of booShots){
-      if(s.dead) continue;
+   // boo shots (gold or pink)
+for(const s of booShots){
+  if(s.dead) continue;
 
-      if(s.isPink){
-       const sm = shotScale();
-const glowR = 16 * sm;
-const w = 4 * sm;
-const h = 14 * sm;
+  const sm = shotScale();
+  const glowR = 16 * sm;
+  const w = 4 * sm;
+  const h = 14 * sm;
 
-if(s.isPink){
-  drawGlow(s.x, s.y, glowR, 0.22, "rgba(255,120,220,0.55)");
-  ctx.fillStyle = "#ffd1ef";
-  ctx.fillRect(s.x-(w/2), s.y-h, w, h);
-} else {
-  drawGlow(s.x, s.y, glowR, 0.18, "rgba(255,214,102,0.55)");
-  ctx.fillStyle = "#fff2c7";
-  ctx.fillRect(s.x-(w/2), s.y-h, w, h);
+  if(s.isPink){
+    drawGlow(s.x, s.y, glowR, 0.22, "rgba(255,120,220,0.55)");
+    ctx.fillStyle = "#ffd1ef";
+    ctx.fillRect(s.x - (w/2), s.y - h, w, h);
+  } else {
+    drawGlow(s.x, s.y, glowR, 0.18, "rgba(255,214,102,0.55)");
+    ctx.fillStyle = "#fff2c7";
+    ctx.fillRect(s.x - (w/2), s.y - h, w, h);
+  }
 }
-    }
 
     // candy
     for(const c of candies){
