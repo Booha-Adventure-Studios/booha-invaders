@@ -488,6 +488,18 @@ addEventListener("resize", resize);
 resize(); // ← IMPORTANT: run once on load
 
 
+  
+function beginWorld(){
+  ctx.setTransform(
+    scale * DPR, 0, 0, scale * DPR,
+    VIEW.ox * DPR, VIEW.oy * DPR
+  );
+}
+
+function beginScreen(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+
 
 // -----------------------
 // Auto firing (movement-locked) + boost lives here
@@ -2108,19 +2120,17 @@ function drawWaveBanner(){
 }
 
 
- function draw(){
+function draw(){
 
-  // ---- SCREEN space (fullscreen canvas) ----
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // -------- SCREEN CLEAR --------
+  beginScreen();
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
 
-  // optional matte behind the world (keeps letterbox black)
-  // ctx.fillStyle = "#000";
-  // ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
+  // -------- WORLD --------
+  beginWorld();
 
-  // ---- WORLD space (PLAYFIELD letterboxed inside canvas) ----
-  ctx.setTransform(scale*DPR, 0, 0, scale*DPR, VIEW.ox*DPR, VIEW.oy*DPR);
-
-  // background (WORLD space)
+  // background
   if(IMG.bg) drawCover(IMG.bg);
   else {
     ctx.fillStyle = "#050014";
@@ -2523,24 +2533,18 @@ function drawDottyKills(){
 }
 
 
-
-   
-    // =========================
-// QUIZ OVERLAY (Multiple Choice) use the real overlay with red/green + JP message
 // =========================
-ctx.setTransform(DPR,0,0,DPR,0,0);
-  
+// QUIZ / WAVE / OVERLAYS  (SCREEN SPACE)
 // =========================
-// WAVE BANNER ✅ Step 1
-// =========================
+beginScreen();
 drawWaveBanner();
 drawQuizOverlay();
 
-  // =========================
-  // PAUSE (HUD + Overlay)
-  // =========================
+// =========================
+// PAUSE (HUD + Overlay)
+// =========================
 if(started){
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  beginScreen();
   drawPauseButton();
   drawDottyKills();
   if(paused){
@@ -2548,26 +2552,32 @@ if(started){
   }
 }
 
+   
 
 
-    // Game Over overlay
-   if(player.energy <= 0 && !endPlaying){
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
 
-      ctx.fillStyle = "rgba(255,255,255,0.94)";
-      ctx.font = "900 38px system-ui, -apple-system, sans-serif";
-      const msg = "GAME OVER";
-      const mw = ctx.measureText(msg).width;
-      ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
 
-      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-      const msg2 = "Press R to Restart";
-      const mw2 = ctx.measureText(msg2).width;
-      ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
-      ctx.restore();
-    }
+ // Game Over overlay
+// Game Over overlay
+beginScreen();
+if(player.energy <= 0 && !endPlaying){
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(0,0,VIEW.vw,VIEW.vh);
+
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+  const msg = "GAME OVER";
+  const mw = ctx.measureText(msg).width;
+  ctx.fillText(msg, VIEW.vw/2 - mw/2, VIEW.vh/2 - 10);
+
+  ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+  const msg2 = "Press R to Restart";
+  const mw2 = ctx.measureText(msg2).width;
+  ctx.fillText(msg2, VIEW.vw/2 - mw2/2, VIEW.vh/2 + 26);
+
+  ctx.restore();
+}
   } // ✅ end draw()
 
   // -----------------------
