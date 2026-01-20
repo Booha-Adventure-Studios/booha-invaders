@@ -300,9 +300,6 @@ let paused = false;
 let _needRotateLast = null;
 let _gateTimer = 0;  
 
-let pointerDown = false;
-let pointerX = null;
-let dragOffsetX = 0;
 
 // coarse pointer = phones/tablets (desktop stays exact)
 const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
@@ -815,7 +812,7 @@ if(quizOpen && quizQ){
 // -----------------------
 let pointerDown = false;
 let pointerX = null;
-
+let dragOffsetX = 0;   // ← add THIS here
 canvas.addEventListener("pointerdown", (e)=>{
 
   // PAUSE: click anywhere resumes
