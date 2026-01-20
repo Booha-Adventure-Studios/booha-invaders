@@ -1992,6 +1992,24 @@ SCRIPT (PART 2) + END
 // -----------------------
 
 
+function drawCoverScreen(img){
+  const cw = VIEW.vw;
+  const ch = VIEW.vh;
+
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+
+  const s = Math.max(cw/iw, ch/ih);
+  const w = iw * s;
+  const h = ih * s;
+
+  const x = (cw - w) / 2;
+  const y = (ch - h) / 2;
+
+  ctx.drawImage(img, x, y, w, h);
+}
+
+  
  function drawGlow(x,y,r,alpha,color){
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -2122,20 +2140,21 @@ function drawWaveBanner(){
 
 function draw(){
 
-  // -------- SCREEN CLEAR --------
+  // -------- SCREEN (fullscreen) --------
   beginScreen();
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
 
-  // -------- WORLD --------
+  if(IMG.bg){
+    drawCoverScreen(IMG.bg);      // fullscreen forest
+  } else {
+    ctx.fillStyle = "#050014";
+    ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
+  }
+
+  // -------- WORLD (playfield letterbox) --------
   beginWorld();
 
-  // background
-  if(IMG.bg) drawCover(IMG.bg);
-  else {
-    ctx.fillStyle = "#050014";
-    ctx.fillRect(0, 0, PLAYFIELD.w, PLAYFIELD.h);
-  }
+  // DO NOT draw background here anymore.
+  // Start immediately with gameplay drawing (rocks, bugs, shots, etc.)
 
 
 
