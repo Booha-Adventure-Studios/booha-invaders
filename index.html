@@ -1508,8 +1508,9 @@ else { // level 3
       x: b.x + b.w/2,
       y: b.y + b.h + 8,
       vx: rand(-55, 55),
-      vy: rand(260, 340),
-      r: rand(7, 10),
+      const sm = shotScale();
+      vy: rand(260, 340) * sm,
+      r:  rand(7, 10) * sm,
       t: 0,
       dead:false
     });
