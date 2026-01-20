@@ -1568,6 +1568,7 @@ const tierDriftMult = 1 + tp * 1.6;  // ✅ adjust this knob (1.2 = strong ramp)
 // MOVEMENT (first)
 // --------------------
 const prevX = player.x;
+
 if(pointerX !== null){
   // target center keeps initial finger-to-player relationship
   const targetCenter = pointerX - dragOffsetX;
@@ -1583,8 +1584,12 @@ if(pointerX !== null){
   } else {
     player.x = targetX;
   }
-}
 
+} else {
+  if(keys.has("ArrowLeft")  || keys.has("a") || keys.has("A")) player.x -= 420*dt;
+  if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
+  player.x = clamp(player.x, 10, innerWidth - player.w - 10);
+}
 
 
 // --------------------
