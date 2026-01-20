@@ -12,22 +12,17 @@ HEAD + STYLE
 <title>Booha Invaders — DOTTY</title>
 <style>
   html,body{
-  margin:0;
-  height:100%;
-  background:#000;
-  overflow:hidden;
-}
-
-canvas{
-  position:fixed;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  display:block;
-  touch-action:none;
-}
-
-
+    margin:0;
+    height:100%;
+    background:#000;
+    overflow:hidden;
+  }
+  canvas{
+    display:block;
+    width:100vw;
+    height:100vh;
+    touch-action:none;
+  }
 
 /* =========================
    Booha Invaders — Start Overlay (CLEAN)
@@ -280,19 +275,6 @@ window.addEventListener("unhandledrejection", (e)=>{
     </div>`
   );
 });
-
-// -----------------------
-// Canonical Playfield (LOCKED)
-// -----------------------
-const PLAYFIELD = {
-  w: 720,
-  h: 1280
-};
-
-let scale = 1;
-let offsetX = 0;
-let offsetY = 0;
-
 //debugger
 // =======================
 // CHUNK A — GLOBALS + RESIZE + FIRING (ANTI-SPRAY FINAL)
@@ -320,8 +302,8 @@ let _gateTimer = 0;
  
 const rotateOverlay = document.getElementById("rotateOverlay");
 
-function U(){ return PLAYFIELD.h; } // universal unit (locked)
-
+function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
+ 
 function isLandscape(){
   return window.innerWidth > window.innerHeight;
 }
@@ -459,47 +441,18 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
 // -----------------------
-// Fullscreen canvas + PLAYFIELD letterbox
+// DPR / resize
 // -----------------------
 const DPR_CAP = 2;
 let DPR = 1;
 
-let VIEW = { vw:0, vh:0, ox:0, oy:0 };
-
 function resize(){
-  VIEW.vw = window.innerWidth;
-  VIEW.vh = window.innerHeight;
-
   DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-
-  // canvas stays fullscreen
-  canvas.width  = Math.floor(VIEW.vw * DPR);
-  canvas.height = Math.floor(VIEW.vh * DPR);
-
-  // scale playfield into viewport
-  scale = Math.min(VIEW.vw / PLAYFIELD.w, VIEW.vh / PLAYFIELD.h);
-
-  // center playfield
-  VIEW.ox = (VIEW.vw - PLAYFIELD.w * scale) / 2;
-  VIEW.oy = (VIEW.vh - PLAYFIELD.h * scale) / 2;
+  canvas.width  = Math.floor(innerWidth * DPR);
+  canvas.height = Math.floor(innerHeight * DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
 }
-
 addEventListener("resize", resize);
-resize(); // ← IMPORTANT: run once on load
-
-
-  
-function beginWorld(){
-  ctx.setTransform(
-    scale * DPR, 0, 0, scale * DPR,
-    VIEW.ox * DPR, VIEW.oy * DPR
-  );
-}
-
-function beginScreen(){
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-}
-
 
 // -----------------------
 // Auto firing (movement-locked) + boost lives here
@@ -1669,7 +1622,7 @@ for(const b of bugs){
     b.enterT += dt;
     const t = clamp(b.enterT / b.enterDur, 0, 1);
 
-    const curve = Math.sin(t*Math.PI) * (PLAYFIELD.w * 0.015) * (Math.random()<0.5?-1:1);
+    const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
     b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
     b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
     continue;
@@ -1690,25 +1643,22 @@ for(const b of bugs){
       b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
     }
     // Phase 2: aggressive side sweeps
-   else {
-  b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
+    else {
+      b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
 
-  b.x += (b.moveDir || 1) * b.moveSpeed * dt;
-  b.y = b.ty + Math.sin(b.bob*1.6) * 14;
+      b.x += (b.moveDir || 1) * b.moveSpeed * dt;
+      b.y = b.ty + Math.sin(b.bob*1.6) * 14;
 
-  const pad = 24;
-  const W = PLAYFIELD.w;
-
-  if(b.x < pad){
-    b.x = pad;
-    b.moveDir = 1;
-  }
-  if(b.x + b.w > W - pad){
-    b.x = W - pad - b.w;
-    b.moveDir = -1;
-  }
-}
-
+      const pad = 24;
+      if(b.x < pad){
+        b.x = pad;
+        b.moveDir = 1;
+      }
+      if(b.x + b.w > innerWidth - pad){
+        b.x = innerWidth - pad - b.w;
+        b.moveDir = -1;
+      }
+    }
   } else {
     // Normal Dotty drift
     b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
@@ -1853,11 +1803,11 @@ addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
 break;
 
 }
+
       }
 
       // offscreen
-const W = PLAYFIELD.w;
-if(s.y < -40 || s.x < -60 || s.x > W + 60) s.dead = true;
+     if(s.y < -40 || s.x < -60 || s.x > innerWidth + 60) s.dead = true;
     }
 
     // bug shots (green blobs)
@@ -1995,24 +1945,6 @@ SCRIPT (PART 2) + END
 // -----------------------
 
 
-function drawCoverScreen(img){
-  const cw = VIEW.vw;
-  const ch = VIEW.vh;
-
-  const iw = img.naturalWidth || img.width;
-  const ih = img.naturalHeight || img.height;
-
-  const s = Math.max(cw/iw, ch/ih);
-  const w = iw * s;
-  const h = ih * s;
-
-  const x = (cw - w) / 2;
-  const y = (ch - h) / 2;
-
-  ctx.drawImage(img, x, y, w, h);
-}
-
-  
  function drawGlow(x,y,r,alpha,color){
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -2033,9 +1965,9 @@ function drawBossHpBar(){
   const hp    = Math.max(0, Math.min(maxHp, boss.hp ?? maxHp));
   const p     = hp / maxHp;
 
-  const w = clamp(VIEW.vw * 0.62, 260, 560);
+  const w = clamp(innerWidth * 0.62, 260, 560);
   const h = 14;
-  const x = VIEW.vw/2 - w/2;
+  const x = innerWidth/2 - w/2;
   const PAD = 12;
   const y = SAFE.top + PAD;
 
@@ -2046,8 +1978,7 @@ function drawBossHpBar(){
   ctx.font = "900 14px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.textAlign = "center";
-  ctx.fillText("Dotty Boss", VIEW.vw/2, y);
-
+  ctx.fillText("Dotty Boss", innerWidth/2, y + 0);
 
   // bg
   ctx.fillStyle = "rgba(0,0,0,0.45)";
@@ -2105,20 +2036,19 @@ function drawWaveBanner(){
 
   ctx.save();
 
-  const bigSize = clamp(VIEW.vw * 0.10, 52, 110);
-const subSize = clamp(VIEW.vw * 0.035, 16, 28);
+  const bigSize = clamp(innerWidth * 0.10, 52, 110);
+  const subSize = clamp(innerWidth * 0.035, 16, 28);
 
-ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
-const tw = ctx.measureText(text).width;
+  ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
+  const tw = ctx.measureText(text).width;
 
-ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
-const sw = ctx.measureText(sub).width;
+  ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
+  const sw = ctx.measureText(sub).width;
 
-const margin = Math.max(40, VIEW.vw * 0.08);
-const travel = VIEW.vw + margin*2 + Math.max(tw, sw);
-const x = VIEW.vw + margin - p * travel;
-const y = VIEW.vh * 0.34;
-
+  const margin = Math.max(40, innerWidth * 0.08);
+  const travel = innerWidth + margin*2 + Math.max(tw, sw);
+  const x = innerWidth + margin - p * travel;
+  const y = innerHeight * 0.34;
 
   ctx.globalCompositeOperation = "lighter";
   drawGlow(x + tw/2, y - bigSize*0.35, bigSize*0.95, 0.22, "rgba(255,120,220,0.55)");
@@ -2143,23 +2073,14 @@ const y = VIEW.vh * 0.34;
 }
 
 
-function draw(){
-
-  // -------- SCREEN (fullscreen) --------
-  beginScreen();
-
-  if(IMG.bg){
-    drawCoverScreen(IMG.bg);      // fullscreen forest
-  } else {
-    ctx.fillStyle = "#050014";
-    ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
-  }
-
-  // -------- WORLD (playfield letterbox) --------
-  beginWorld();
-
-  // DO NOT draw background here anymore.
-  // Start immediately with gameplay drawing (rocks, bugs, shots, etc.)
+ 
+  function draw(){
+    // background
+    if(IMG.bg) drawCover(IMG.bg);
+    else {
+      ctx.fillStyle = "#050014";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+    }
 
     // rocks
     for(const r of rocks){
@@ -2225,6 +2146,7 @@ for(const b of bugs){
     ctx.restore();
   }
 }
+drawBossHpBar();
    
 
     // bug shots (green glowing slime blobs)
@@ -2370,7 +2292,7 @@ function drawPauseButton(){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
   const PAD = 12;
-  PAUSE_BTN.x = VIEW.vw - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
   PAUSE_BTN.y = SAFE.top + HUD_PAD;
 
 
@@ -2411,20 +2333,13 @@ function drawPauseOverlay(){
   ctx.save();
 
   // Dim + soft vignette
- ctx.fillStyle = "rgba(0,0,0,0.62)";
-ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
-
-const vg = ctx.createRadialGradient(
-  VIEW.vw/2, VIEW.vh/2, 50,
-  VIEW.vw/2, VIEW.vh/2, Math.max(VIEW.vw, VIEW.vh) * 0.75
-);
-
-vg.addColorStop(0, "rgba(0,0,0,0.00)");
-vg.addColorStop(1, "rgba(0,0,0,0.55)");
-
-ctx.fillStyle = vg;
-ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
-
+  ctx.fillStyle = "rgba(0,0,0,0.62)";
+  ctx.fillRect(0,0,innerWidth,innerHeight);
+  const vg = ctx.createRadialGradient(innerWidth/2, innerHeight/2, 50, innerWidth/2, innerHeight/2, Math.max(innerWidth,innerHeight)*0.75);
+  vg.addColorStop(0, "rgba(0,0,0,0.00)");
+  vg.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0,0,innerWidth,innerHeight);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -2450,24 +2365,16 @@ ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
     ctx.fillText(text, x, y);
   }
 
- const cx = VIEW.vw / 2;
+  const cx = innerWidth/2;
 
-// Title (Booha pink)
-glowText(
-  "PAUSED",
-  cx,
-  VIEW.vh * 0.24,
-  40, 900,
-  "rgba(255, 120, 200, 0.98)",
-  "rgba(255, 120, 200, 0.85)",
-  22, 0.85
-);
+  // Title (Booha pink)
+  glowText("PAUSED", cx, innerHeight*0.24, 40, 900,
+           "rgba(255, 120, 200, 0.98)", "rgba(255, 120, 200, 0.85)", 22, 0.85);
 
-// Copy (EN then JP under each line)
-const y0 = VIEW.vh * 0.40;
-const lineGap = 68;     // distance between the two English blocks
-const jpOffset = 26;    // JP line sits under EN
-
+  // Copy (EN then JP under each line)
+  const y0 = innerHeight*0.40;
+  const lineGap = 68;     // distance between the two English blocks
+  const jpOffset = 26;    // JP line sits under EN
 
   // Line 1
   glowText(
@@ -2497,12 +2404,12 @@ const jpOffset = 26;    // JP line sits under EN
   // Bottom hint
   glowText(
     "Tap / Click anywhere",
-    cx, VIEW.vh *0.78, 16, 800,
+    cx, innerHeight*0.78, 16, 800,
     "rgba(255,255,255,0.92)", "rgba(255,255,255,0.55)", 14, 0.85
   );
   glowText(
     "どこでも タップ！",
-    cx, VIEW.vh *0.78 + 22, 16, 900,
+    cx, innerHeight*0.78 + 22, 16, 900,
     "rgba(255, 230, 120, 0.95)", "rgba(255, 230, 120, 0.70)", 14, 0.90
   );
 
@@ -2568,46 +2475,53 @@ function drawDottyKills(){
 }
 
 
-// =========================
-// QUIZ / WAVE / OVERLAYS  (SCREEN SPACE)
-// =========================
-beginScreen();
 
-drawBossHpBar();     // moved here
+   
+    // =========================
+// QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
+// =========================
+// =========================
+// WAVE BANNER ✅ Step 1
+// =========================
 drawWaveBanner();
+
+// =========================
+// QUIZ OVERLAY ...
+// =========================
 drawQuizOverlay();
 
+  // =========================
+  // PAUSE (HUD + Overlay)
+  // =========================
 if(started){
   drawPauseButton();
   drawDottyKills();
-  // energy meter block here (screen)
-  if(paused) drawPauseOverlay();
+  if(paused){
+    drawPauseOverlay();
+  }
 }
 
 
-// Game Over overlay
-beginScreen();
-if(player.energy <= 0 && !endPlaying){
-  ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(0,0,VIEW.vw,VIEW.vh);
 
-  ctx.fillStyle = "rgba(255,255,255,0.94)";
-  ctx.font = "900 38px system-ui, -apple-system, sans-serif";
-  const msg = "GAME OVER";
-  const mw = ctx.measureText(msg).width;
-  ctx.fillText(msg, VIEW.vw/2 - mw/2, VIEW.vh/2 - 10);
+    // Game Over overlay
+   if(player.energy <= 0 && !endPlaying){
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
 
-  ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-  const msg2 = "Press R to Restart";
-  const mw2 = ctx.measureText(msg2).width;
-  ctx.fillText(msg2, VIEW.vw/2 - mw2/2, VIEW.vh/2 + 26);
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+      const msg = "GAME OVER";
+      const mw = ctx.measureText(msg).width;
+      ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
 
-  ctx.restore();
-}
+      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+      const msg2 = "Press R to Restart";
+      const mw2 = ctx.measureText(msg2).width;
+      ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
+      ctx.restore();
+    }
   } // ✅ end draw()
-
-  
 
   // -----------------------
 // Quiz helpers (Multiple Choice runtime) ✅ feedback + retry + 1st-try reward
@@ -2618,11 +2532,11 @@ let quizFirstTry = true;                     // reward only if true
 let quizMsg = "";                            // JP message
 
 function quizHitTest(mx, my){
-  const btnW = clamp(VIEW.vw * 0.72, 260, 560);
+  const btnW = clamp(innerWidth*0.72, 260, 560);
   const btnH = 54;
   const gap = 14;
-  const startY = VIEW.vh * 0.42;
-  const x = VIEW.vw / 2 - btnW / 2;
+  const startY = innerHeight*0.42;
+  const x = innerWidth/2 - btnW/2;
 
   for(let i=0;i<4;i++){
     const y = startY + i*(btnH+gap);
@@ -2639,8 +2553,7 @@ function hitPauseBtn(mx, my){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
 
-  PAUSE_BTN.x = VIEW.vw - SAFE.right - HUD_PAD - PAUSE_BTN.w;
-
+  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
   PAUSE_BTN.y = SAFE.top + HUD_PAD;
 
   return (
@@ -2756,6 +2669,9 @@ function answerQuiz(index){
 // -----------------------
 
 ////TRYING TO FIX THE BOOS
+
+/* TEMP CUT */
+   
  
 function tick(ts){
   // ✅ Schedule next frame FIRST so the loop cannot die
@@ -2824,20 +2740,14 @@ draw();
 function resetGame(){
   resize();
 
-// player sizing (WORLD space)
-const W = PLAYFIELD.w;
-const H = PLAYFIELD.h;
+  // player sizing
+ player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
+ player.h = player.w;
+ player.x = innerWidth/2 - player.w/2;
 
-player.w = clamp(U() * 0.22, 46, 86); // GAME_SCALE no longer applies
-player.h = player.w;
-
-// center horizontally in PLAYFIELD
-player.x = W/2 - player.w/2;
-
-// keep Booha near bottom of PLAYFIELD
+// keep Booha near bottom even on short screens
 const bottomPad = 14;
-player.y = H - player.h - bottomPad;
-
+player.y = innerHeight - player.h - bottomPad;
 
   player.energy = 100;
   player.glow = 0;
@@ -2852,8 +2762,7 @@ player.y = H - player.h - bottomPad;
 
 
 // keep 4 rocks fitting on tiny screens
-const gap = Math.max(10, (PLAYFIELD.w - count * rockW) / (count + 1));
-
+const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
 
 // push rocks lower (closer to Booha, arcade-style)
 const ry = player.y - rockH - clamp(U()*0.18, 26, 60) * GAME_SCALE;
