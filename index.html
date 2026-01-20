@@ -299,7 +299,15 @@ let started = false;
 let paused = false;  
 let _needRotateLast = null;
 let _gateTimer = 0;  
- 
+
+let pointerDown = false;
+let pointerX = null;
+let dragOffsetX = 0;
+
+// coarse pointer = phones/tablets (desktop stays exact)
+const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
+
+  
 const rotateOverlay = document.getElementById("rotateOverlay");
 
 function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
@@ -326,13 +334,18 @@ function computeGameScale(){
   if(u <= 520) return 0.62;  // normal phones
   return 1;                  // tablets / desktop
 }
- 
- 
+  
 const SAFE = {
   top: 0,
   right: 0
 };
 
+function shotScale(){
+  // desktop/tablets: 1
+  // small landscape phones: GAME_SCALE (0.58/0.62)
+  return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
+}
+  
 function updateSafeArea(){
   const s = getComputedStyle(document.documentElement);
 
@@ -832,6 +845,9 @@ canvas.addEventListener("pointerdown", (e)=>{
   e.preventDefault();
   pointerDown = true;
   pointerX = e.clientX;
+  // ✅ anchor Booha to finger (mobile feel fix)
+ dragOffsetX = pointerX - (player.x + player.w/2);
+
   try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
 
 }, { passive:false });
@@ -1450,12 +1466,13 @@ function fireBooShot(isPink){
   const y0 = player.y + 6;
 
   // base vertical speed
-  const vy = isPink ? -1050 : -900;
+ const sm = shotScale();              // ✅ mobile-only scaling factor
+ const vy = (isPink ? -1050 : -900) * sm;
 
-  // helper to spawn one projectile
-  function spawn(vx){
-    booShots.push({ x:x0, y:y0, vx, vy, isPink, dead:false });
-  }
+function spawn(vx){
+  booShots.push({ x:x0, y:y0, vx: vx * sm, vy, isPink, dead:false });
+}
+
 
   // Weapon patterns
   if(booWeaponLevel === 1){
@@ -1554,13 +1571,21 @@ const tierDriftMult = 1 + tp * 1.6;  // ✅ adjust this knob (1.2 = strong ramp)
 // MOVEMENT (first)
 // --------------------
 const prevX = player.x;
-
 if(pointerX !== null){
-  player.x = clamp(pointerX - player.w/2, 10, innerWidth - player.w - 10);
-} else {
-  if(keys.has("ArrowLeft")  || keys.has("a") || keys.has("A")) player.x -= 420*dt;
-  if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
-  player.x = clamp(player.x, 10, innerWidth - player.w - 10);
+  // target center keeps initial finger-to-player relationship
+  const targetCenter = pointerX - dragOffsetX;
+  let targetX = targetCenter - player.w/2;
+
+  // slightly tighter pad on phones
+  const pad = IS_COARSE ? 6 : 10;
+  targetX = clamp(targetX, pad, innerWidth - player.w - pad);
+
+  // ✅ smoothing only on coarse pointers (phones) — desktop unchanged
+  if(IS_COARSE){
+    player.x += (targetX - player.x) * 0.35;
+  } else {
+    player.x = targetX;
+  }
 }
 
 
@@ -2183,14 +2208,20 @@ drawBossHpBar();
       if(s.dead) continue;
 
       if(s.isPink){
-        drawGlow(s.x, s.y, 16, 0.22, "rgba(255,120,220,0.55)");
-        ctx.fillStyle = "#ffd1ef";
-        ctx.fillRect(s.x-2, s.y-10, 4, 14);
-      } else {
-        drawGlow(s.x, s.y, 16, 0.18, "rgba(255,214,102,0.55)");
-        ctx.fillStyle = "#fff2c7";
-        ctx.fillRect(s.x-2, s.y-10, 4, 14);
-      }
+       const sm = shotScale();
+const glowR = 16 * sm;
+const w = 4 * sm;
+const h = 14 * sm;
+
+if(s.isPink){
+  drawGlow(s.x, s.y, glowR, 0.22, "rgba(255,120,220,0.55)");
+  ctx.fillStyle = "#ffd1ef";
+  ctx.fillRect(s.x-(w/2), s.y-h, w, h);
+} else {
+  drawGlow(s.x, s.y, glowR, 0.18, "rgba(255,214,102,0.55)");
+  ctx.fillStyle = "#fff2c7";
+  ctx.fillRect(s.x-(w/2), s.y-h, w, h);
+}
     }
 
     // candy
@@ -2765,7 +2796,12 @@ player.y = innerHeight - player.h - bottomPad;
 const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
 
 // push rocks lower (closer to Booha, arcade-style)
-const ry = player.y - rockH - clamp(U()*0.18, 26, 60) * GAME_SCALE;
+const rockPad = (IS_COARSE && isLandscape()) 
+  ? (clamp(U()*0.10, 10, 32) * GAME_SCALE)   // ✅ smaller pad on phones = rocks lower
+  : (clamp(U()*0.18, 26, 60) * GAME_SCALE);
+
+const ry = player.y - rockH - rockPad;
+
  
 
   for(let i=0;i<count;i++){
