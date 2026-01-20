@@ -342,6 +342,11 @@ function shotScale(){
   // small landscape phones: GAME_SCALE (0.58/0.62)
   return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
 }
+
+function candyScale(){
+  return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
+}
+
   
 function updateSafeArea(){
   const s = getComputedStyle(document.documentElement);
@@ -1465,28 +1470,33 @@ function fireBooShot(isPink){
   // base vertical speed
  const sm = shotScale();              // ✅ mobile-only scaling factor
  const vy = (isPink ? -1050 : -900) * sm;
+ const spread = 1.0 * shotScale(); // mobile smaller
+ 
 
 function spawn(vx){
   booShots.push({ x:x0, y:y0, vx: vx * sm, vy, isPink, dead:false });
 }
 
 
-  // Weapon patterns
-  if(booWeaponLevel === 1){
-    spawn(0);
-  }
-  else if(booWeaponLevel === 2){
-    spawn(0);
-    spawn(-220);
-    spawn(220);
-  }
-  else { // level 3
-    spawn(0);
-    spawn(-260);
-    spawn(260);
-    spawn(-140);
-    spawn(140);
-  }
+ // Weapon patterns
+const spread = shotScale(); // desktop = 1, phones < 1
+
+if(booWeaponLevel === 1){
+  spawn(0);
+}
+else if(booWeaponLevel === 2){
+  spawn(0);
+  spawn(-220 * spread);
+  spawn( 220 * spread);
+}
+else { // level 3
+  spawn(0);
+  spawn(-260 * spread);
+  spawn( 260 * spread);
+  spawn(-140 * spread);
+  spawn( 140 * spread);
+}
+
 
   // subtle glow when shooting
   player.glow = isPink ? 0.10 : 0.12;
@@ -1903,8 +1913,10 @@ if(!bl.dead && player.hitIFrames <= 0){
     addSpark(c.x + rand(-6,6), c.y + rand(-6,6), 1, "pink");
 
     // catch
-    if(aabb(c.x-18, c.y-18, 36, 36, player.x, player.y, player.w, player.h)){
-      c.dead = true;
+   const cm = candyScale();
+   const cs = 36 * cm;
+   if(aabb(c.x - cs/2, c.y - cs/2, cs, cs, player.x, player.y, player.w, player.h)){
+    c.dead = true;
 
       // ✅ BOOST STACKS (persist until hit)
       // 1 candy = +1 stack, 2 candies = +2 stacks, capped at 3
@@ -2235,7 +2247,9 @@ for(const s of booShots){
     drawGlow(c.x, c.y, 20, 0.22, "rgba(120,200,255,0.65)");
     ctx.restore();
   }
-  ctx.drawImage(IMG.candy, c.x-18, c.y-18, 36, 36);
+ const cm = candyScale();
+ const cs = 36 * cm;
+ ctx.drawImage(IMG.candy, c.x - cs/2, c.y - cs/2, cs, cs);
  }
 }
 
