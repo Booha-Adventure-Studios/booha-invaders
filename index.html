@@ -2161,9 +2161,6 @@ function draw(){
   // DO NOT draw background here anymore.
   // Start immediately with gameplay drawing (rocks, bugs, shots, etc.)
 
-
-
-
     // rocks
     for(const r of rocks){
       if(r.hp <= 0) continue;
@@ -2500,12 +2497,12 @@ const jpOffset = 26;    // JP line sits under EN
   // Bottom hint
   glowText(
     "Tap / Click anywhere",
-    cx, innerHeight*0.78, 16, 800,
+    cx, VIEW.vh *0.78, 16, 800,
     "rgba(255,255,255,0.92)", "rgba(255,255,255,0.55)", 14, 0.85
   );
   glowText(
     "どこでも タップ！",
-    cx, innerHeight*0.78 + 22, 16, 900,
+    cx, VIEW.vh *0.78 + 22, 16, 900,
     "rgba(255, 230, 120, 0.95)", "rgba(255, 230, 120, 0.70)", 14, 0.90
   );
 
@@ -2586,14 +2583,8 @@ if(started){
   // energy meter block here (screen)
   if(paused) drawPauseOverlay();
 }
-}
-
-   
 
 
-
-
- // Game Over overlay
 // Game Over overlay
 beginScreen();
 if(player.energy <= 0 && !endPlaying){
@@ -2615,6 +2606,8 @@ if(player.energy <= 0 && !endPlaying){
   ctx.restore();
 }
   } // ✅ end draw()
+
+  
 
   // -----------------------
 // Quiz helpers (Multiple Choice runtime) ✅ feedback + retry + 1st-try reward
@@ -2763,9 +2756,6 @@ function answerQuiz(index){
 // -----------------------
 
 ////TRYING TO FIX THE BOOS
-
-/* TEMP CUT */
-   
  
 function tick(ts){
   // ✅ Schedule next frame FIRST so the loop cannot die
