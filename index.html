@@ -12,19 +12,21 @@ HEAD + STYLE
 <title>Booha Invaders — DOTTY</title>
 <style>
   html,body{
-    margin:0;
-    height:100%;
-    background:#000;
-    overflow:hidden;
-  }
- canvas{
+  margin:0;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+}
+
+canvas{
   position:fixed;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
+  inset:0;
+  width:100vw;
+  height:100vh;
   display:block;
   touch-action:none;
 }
+
 
 
 /* =========================
@@ -457,21 +459,34 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
 // -----------------------
-// Canonical resize (PLAYFIELD-locked)
+// Fullscreen canvas + PLAYFIELD letterbox
 // -----------------------
+const DPR_CAP = 2;
+let DPR = 1;
+
+let VIEW = { vw:0, vh:0, ox:0, oy:0 };
+
 function resize(){
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  VIEW.vw = window.innerWidth;
+  VIEW.vh = window.innerHeight;
 
-  scale = Math.min(vw / PLAYFIELD.w, vh / PLAYFIELD.h);
+  DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
 
-  canvas.width  = Math.floor(PLAYFIELD.w * scale);
-  canvas.height = Math.floor(PLAYFIELD.h * scale);
+  // canvas stays fullscreen
+  canvas.width  = Math.floor(VIEW.vw * DPR);
+  canvas.height = Math.floor(VIEW.vh * DPR);
 
-  canvas.style.width  = canvas.width + "px";
-  canvas.style.height = canvas.height + "px";
+  // scale playfield into viewport
+  scale = Math.min(VIEW.vw / PLAYFIELD.w, VIEW.vh / PLAYFIELD.h);
+
+  // center playfield
+  VIEW.ox = (VIEW.vw - PLAYFIELD.w * scale) / 2;
+  VIEW.oy = (VIEW.vh - PLAYFIELD.h * scale) / 2;
 }
+
 addEventListener("resize", resize);
+resize(); // ← IMPORTANT: run once on load
+
 
 
 // -----------------------
@@ -2093,16 +2108,26 @@ function drawWaveBanner(){
 }
 
 
- 
-function draw(){
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+ function draw(){
 
-  // background
+  // ---- SCREEN space (fullscreen canvas) ----
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // optional matte behind the world (keeps letterbox black)
+  // ctx.fillStyle = "#000";
+  // ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
+
+  // ---- WORLD space (PLAYFIELD letterboxed inside canvas) ----
+  ctx.setTransform(scale*DPR, 0, 0, scale*DPR, VIEW.ox*DPR, VIEW.oy*DPR);
+
+  // background (WORLD space)
   if(IMG.bg) drawCover(IMG.bg);
   else {
     ctx.fillStyle = "#050014";
     ctx.fillRect(0, 0, PLAYFIELD.w, PLAYFIELD.h);
   }
+
+
 
 
     // rocks
@@ -2503,7 +2528,8 @@ function drawDottyKills(){
     // =========================
 // QUIZ OVERLAY (Multiple Choice) use the real overlay with red/green + JP message
 // =========================
-ctx.setTransform(1, 0, 0, 1, 0, 0);  
+ctx.setTransform(DPR,0,0,DPR,0,0);
+  
 // =========================
 // WAVE BANNER ✅ Step 1
 // =========================
@@ -2514,7 +2540,7 @@ drawQuizOverlay();
   // PAUSE (HUD + Overlay)
   // =========================
 if(started){
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
   drawPauseButton();
   drawDottyKills();
   if(paused){
