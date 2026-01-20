@@ -1669,7 +1669,7 @@ for(const b of bugs){
     b.enterT += dt;
     const t = clamp(b.enterT / b.enterDur, 0, 1);
 
-    const curve = Math.sin(t*Math.PI) * (innerWidth*0.015) * (Math.random()<0.5?-1:1);
+    const curve = Math.sin(t*Math.PI) * (PLAYFIELD.w * 0.015) * (Math.random()<0.5?-1:1);
     b.x = b.sx + (b.tx - b.sx)*easeOutCubic(t) + curve*(1-t);
     b.y = b.sy + (b.ty - b.sy)*easeInOutSine(t);
     continue;
@@ -1690,22 +1690,25 @@ for(const b of bugs){
       b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
     }
     // Phase 2: aggressive side sweeps
-    else {
-      b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
+   else {
+  b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
 
-      b.x += (b.moveDir || 1) * b.moveSpeed * dt;
-      b.y = b.ty + Math.sin(b.bob*1.6) * 14;
+  b.x += (b.moveDir || 1) * b.moveSpeed * dt;
+  b.y = b.ty + Math.sin(b.bob*1.6) * 14;
 
-      const pad = 24;
-      if(b.x < pad){
-        b.x = pad;
-        b.moveDir = 1;
-      }
-      if(b.x + b.w > innerWidth - pad){
-        b.x = innerWidth - pad - b.w;
-        b.moveDir = -1;
-      }
-    }
+  const pad = 24;
+  const W = PLAYFIELD.w;
+
+  if(b.x < pad){
+    b.x = pad;
+    b.moveDir = 1;
+  }
+  if(b.x + b.w > W - pad){
+    b.x = W - pad - b.w;
+    b.moveDir = -1;
+  }
+}
+
   } else {
     // Normal Dotty drift
     b.x = b.tx + Math.sin(b.bob*0.9) * b.driftSpeed;
@@ -1850,11 +1853,11 @@ addSpark(b.x+b.w/2, b.y+b.h/2, 14, s.isPink ? "pink":"gold");
 break;
 
 }
-
       }
 
       // offscreen
-     if(s.y < -40 || s.x < -60 || s.x > innerWidth + 60) s.dead = true;
+const W = PLAYFIELD.w;
+if(s.y < -40 || s.x < -60 || s.x > W + 60) s.dead = true;
     }
 
     // bug shots (green blobs)
@@ -2030,9 +2033,9 @@ function drawBossHpBar(){
   const hp    = Math.max(0, Math.min(maxHp, boss.hp ?? maxHp));
   const p     = hp / maxHp;
 
-  const w = clamp(innerWidth * 0.62, 260, 560);
+  const w = clamp(VIEW.vw * 0.62, 260, 560);
   const h = 14;
-  const x = innerWidth/2 - w/2;
+  const x = VIEW.vw/2 - w/2;
   const PAD = 12;
   const y = SAFE.top + PAD;
 
@@ -2043,7 +2046,8 @@ function drawBossHpBar(){
   ctx.font = "900 14px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.textAlign = "center";
-  ctx.fillText("Dotty Boss", innerWidth/2, y + 0);
+  ctx.fillText("Dotty Boss", VIEW.vw/2, y);
+
 
   // bg
   ctx.fillStyle = "rgba(0,0,0,0.45)";
@@ -2101,19 +2105,20 @@ function drawWaveBanner(){
 
   ctx.save();
 
-  const bigSize = clamp(innerWidth * 0.10, 52, 110);
-  const subSize = clamp(innerWidth * 0.035, 16, 28);
+  const bigSize = clamp(VIEW.vw * 0.10, 52, 110);
+const subSize = clamp(VIEW.vw * 0.035, 16, 28);
 
-  ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
-  const tw = ctx.measureText(text).width;
+ctx.font = "900 " + bigSize + "px system-ui, -apple-system, sans-serif";
+const tw = ctx.measureText(text).width;
 
-  ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
-  const sw = ctx.measureText(sub).width;
+ctx.font = "900 " + subSize + "px system-ui, -apple-system, sans-serif";
+const sw = ctx.measureText(sub).width;
 
-  const margin = Math.max(40, innerWidth * 0.08);
-  const travel = innerWidth + margin*2 + Math.max(tw, sw);
-  const x = innerWidth + margin - p * travel;
-  const y = innerHeight * 0.34;
+const margin = Math.max(40, VIEW.vw * 0.08);
+const travel = VIEW.vw + margin*2 + Math.max(tw, sw);
+const x = VIEW.vw + margin - p * travel;
+const y = VIEW.vh * 0.34;
+
 
   ctx.globalCompositeOperation = "lighter";
   drawGlow(x + tw/2, y - bigSize*0.35, bigSize*0.95, 0.22, "rgba(255,120,220,0.55)");
@@ -2223,7 +2228,6 @@ for(const b of bugs){
     ctx.restore();
   }
 }
-drawBossHpBar();
    
 
     // bug shots (green glowing slime blobs)
@@ -2369,7 +2373,7 @@ function drawPauseButton(){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
   const PAD = 12;
-  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+  PAUSE_BTN.x = VIEW.vw - SAFE.right - HUD_PAD - PAUSE_BTN.w;
   PAUSE_BTN.y = SAFE.top + HUD_PAD;
 
 
@@ -2410,13 +2414,20 @@ function drawPauseOverlay(){
   ctx.save();
 
   // Dim + soft vignette
-  ctx.fillStyle = "rgba(0,0,0,0.62)";
-  ctx.fillRect(0,0,innerWidth,innerHeight);
-  const vg = ctx.createRadialGradient(innerWidth/2, innerHeight/2, 50, innerWidth/2, innerHeight/2, Math.max(innerWidth,innerHeight)*0.75);
-  vg.addColorStop(0, "rgba(0,0,0,0.00)");
-  vg.addColorStop(1, "rgba(0,0,0,0.55)");
-  ctx.fillStyle = vg;
-  ctx.fillRect(0,0,innerWidth,innerHeight);
+ ctx.fillStyle = "rgba(0,0,0,0.62)";
+ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
+
+const vg = ctx.createRadialGradient(
+  VIEW.vw/2, VIEW.vh/2, 50,
+  VIEW.vw/2, VIEW.vh/2, Math.max(VIEW.vw, VIEW.vh) * 0.75
+);
+
+vg.addColorStop(0, "rgba(0,0,0,0.00)");
+vg.addColorStop(1, "rgba(0,0,0,0.55)");
+
+ctx.fillStyle = vg;
+ctx.fillRect(0, 0, VIEW.vw, VIEW.vh);
+
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -2442,16 +2453,24 @@ function drawPauseOverlay(){
     ctx.fillText(text, x, y);
   }
 
-  const cx = innerWidth/2;
+ const cx = VIEW.vw / 2;
 
-  // Title (Booha pink)
-  glowText("PAUSED", cx, innerHeight*0.24, 40, 900,
-           "rgba(255, 120, 200, 0.98)", "rgba(255, 120, 200, 0.85)", 22, 0.85);
+// Title (Booha pink)
+glowText(
+  "PAUSED",
+  cx,
+  VIEW.vh * 0.24,
+  40, 900,
+  "rgba(255, 120, 200, 0.98)",
+  "rgba(255, 120, 200, 0.85)",
+  22, 0.85
+);
 
-  // Copy (EN then JP under each line)
-  const y0 = innerHeight*0.40;
-  const lineGap = 68;     // distance between the two English blocks
-  const jpOffset = 26;    // JP line sits under EN
+// Copy (EN then JP under each line)
+const y0 = VIEW.vh * 0.40;
+const lineGap = 68;     // distance between the two English blocks
+const jpOffset = 26;    // JP line sits under EN
+
 
   // Line 1
   glowText(
@@ -2556,19 +2575,17 @@ function drawDottyKills(){
 // QUIZ / WAVE / OVERLAYS  (SCREEN SPACE)
 // =========================
 beginScreen();
+
+drawBossHpBar();     // moved here
 drawWaveBanner();
 drawQuizOverlay();
 
-// =========================
-// PAUSE (HUD + Overlay)
-// =========================
 if(started){
-  beginScreen();
   drawPauseButton();
   drawDottyKills();
-  if(paused){
-    drawPauseOverlay();
-  }
+  // energy meter block here (screen)
+  if(paused) drawPauseOverlay();
+}
 }
 
    
@@ -2608,11 +2625,11 @@ let quizFirstTry = true;                     // reward only if true
 let quizMsg = "";                            // JP message
 
 function quizHitTest(mx, my){
-  const btnW = clamp(innerWidth*0.72, 260, 560);
+  const btnW = clamp(VIEW.vw * 0.72, 260, 560);
   const btnH = 54;
   const gap = 14;
-  const startY = innerHeight*0.42;
-  const x = innerWidth/2 - btnW/2;
+  const startY = VIEW.vh * 0.42;
+  const x = VIEW.vw / 2 - btnW / 2;
 
   for(let i=0;i<4;i++){
     const y = startY + i*(btnH+gap);
@@ -2629,7 +2646,8 @@ function hitPauseBtn(mx, my){
   PAUSE_BTN.w = 36;
   PAUSE_BTN.h = 36;
 
-  PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+  PAUSE_BTN.x = VIEW.vw - SAFE.right - HUD_PAD - PAUSE_BTN.w;
+
   PAUSE_BTN.y = SAFE.top + HUD_PAD;
 
   return (
@@ -2816,14 +2834,20 @@ draw();
 function resetGame(){
   resize();
 
-  // player sizing
- player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
- player.h = player.w;
- player.x = innerWidth/2 - player.w/2;
+// player sizing (WORLD space)
+const W = PLAYFIELD.w;
+const H = PLAYFIELD.h;
 
-// keep Booha near bottom even on short screens
+player.w = clamp(U() * 0.22, 46, 86); // GAME_SCALE no longer applies
+player.h = player.w;
+
+// center horizontally in PLAYFIELD
+player.x = W/2 - player.w/2;
+
+// keep Booha near bottom of PLAYFIELD
 const bottomPad = 14;
-player.y = innerHeight - player.h - bottomPad;
+player.y = H - player.h - bottomPad;
+
 
   player.energy = 100;
   player.glow = 0;
@@ -2838,7 +2862,8 @@ player.y = innerHeight - player.h - bottomPad;
 
 
 // keep 4 rocks fitting on tiny screens
-const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
+const gap = Math.max(10, (PLAYFIELD.w - count * rockW) / (count + 1));
+
 
 // push rocks lower (closer to Booha, arcade-style)
 const ry = player.y - rockH - clamp(U()*0.18, 26, 60) * GAME_SCALE;
