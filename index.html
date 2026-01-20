@@ -275,6 +275,19 @@ window.addEventListener("unhandledrejection", (e)=>{
     </div>`
   );
 });
+
+// -----------------------
+// Canonical Playfield (LOCKED)
+// -----------------------
+const PLAYFIELD = {
+  w: 720,
+  h: 1280
+};
+
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
 //debugger
 // =======================
 // CHUNK A — GLOBALS + RESIZE + FIRING (ANTI-SPRAY FINAL)
@@ -302,8 +315,8 @@ let _gateTimer = 0;
  
 const rotateOverlay = document.getElementById("rotateOverlay");
 
-function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
- 
+function U(){ return PLAYFIELD.h; } // universal unit (locked)
+
 function isLandscape(){
   return window.innerWidth > window.innerHeight;
 }
@@ -441,18 +454,22 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
 // -----------------------
-// DPR / resize
+// Canonical resize (PLAYFIELD-locked)
 // -----------------------
-const DPR_CAP = 2;
-let DPR = 1;
-
 function resize(){
-  DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-  canvas.width  = Math.floor(innerWidth * DPR);
-  canvas.height = Math.floor(innerHeight * DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  scale = Math.min(vw / PLAYFIELD.w, vh / PLAYFIELD.h);
+
+  canvas.width  = Math.floor(PLAYFIELD.w * scale);
+  canvas.height = Math.floor(PLAYFIELD.h * scale);
+
+  canvas.style.width  = canvas.width + "px";
+  canvas.style.height = canvas.height + "px";
 }
 addEventListener("resize", resize);
+
 
 // -----------------------
 // Auto firing (movement-locked) + boost lives here
@@ -2074,13 +2091,16 @@ function drawWaveBanner(){
 
 
  
-  function draw(){
-    // background
-    if(IMG.bg) drawCover(IMG.bg);
-    else {
-      ctx.fillStyle = "#050014";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-    }
+function draw(){
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+
+  // background
+  if(IMG.bg) drawCover(IMG.bg);
+  else {
+    ctx.fillStyle = "#050014";
+    ctx.fillRect(0, 0, PLAYFIELD.w, PLAYFIELD.h);
+  }
+
 
     // rocks
     for(const r of rocks){
@@ -2478,22 +2498,20 @@ function drawDottyKills(){
 
    
     // =========================
-// QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
+// QUIZ OVERLAY (Multiple Choice) use the real overlay with red/green + JP message
 // =========================
+ctx.setTransform(1, 0, 0, 1, 0, 0);  
 // =========================
 // WAVE BANNER ✅ Step 1
 // =========================
 drawWaveBanner();
-
-// =========================
-// QUIZ OVERLAY ...
-// =========================
 drawQuizOverlay();
 
   // =========================
   // PAUSE (HUD + Overlay)
   // =========================
 if(started){
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   drawPauseButton();
   drawDottyKills();
   if(paused){
