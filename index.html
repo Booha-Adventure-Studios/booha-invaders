@@ -1505,20 +1505,22 @@ else { // level 3
   player.glow = isPink ? 0.10 : 0.12;
 }
 
+function fireBugShot(b){
+  const sm = shotScale(); // ✅ define OUTSIDE the object
 
-  function fireBugShot(b){
-    bugShots.push({
-      x: b.x + b.w/2,
-      y: b.y + b.h + 8,
-      vx: rand(-55, 55),
-      const: sm = shotScale();
-      vy: rand(260, 340) * sm,
-      r:  rand(7, 10) * sm,
-      t: 0,
-      dead:false
-    });
-    b.glow = 0.18;
-  }
+  bugShots.push({
+    x: b.x + b.w/2,
+    y: b.y + b.h + 8,
+    vx: rand(-55, 55) * sm,   // optional but recommended
+    vy: rand(260, 340) * sm,
+    r:  rand(7, 10) * sm,
+    t: 0,
+    dead: false
+  });
+
+  b.glow = 0.18;
+}
+
 
 
 function fireBossSpread(b){
