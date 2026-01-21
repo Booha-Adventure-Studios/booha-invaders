@@ -462,15 +462,10 @@ const DPR_CAP = 2;
 let DPR = 1;
 
 function viewportW(){
-  return Math.floor(window.visualViewport?.width ?? window.innerWidth);
+  return Math.floor((window.visualViewport?.width ?? window.innerWidth));
 }
-
 function viewportH(){
-  return Math.floor(window.visualViewport?.height ?? window.innerHeight);
-}
-
-function bandH(){
-  return viewportH() * 0.25;
+  return Math.floor((window.visualViewport?.height ?? window.innerHeight));
 }
 
 function resize(){
@@ -489,7 +484,6 @@ function resize(){
   // draw in CSS px
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
-
 addEventListener("resize", resize);
 
 // IMPORTANT: mobile browsers change visualViewport without firing resize reliably
@@ -1276,20 +1270,10 @@ function canPlaceTarget(tx, ty, bw, bh){
 
 function pickTargetSlot(bw, bh){
   const lanes = 6;
-  const VW = viewportW();
-  const VH = viewportH();
-  const laneW = VW / lanes;
+  const laneW = innerWidth / lanes;
 
-  // Dotty hover zone centered around the 75% line
-  const y75 = VH * 0.75;
-  const hoverTop = y75 - bh * 2.2;
-
-  const rows = [
-    hoverTop,
-    hoverTop + bh * 0.7,
-    hoverTop + bh * 1.3
-  ];
-
+  const baseY = clamp(U()*0.18, 62, 130);
+ const rows  = [ baseY, baseY + bh*0.70, baseY + bh*1.30 ];
 
 
   for(let tries=0; tries<24; tries++){
@@ -2831,18 +2815,13 @@ function resetGame(){
   resize();
 
   // player sizing
-const baseBoo = bandH() * 0.55; // tuned visually
-player.w = clamp(baseBoo, 40, 72) * GAME_SCALE;
-player.h = player.w;
+ player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
+ player.h = player.w;
+ player.x = innerWidth/2 - player.w/2;
 
- const VW = viewportW();
- const VH = viewportH();
-
-player.x = VW/2 - player.w/2;
-
-// Booha lives in bottom band (bottom 25%), anchored to visible playfield
+// keep Booha near bottom even on short screens
 const bottomPad = 14;
-player.y = VH - player.h - bottomPad;
+player.y = innerHeight - player.h - bottomPad;
 
   player.energy = 100;
   player.glow = 0;
@@ -2852,10 +2831,8 @@ player.y = VH - player.h - bottomPad;
   // rocks
   rocks.length = 0;
   const count = 4;
-  const baseRock = bandH() * 0.85;
- const rockW = clamp(baseRock, 68, 120) * GAME_SCALE;
-const rockH = rockW * 0.72;
-
+  const rockW = clamp(U() * 0.34, 84, 150) * GAME_SCALE;
+  const rockH = rockW * 0.72;
 
 
 // keep 4 rocks fitting on tiny screens
@@ -2866,9 +2843,7 @@ const rockPad = (IS_COARSE && isLandscape())
   ? (clamp(U()*0.10, 10, 32) * GAME_SCALE)   // ✅ smaller pad on phones = rocks lower
   : (clamp(U()*0.18, 26, 60) * GAME_SCALE);
 
-
-const y75 = VH * 0.75;        // rocks line
-const ry  = y75 - rockH;      // rock bottom sits on the 75% line
+const ry = player.y - rockH - rockPad;
 
  
 
@@ -3072,4 +3047,3 @@ if(endVideo){
 </script>
 </body>
 </html>
-
