@@ -462,15 +462,17 @@ const DPR_CAP = 2;
 let DPR = 1;
 
 function viewportW(){
-  return Math.floor((window.visualViewport?.width ?? window.innerWidth));
-}
-function viewportH(){
-  return Math.floor((window.visualViewport?.height ?? window.innerHeight));
+  return Math.floor(window.visualViewport?.width ?? window.innerWidth);
 }
 
-function resize(){
-  const vw = viewportW();
-  const vh = viewportH();
+function viewportH(){
+  return Math.floor(window.visualViewport?.height ?? window.innerHeight);
+}
+
+function bandH(){
+  return viewportH() * 0.25;
+}
+
 
   // set CSS pixel size explicitly (avoids 100vh / toolbar lies)
   canvas.style.width  = vw + "px";
@@ -2825,8 +2827,10 @@ function resetGame(){
   resize();
 
   // player sizing
- player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
- player.h = player.w;
+const baseBoo = bandH() * 0.55; // tuned visually
+player.w = clamp(baseBoo, 40, 72) * GAME_SCALE;
+player.h = player.w;
+
  const VW = viewportW();
  const VH = viewportH();
 
@@ -2844,8 +2848,10 @@ player.y = VH - player.h - bottomPad;
   // rocks
   rocks.length = 0;
   const count = 4;
-  const rockW = clamp(U() * 0.34, 84, 150) * GAME_SCALE;
-  const rockH = rockW * 0.72;
+  const baseRock = bandH() * 0.85;
+ const rockW = clamp(baseRock, 68, 120) * GAME_SCALE;
+const rockH = rockW * 0.72;
+
 
 
 // keep 4 rocks fitting on tiny screens
