@@ -298,7 +298,9 @@ let endFadeStarted = false; // optional extra safety
 let started = false;
 let paused = false;  
 let _needRotateLast = null;
-let _gateTimer = 0;  
+let _gateTimer = 0;
+let GAME_SCALE = 1;  
+let LOCKED_SCALE = 1;
 
 
 // coarse pointer = phones/tablets (desktop stays exact)
@@ -337,6 +339,11 @@ const SAFE = {
   right: 0
 };
 
+function worldScale(){
+  return started ? LOCKED_SCALE : GAME_SCALE;
+}
+
+  
 function shotScale(){
   // desktop/tablets: 1
   // small landscape phones: GAME_SCALE (0.58/0.62)
@@ -1306,7 +1313,8 @@ const DOTTY_SHIELD_POST = 2.0; // seconds AFTER arriving
   const lanes = 6;
   const laneW = innerWidth / lanes;
 
-  const bw = clamp(U() * 0.16, 36, 72) * GAME_SCALE;
+  const bw = clamp(U() * 0.16, 36, 72) * worldScale()
+
   const bh = bw;
 
 
@@ -2815,7 +2823,7 @@ function resetGame(){
   resize();
 
   // player sizing
- player.w = clamp(U() * 0.22, 46, 86) * GAME_SCALE;
+ player.w = clamp(U() * 0.22, 46, 86) * worldScale();
  player.h = player.w;
  player.x = innerWidth/2 - player.w/2;
 
@@ -2831,7 +2839,7 @@ player.y = innerHeight - player.h - bottomPad;
   // rocks
   rocks.length = 0;
   const count = 4;
-  const rockW = clamp(U() * 0.34, 84, 150) * GAME_SCALE;
+  const rockW = clamp(U() * 0.34, 84, 150) * worldScale();
   const rockH = rockW * 0.72;
 
 
@@ -2840,8 +2848,8 @@ const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
 
 // push rocks lower (closer to Booha, arcade-style)
 const rockPad = (IS_COARSE && isLandscape()) 
-  ? (clamp(U()*0.10, 10, 32) * GAME_SCALE)   // ✅ smaller pad on phones = rocks lower
-  : (clamp(U()*0.18, 26, 60) * GAME_SCALE);
+  ? (clamp(U()*0.10, 10, 32) * worldScale())   // ✅ smaller pad on phones = rocks lower
+  : (clamp(U()*0.18, 26, 60) * worldScale());
 
 const ry = player.y - rockH - rockPad;
 
@@ -2996,6 +3004,9 @@ const startBtn = document.getElementById("startBtn");
 if(startBtn){
   startBtn.addEventListener("click", ()=>{
     updateOrientationGate();
+
+    LOCKED_SCALE = GAME_SCALE;   // ← ✅ LOCK IT HERE
+    
     started = true;
     quizOpen = false;
 
