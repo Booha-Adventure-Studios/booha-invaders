@@ -20,7 +20,7 @@ HEAD + STYLE
   canvas{
     display:block;
     width:100vw;
-    height:100vh;
+    height:100%;
     touch-action:none;
   }
 
@@ -461,13 +461,35 @@ const ctx = canvas.getContext("2d", { alpha:false });
 const DPR_CAP = 2;
 let DPR = 1;
 
+function viewportW(){
+  return Math.floor((window.visualViewport?.width ?? window.innerWidth));
+}
+function viewportH(){
+  return Math.floor((window.visualViewport?.height ?? window.innerHeight));
+}
+
 function resize(){
+  const vw = viewportW();
+  const vh = viewportH();
+
+  // set CSS pixel size explicitly (avoids 100vh / toolbar lies)
+  canvas.style.width  = vw + "px";
+  canvas.style.height = vh + "px";
+
+  // DPR backing store
   DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-  canvas.width  = Math.floor(innerWidth * DPR);
-  canvas.height = Math.floor(innerHeight * DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0); // draw in CSS px
+  canvas.width  = Math.floor(vw * DPR);
+  canvas.height = Math.floor(vh * DPR);
+
+  // draw in CSS px
+  ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 addEventListener("resize", resize);
+
+// IMPORTANT: mobile browsers change visualViewport without firing resize reliably
+window.visualViewport?.addEventListener("resize", resize);
+window.visualViewport?.addEventListener("scroll", resize);
+
 
 // -----------------------
 // Auto firing (movement-locked) + boost lives here
