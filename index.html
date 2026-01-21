@@ -473,6 +473,9 @@ function bandH(){
   return viewportH() * 0.25;
 }
 
+function resize(){
+  const vw = viewportW();
+  const vh = viewportH();
 
   // set CSS pixel size explicitly (avoids 100vh / toolbar lies)
   canvas.style.width  = vw + "px";
@@ -486,6 +489,7 @@ function bandH(){
   // draw in CSS px
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
+
 addEventListener("resize", resize);
 
 // IMPORTANT: mobile browsers change visualViewport without firing resize reliably
