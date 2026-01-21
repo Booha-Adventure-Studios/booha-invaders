@@ -1386,9 +1386,13 @@ bugs.push({
   return 1 - Math.pow(1 - t, 3);
 }
 
+//INCREASE 0.05 to move BOSS higher//  
 function spawnBossDotty(){
   // base dotty size
-  const baseW = clamp(innerWidth * 0.078, 54, 78);
+  const ty = clamp(
+  U()*0.18 + ((IS_COARSE && isLandscape()) ? -U()*0.05 : 0),
+  90, 170
+);
   const k = bossIndexForWave(WaveState.wave); // 1,2,3...
 
   // size growth: first boss +15%, then +10% per boss after that
@@ -1442,7 +1446,7 @@ const hp = BOSS_BASE_HP + (k-1)*BOSS_HP_GAIN;
 
     bob: rand(0, 10),
     driftSpeed: waveDriftSpeed(WaveState.wave),
-    fireCD: 0.6,
+    fireCD: 0.6 * dottyFireScale(),
     glow: 0
   });
 }
