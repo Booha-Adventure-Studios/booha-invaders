@@ -349,6 +349,10 @@ function candyScale(){
   return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
 }
 
+function dottyFireScale(){
+  return (IS_COARSE && isLandscape()) ? 1.25 : 1;
+}
+  
   
 function updateSafeArea(){
   const s = getComputedStyle(document.documentElement);
@@ -1274,8 +1278,11 @@ function pickTargetSlot(bw, bh){
   const lanes = 6;
   const laneW = innerWidth / lanes;
 
-  const baseY = clamp(U()*0.18, 62, 130);
- const rows  = [ baseY, baseY + bh*0.70, baseY + bh*1.30 ];
+  //ADJUST DOTTY "COME DOWN" *0.04-->here//
+  const mobileYOffset =
+  (IS_COARSE && isLandscape()) ? -U()*0.04 : 0;
+  const baseY = clamp(U()*0.18 + mobileYOffset, 62, 130);
+  const rows  = [ baseY, baseY + bh*0.70, baseY + bh*1.30 ];
 
 
   for(let tries=0; tries<24; tries++){
@@ -1358,9 +1365,9 @@ bugs.push({
   bob: rand(0, 10),
   driftSpeed: waveDriftSpeed(WaveState.wave),
   fireCD: rand(
-    waveFireCooldown(WaveState.wave) * 0.75,
-    waveFireCooldown(WaveState.wave) * 1.10
-  ),
+  waveFireCooldown(WaveState.wave) * 0.75,
+  waveFireCooldown(WaveState.wave) * 1.10
+ ) * dottyFireScale(),
 
   glow: 0
 });
