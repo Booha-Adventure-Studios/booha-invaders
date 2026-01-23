@@ -2050,13 +2050,13 @@ function fireBugShot(b){
 }
 
 
-
 function fireBossSpread(b){
   const cx = b.x + b.w/2;
   const cy = b.y + b.h;
 
   const count = (b.phase === 2) ? 7 : 5;
-  const speed = (b.phase === 2) ? 360 : 300;
+  const mob = IS_COARSE ? 0.65 : 1;                 // mobile nerf knob
+  const speed = ((b.phase === 2) ? 360 : 300) * mob;
   const angleSpan = Math.PI * 0.6; // wide arc
 
   for(let i=0;i<count;i++){
@@ -2068,7 +2068,7 @@ function fireBossSpread(b){
       y: cy,
       vx: Math.sin(a) * speed,
       vy: Math.cos(a) * speed,
-      r: 9,
+      r:  9 * (IS_COARSE ? 0.72 : 1),
       t: 0,
       dead:false
     });
@@ -2210,14 +2210,18 @@ for(const b of bugs){
   if(b.isBoss){
     // Phase 1: calm hover
     if(b.phase === 1){
-      b.x = b.tx + Math.sin(b.bob*0.8) * b.driftSpeed;
-      b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25);
+      const bossMob = IS_COARSE ? 0.55 : 1; // mobile slower
+      b.x = b.tx + Math.sin(b.bob*0.8) * (b.driftSpeed * bossMob);
+      b.y = b.ty + Math.cos(b.bob*1.0) * (b.driftSpeed*0.25 * bossMob);
     }
     // Phase 2: aggressive side sweeps
     else {
-      b.moveSpeed = clamp((b.moveSpeed || 0) + dt * 220, 0, 420);
+     const accel = (IS_COARSE ? 140 : 220);
+     const vmax  = (IS_COARSE ? 260 : 420);
+     b.moveSpeed = clamp((b.moveSpeed || 0) + dt * accel, 0, vmax);
 
-      b.x += (b.moveDir || 1) * b.moveSpeed * dt;
+
+      b.x += (b.moveDir || 1) * b.moveSpeed * dt * (IS_COARSE ? 0.75 : 1);
       b.y = b.ty + Math.sin(b.bob*1.6) * 14;
 
       const pad = 24;
@@ -2256,16 +2260,19 @@ for(const b of bugs){
   if(b.shieldT > 0 || !b.hasShotOnce) continue;
 
   // cadence tick (boss phase 2 fires faster)
+  // cadence tick (boss phase 2 fires faster)
   let fireDt = dt;
+
   if(b.isBoss && b.phase === 2){
-    fireDt *= 1.6; // adjust this knob
-  }
+  fireDt *= IS_COARSE ? 1.15 : 1.6; // mobile fires slower
+}
+
 
   b.fireCD -= fireDt;
   if(b.fireCD <= 0){
     fireBugShot(b);
     b.fireCD = rand(base, base + 1.0);
-    b.fireCD = Math.max(0.6, b.fireCD);
+    b.fireCD = Math.max(IS_COARSE ? 0.95 : 0.6, b.fireCD);
   }
  }
 }
