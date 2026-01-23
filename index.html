@@ -713,39 +713,45 @@ loadImg("assets/bug-1.png").then(img=>{
   const TEENS = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"];
   const TENS  = ["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
 
-  function numberToWords(n){
-    if(n < 10) return ONES[n];
-    if(n < 20) return TEENS[n-10];
+ function numberToWords(n){
+  if(n === 100) return "one hundred";
+  if(n < 10) return ONES[n];
+  if(n < 20) return TEENS[n-10];
+  const t = (n/10)|0;
+  const o = n % 10;
+  if(o === 0) return TENS[t];
+  return TENS[t] + "-" + ONES[o];
+}
+
+
+function splitDigitsWords(n){
+  if(n === 100) return "one zero zero";
+  const t = (n/10)|0;
+  const o = n % 10;
+  return ONES[t] + " " + ONES[o];
+}
+
+function twoEightyStyle(n){
+  if(n === 100) return "one-hundred";
+  const t = (n/10)|0;
+  return ONES[t] + "-" + TENS[t];
+}
+
+function punChoice(n){
+  const H = { one:"won", two:"too", four:"for", eight:"ate", zero:"oh" };
+  if(n === 100) return "won-hundred";
+  if(n >= 10){
     const t = (n/10)|0;
     const o = n % 10;
-    if(o === 0) return TENS[t];
-    return TENS[t] + "-" + ONES[o];
+    const a = H[ONES[t]] || ONES[t];
+    const b = H[ONES[o]] || ONES[o];
+    return a + "-" + b;
   }
+  const w = ONES[n];
+  return (H[w] || ("the-" + w));
+}
 
-  function splitDigitsWords(n){
-    const t = (n/10)|0;
-    const o = n % 10;
-    return ONES[t] + " " + ONES[o]; // "two eight"
-  }
-
-  function twoEightyStyle(n){
-    const t = (n/10)|0;
-    return ONES[t] + "-" + TENS[t]; // "two-eighty"
-  }
-
-  function punChoice(n){
-    const H = { one:"won", two:"too", four:"for", eight:"ate", zero:"oh" };
-    if(n >= 10){
-      const t = (n/10)|0;
-      const o = n % 10;
-      const a = H[ONES[t]] || ONES[t];
-      const b = H[ONES[o]] || ONES[o];
-      return a + "-" + b; // "too-ate"
-    }
-    const w = ONES[n];
-    return (H[w] || ("the-" + w));
-  }
-
+  
   function makeQuestion(n){
     const correct = numberToWords(n);
 
@@ -1046,6 +1052,15 @@ function drawQuizOverlay(){
 
     const numSize = Math.round((isMob ? 64 : 74) * s);
     ctx.font = `900 ${numSize}px system-ui, -apple-system, sans-serif`;
+    // dark back-glow halo (depth + contrast)
+ctx.save();
+ctx.shadowBlur = Math.round(38 * s);
+ctx.shadowColor = "rgba(0,0,0,0.85)";
+ctx.fillStyle = "rgba(0,0,0,0.65)";
+const qwBack = ctx.measureText(q).width;
+ctx.fillText(q, cx - qwBack/2, H * (isMob ? 0.305 : 0.34));
+ctx.restore();
+
 
     // glow pass
     ctx.save();
@@ -1056,13 +1071,7 @@ function drawQuizOverlay(){
     ctx.fillText(q, cx - qw/2, H * (isMob ? 0.305 : 0.34));
     ctx.restore();
 
-    // tiny header label (more "brand", less "app")
-    const tag = "BOOHA QUIZ";
-    ctx.font = `900 ${Math.round(12*s)}px system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
-    const tw = ctx.measureText(tag).width;
-    ctx.fillText(tag, cx - tw/2, H * (isMob ? 0.262 : 0.292));
-
+   
     // sparkle confetti (subtle + deterministic)
     (function sparkles(){
       const count = isMob ? 10 : 14;
@@ -3045,6 +3054,11 @@ if(started){
   }
 }
 
+// MOBILE: let canvas receive taps during quiz (mobileHoldControls sits on top otherwise)
+if(IS_COARSE && mobileControls){
+  mobileControls.style.pointerEvents = quizOpen ? "none" : "auto";
+}
+    
 
 
     // Game Over overlay
