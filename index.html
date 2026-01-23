@@ -338,6 +338,29 @@ function worldScale(){
   return started ? LOCKED_SCALE : GAME_SCALE;
 }
 
+// -----------------------
+// iOS-only sizing cap helper (keeps iPhone from blowing up)
+// THE iOS is fucking up)
+// -----------------------
+function isIOS(){
+  return /iP(ad|hone|od)/.test(navigator.userAgent);
+}
+
+// "Dotty ceiling" in pixels, matching spawnBug()
+function dottyCeilPx(){
+  return 72 * worldScale(); // bw max in spawnBug()
+}
+
+// On iOS only, cap a size to Dotty's ceiling * ratio
+// Example: Booha ratio 86/72, Rocks ratio 150/72
+function capToDottyOnIOS(sizePx, ratio){
+  if(!isIOS()) return sizePx;
+  const cap = dottyCeilPx() * ratio;
+  return Math.min(sizePx, cap);
+}
+
+////SCALING PROBLEMS???  
+
 function H(){
   const vv = window.visualViewport;
   if(!vv) return innerHeight;
@@ -2862,14 +2885,21 @@ draw();
 function resetGame(){
   resize();
 
-  // keep Booha near bottom even on short screens
   const bottomPad = 14;
 
-  // player sizing
-  player.w = clamp(U() * 0.22, 46, 86) * worldScale();
+  // -----------------------
+  // player sizing (Booha)
+  // -----------------------
+  let booW = clamp(U() * 0.22, 46, 86) * worldScale();
+
+  // ✅ iOS-only: prevent Booha from exceeding Dotty-based ceiling
+  // Booha max is 86, Dotty max is 72 → ratio = 86/72
+  booW = capToDottyOnIOS(booW, 86/72);
+
+  player.w = booW;
   player.h = player.w;
 
-  // ✅ iPhone-safe positioning (only changes if you use W()/H())
+  // positioning (keep your existing W/H usage if you want)
   player.x = W()/2 - player.w/2;
   player.y = H() - player.h - bottomPad;
 
@@ -2878,19 +2908,29 @@ function resetGame(){
   player.sugar = 0;
   player.hitIFrames = 0;
 
+  // -----------------------
   // rocks
+  // -----------------------
   rocks.length = 0;
   const count = 4;
-  const rockW = clamp(U() * 0.34, 84, 150) * worldScale();
+
+  let rockW = clamp(U() * 0.34, 84, 150) * worldScale();
+
+  // ✅ iOS-only: prevent rocks from exceeding Dotty-based ceiling
+  // Rock max is 150, Dotty max is 72 → ratio = 150/72
+  rockW = capToDottyOnIOS(rockW, 150/72);
+
   const rockH = rockW * 0.72;
 
-  // keep 4 rocks fitting on tiny screens
   const gap = Math.max(10, (W() - count*rockW) / (count+1));
 
   // push rocks lower (closer to Booha, arcade-style)
-  const rockPad = (IS_COARSE && isLandscape())
-    ? (clamp(U()*0.10, 10, 32) * worldScale())   // smaller pad on phones = rocks lower
+  let rockPad = (IS_COARSE && isLandscape())
+    ? (clamp(U()*0.10, 10, 32) * worldScale())
     : (clamp(U()*0.18, 26, 60) * worldScale());
+
+  // ✅ keep pad proportional to the iOS-capped rock size too
+  rockPad = capToDottyOnIOS(rockPad, 150/72);
 
   const ry = player.y - rockH - rockPad;
 
@@ -2910,12 +2950,12 @@ function resetGame(){
   sparkles.length = 0;
   candies.length = 0;
 
-  // quiz setup
   if(!quizDeck.length) buildQuizDeck();
   nextQuiz();
 
   stageTime = 0;
 }
+
 
 
 function startMainBGM(){
