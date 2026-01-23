@@ -154,16 +154,17 @@ HEAD + STYLE
 }
 
 #endVideo{
-  position:fixed;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  object-fit:cover;
-  opacity:0;
-  pointer-events:none;
-  z-index:99998;
-  transition:opacity 900ms ease;
-  background:#000;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;     /* ✅ no cropping */
+  object-position: center; /* ✅ stays centered */
+  opacity: 0;
+  pointer-events: none;
+  z-index: 99998;
+  transition: opacity 900ms ease;
+  background: #000;
 }
 
  
