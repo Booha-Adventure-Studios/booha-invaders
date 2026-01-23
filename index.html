@@ -546,8 +546,8 @@ function resize(){
   canvas.width  = Math.floor(vw * DPR);
   canvas.height = Math.floor(vh * DPR);
 
-  // draw in CSS px
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+ // ✅ CSS-pixel contract: reset transform
+ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 addEventListener("resize", resize);
 
