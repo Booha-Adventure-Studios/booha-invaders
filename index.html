@@ -338,7 +338,7 @@ let LOCKED_SCALE = 1;
 
 // coarse pointer = phones/tablets (desktop stays exact)
 const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
-document.getElementById("mobileHoldControls").style.display = (IS_COARSE ? "block" : "none");
+document.getElementById("mobileHoldControls").style.display = "none";
 
   
 const rotateOverlay = document.getElementById("rotateOverlay");
@@ -802,6 +802,8 @@ loadImg("assets/bug-1.png").then(img=>{
 function triggerEndVideo(){
   if(endPlaying) return;
   endPlaying = true;
+
+  if(IS_COARSE) document.getElementById("mobileHoldControls").style.display = "none";
 
   setPaused(false);
   pointerDown = false;
@@ -3107,8 +3109,11 @@ function startMainBGM(){
   // START button (wire once)
 const startBtn = document.getElementById("startBtn");
 if(startBtn){
- startBtn.addEventListener("click", ()=>{
-  started = true;              // ✅ set FIRST
+  startBtn.addEventListener("click", ()=>{
+    started = true;              // ✅ set FIRST
+
+    if(IS_COARSE){
+      document.getElementById("mobileHoldControls").style.display = "block";
 
   updateOrientationGate();     // ✅ computes GAME_SCALE once
   LOCKED_SCALE = GAME_SCALE;   // ✅ lock once
