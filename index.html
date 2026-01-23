@@ -11,18 +11,26 @@ HEAD + STYLE
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Booha Invaders — DOTTY</title>
 <style>
-  html,body{
-    margin:0;
-    height:100%;
-    background:#000;
-    overflow:hidden;
-  }
-  canvas{
-    display:block;
-    width:100vw;
-    height:100%;
-    touch-action:none;
-  }
+  html, body{
+  margin: 0;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  overscroll-behavior: none;           /* Android/Chrome + some others */
+  -webkit-overflow-scrolling: auto;
+}
+
+canvas{
+  display: block;
+  width: 100vw;
+  height: 100%;
+  touch-action: none;                  /* blocks scroll/pinch on supported browsers */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 
 /* =========================
    Booha Invaders — Start Overlay (CLEAN)
@@ -544,6 +552,25 @@ let booPinkCD = 0;   // boost cadence cooldown (pink)
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
+// -----------------------
+// Mobile: prevent page/gesture scrolling (Android + iOS)
+// Place once during init (after IS_COARSE is defined)
+// -----------------------
+if(IS_COARSE){
+  const root = document.documentElement;
+
+  // CSS overscroll lock (Android/Chrome + some others)
+  document.body.style.overscrollBehavior = "none";
+  root.style.overscrollBehavior = "none";
+
+  // iOS Safari: lock page scrolling (prevents "sliding" feel)
+  document.body.style.position = "fixed";
+  document.body.style.inset = "0";
+  document.body.style.width = "100%";
+  document.body.style.height = "100%";
+  document.body.style.overflow = "hidden";
+}
+  
 // -----------------------
 // DPR / resize
 // -----------------------
