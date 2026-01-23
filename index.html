@@ -309,11 +309,14 @@ const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
   
 const rotateOverlay = document.getElementById("rotateOverlay");
 
-function U(){ return Math.min(innerWidth, innerHeight); } // universal unit  
- 
-function isLandscape(){
-  return window.innerWidth > window.innerHeight;
+function U(){
+  return Math.min(viewportW(), viewportH());
 }
+
+function isLandscape(){
+  return viewportW() > viewportH();
+}
+
 
 const HUD_PAD = 12;
 
@@ -361,24 +364,9 @@ function capToDottyOnIOS(sizePx, ratio){
 
 ////SCALING PROBLEMS???  
 
-function H(){
-  const vv = window.visualViewport;
-  if(!vv) return innerHeight;
+function W(){ return viewportW(); }
+function H(){ return viewportH(); }
 
-  const vh = Math.floor(vv.height);
-  // Use visualViewport ONLY when it meaningfully differs (iPhone toolbar/safe-area situation)
-  return (Math.abs(vh - innerHeight) > 8) ? vh : innerHeight;
-}
-
-function W(){
-  const vv = window.visualViewport;
-  if(!vv) return innerWidth;
-
-  const vw = Math.floor(vv.width);
-  return (Math.abs(vw - innerWidth) > 8) ? vw : innerWidth;
-}
-
-  
 
 function viewportW(){
   return Math.floor(
@@ -1338,7 +1326,7 @@ function canPlaceTarget(tx, ty, bw, bh){
 
 function pickTargetSlot(bw, bh){
   const lanes = 6;
-  const laneW = innerWidth / lanes;
+  const laneW = W() / lanes;
 
   //ADJUST DOTTY "COME DOWN" *0.04-->here//
   const mobileYOffset =
