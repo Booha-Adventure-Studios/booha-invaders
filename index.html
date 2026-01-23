@@ -396,22 +396,25 @@ function viewportH(){
   );
 }
 
-  
-  
+function isSmallLandscapePhone(){
+  // “phone landscape mode” in your system is defined by GAME_SCALE < 1
+  // This avoids pointer/coarse lying in emulators and iOS.
+  return isLandscape() && GAME_SCALE < 0.999;
+}
+
 function shotScale(){
-  // desktop/tablets: 1
-  // small landscape phones: GAME_SCALE (0.58/0.62)
-  return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
+  return isSmallLandscapePhone() ? GAME_SCALE : 1;
 }
 
 function candyScale(){
-  return (IS_COARSE && isLandscape()) ? GAME_SCALE : 1;
+  return isSmallLandscapePhone() ? GAME_SCALE : 1;
 }
 
 function dottyFireScale(){
-  return (IS_COARSE && isLandscape()) ? 1.25 : 1;
+  return isSmallLandscapePhone() ? 1.25 : 1;
 }
   
+
   
 function updateSafeArea(){
   const s = getComputedStyle(document.documentElement);
