@@ -831,6 +831,56 @@ function triggerEndVideo(){
   }
 }
 
+function quizTapToKey(px, py){
+  if(!quizOpen || !quizQ) return false;
+
+  // Must match drawQuizOverlay() geometry
+  const W = innerWidth, H = innerHeight;
+  const cx = W/2;
+
+  const isMob = (typeof IS_COARSE !== "undefined")
+    ? IS_COARSE
+    : (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+
+  const minD = Math.min(W, H);
+  const s = isMob ? clamp(minD / 560, 0.78, 0.95) : 1;
+
+  const cardW = clamp(W * (isMob ? 0.90 : 0.76), 280, 620);
+  const btnW  = clamp(cardW * 0.94, 260, 560);
+  const btnH  = Math.round(56 * s);
+  const gap   = Math.round(12 * s);
+
+  const extraBelow = Math.round(72 * s);
+  const stackH = 4*btnH + 3*gap + extraBelow;
+  const topTarget = H * (isMob ? 0.38 : 0.42);
+  const bottomPad = Math.round(18 * s);
+
+  let startY = topTarget;
+  if(isMob && (startY + stackH > H - bottomPad)){
+    startY = Math.max(
+      Math.round(H - bottomPad - stackH),
+      Math.round(H * 0.20)
+    );
+  }
+
+  const x = cx - btnW/2;
+
+  // hit test
+  if(px < x || px > x + btnW) return false;
+
+  for(let i=0;i<4;i++){
+    const y = startY + i*(btnH+gap);
+    if(py >= y && py <= y + btnH){
+      const k = String(i+1);
+      // simulate existing keyboard path (1–4)
+      window.dispatchEvent(new KeyboardEvent("keydown", { key:k, code:"Digit"+k, bubbles:true }));
+      return true;
+    }
+  }
+  return false;
+}
+  
+
  // -----------------------
   // NOTE: Quiz overlay drawing DOES NOT belong in Chunk 2 update section.
   // Keeping your code (not deleting) but wrapping it so it doesn't run here.
@@ -838,91 +888,212 @@ function triggerEndVideo(){
 // =========================
 // QUIZ OVERLAY (Multiple Choice) shows red/green + message
 // =========================
-  // -----------------------
-  function drawQuizOverlay(){
+function drawQuizOverlay(){
 
-if(quizOpen && quizQ){
-  ctx.save();
+  if(quizOpen && quizQ){
+    ctx.save();
 
-  // dim + vignette
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(0,0,innerWidth,innerHeight);
+    const W = innerWidth, H = innerHeight;
+    const cx = W/2, cy = H/2;
+    const minD = Math.min(W, H);
 
-  const cx = innerWidth/2, cy = innerHeight/2;
-  const r0 = Math.min(innerWidth, innerHeight) * 0.22;
-  const r1 = Math.min(innerWidth, innerHeight) * 0.80;
-  const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
-  vg.addColorStop(0, "rgba(0,0,0,0)");
-  vg.addColorStop(1, "rgba(0,0,0,0.65)");
-  ctx.fillStyle = vg;
-  ctx.fillRect(0,0,innerWidth,innerHeight);
+    // "mobile-ish" detection (keeps desktop unchanged)
+    const isMob = (typeof IS_COARSE !== "undefined")
+      ? IS_COARSE
+      : (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
 
-  // Big number
-  const q = String(quizQ.n);
-  ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.font = "900 72px system-ui, -apple-system, sans-serif";
-  const qw = ctx.measureText(q).width;
-  ctx.fillText(q, innerWidth/2 - qw/2, innerHeight*0.34);
+    // scale for phones (subtle; desktop stays 1)
+    const s = isMob ? clamp(minD / 560, 0.78, 0.95) : 1;
 
-  // Buttons layout (must match hit-test)
-  const btnW = clamp(innerWidth*0.72, 260, 560);
-  const btnH = 54;
-  const gap = 14;
-  const startY = innerHeight*0.42;
-  const x = innerWidth/2 - btnW/2;
+    // -----------------------
+    // Dim + colorful Booha vignette (more "fun")
+    // -----------------------
+    ctx.fillStyle = "rgba(0,0,0,0.50)";
+    ctx.fillRect(0,0,W,H);
 
-  ctx.font = "800 20px system-ui, -apple-system, sans-serif";
+    // soft candy aura behind the card
+    const auraR0 = minD * 0.05;
+    const auraR1 = minD * 0.75;
+    const aura = ctx.createRadialGradient(cx, cy, auraR0, cx, cy, auraR1);
+    aura.addColorStop(0.00, "rgba(255, 210, 80, 0.10)"); // warm gold
+    aura.addColorStop(0.35, "rgba(120, 200, 255, 0.10)"); // aqua
+    aura.addColorStop(0.70, "rgba(255, 120, 210, 0.08)"); // pink
+    aura.addColorStop(1.00, "rgba(0,0,0,0.62)");
+    ctx.fillStyle = aura;
+    ctx.fillRect(0,0,W,H);
 
-  for(let i=0;i<4;i++){
-    const y = startY + i*(btnH+gap);
+    // extra vignette to keep focus
+    const r0 = minD * 0.22;
+    const r1 = minD * 0.86;
+    const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, "rgba(0,0,0,0.70)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0,0,W,H);
 
-    // ✅ state colors
-    const isCorrect = (quizSolved && i === quizQ.correctIndex);
-    const isWrong   = (quizTried && quizTried[i]);
+    // -----------------------
+// Card geometry (fits both desktop + mobile) + MOBILE FIT
+// -----------------------
+const cardW = clamp(W * (isMob ? 0.90 : 0.76), 280, 620);
+const btnW  = clamp(cardW * 0.94, 260, 560);
+const btnH  = Math.round(56 * s);
+const gap   = Math.round(12 * s);
 
-    let fill = "rgba(255,255,255,0.10)";
-    let stroke = "rgba(255,255,255,0.22)";
+// Compute a startY that keeps the whole stack on-screen (mobile)
+const extraBelow = Math.round(72 * s);          // hint + message area
+const stackH = 4*btnH + 3*gap + extraBelow;
 
-    if(isWrong){
-      fill = "rgba(255,60,90,0.22)";
-      stroke = "rgba(255,60,90,0.55)";
+const topTarget = H * (isMob ? 0.38 : 0.42);
+const bottomPad = Math.round(18 * s);
+
+let startY = topTarget;
+
+// If it would clip, push it up (mobile only)
+if(isMob && (startY + stackH > H - bottomPad)){
+  startY = Math.max(
+    Math.round(H - bottomPad - stackH),
+    Math.round(H * 0.20)
+  );
+}
+
+const x = cx - btnW/2;
+
+
+    // -----------------------
+    // Big number (glow + candy gradient)
+    // -----------------------
+    const q = String(quizQ.n);
+
+    // gradient fill for number
+    const ng = ctx.createLinearGradient(cx - 120, 0, cx + 120, 0);
+    ng.addColorStop(0.00, "rgba(255, 220, 120, 0.98)");
+    ng.addColorStop(0.45, "rgba(255, 255, 255, 0.98)");
+    ng.addColorStop(1.00, "rgba(160, 220, 255, 0.98)");
+
+    const numSize = Math.round((isMob ? 64 : 72) * s);
+    ctx.font = `900 ${numSize}px system-ui, -apple-system, sans-serif`;
+
+    // glow pass
+    ctx.save();
+    ctx.shadowBlur = Math.round(26 * s);
+    ctx.shadowColor = "rgba(255, 210, 80, 0.55)";
+    ctx.fillStyle = ng;
+    const qw = ctx.measureText(q).width;
+    ctx.fillText(q, cx - qw/2, H * (isMob ? 0.305 : 0.34));
+    ctx.restore();
+
+    // -----------------------
+    // Tiny header label (adds flavor)
+    // -----------------------
+    const tag = "BOOHA QUIZ";
+    ctx.font = `800 ${Math.round(12*s)}px system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    const tw = ctx.measureText(tag).width;
+    ctx.fillText(tag, cx - tw/2, H * (isMob ? 0.265 : 0.295));
+
+    // -----------------------
+    // Buttons (glass + neon edge)
+    // -----------------------
+    ctx.font = `800 ${Math.round(20*s)}px system-ui, -apple-system, sans-serif`;
+
+    for(let i=0;i<4;i++){
+      const y = startY + i*(btnH+gap);
+
+      const isCorrect = (quizSolved && i === quizQ.correctIndex);
+      const isWrong   = (quizTried && quizTried[i]);
+
+      // base glass
+      let fillA = 0.14;
+      let stroke = "rgba(255,255,255,0.22)";
+
+      // accent hues
+      let edge = "rgba(140, 210, 255, 0.35)"; // aqua default
+      if(i === 1) edge = "rgba(255, 170, 230, 0.32)"; // pink
+      if(i === 2) edge = "rgba(255, 220, 120, 0.30)"; // gold
+      if(i === 3) edge = "rgba(160, 255, 210, 0.28)"; // mint
+
+      if(isWrong){
+        fillA = 0.18;
+        edge = "rgba(255,60,90,0.70)";
+        stroke = "rgba(255,60,90,0.62)";
+      }
+      if(isCorrect){
+        fillA = 0.18;
+        edge = "rgba(60,255,140,0.78)";
+        stroke = "rgba(60,255,140,0.66)";
+      }
+
+      // soft glow behind button
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = edge;
+      ctx.globalAlpha = 0.16;
+      ctx.fillRect(x-2, y-2, btnW+4, btnH+4);
+      ctx.restore();
+
+      // glass fill
+      ctx.fillStyle = `rgba(255,255,255,${fillA})`;
+      ctx.fillRect(x, y, btnW, btnH);
+
+      // subtle inner gradient sheen
+      const gg = ctx.createLinearGradient(0, y, 0, y+btnH);
+      gg.addColorStop(0.0, "rgba(255,255,255,0.10)");
+      gg.addColorStop(0.5, "rgba(255,255,255,0.02)");
+      gg.addColorStop(1.0, "rgba(0,0,0,0.06)");
+      ctx.fillStyle = gg;
+      ctx.fillRect(x, y, btnW, btnH);
+
+      // outline
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, btnW, btnH);
+
+      // small neon edge line (top)
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x+2, y+2);
+      ctx.lineTo(x+btnW-2, y+2);
+      ctx.stroke();
+      ctx.restore();
+
+      // text
+      const label = (i+1) + ")  " + quizQ.choices[i];
+      ctx.fillStyle = "rgba(255,255,255,0.93)";
+      ctx.fillText(label, x + Math.round(16*s), y + Math.round(36*s));
     }
-    if(isCorrect){
-      fill = "rgba(60,255,140,0.22)";
-      stroke = "rgba(60,255,140,0.65)";
+
+    // -----------------------
+    // Hint + JP message
+    // -----------------------
+    const baseY = startY + 4*(btnH+gap);
+
+    ctx.font = `700 ${Math.round(14*s)}px system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    const hint = "Tap an answer or press 1–4";
+    const hw = ctx.measureText(hint).width;
+    ctx.fillText(hint, cx - hw/2, baseY + Math.round(12*s));
+
+    if(typeof quizMsg === "string" && quizMsg){
+      ctx.font = `900 ${Math.round(16*s)}px system-ui, -apple-system, sans-serif`;
+
+      // message glow
+      ctx.save();
+      ctx.shadowBlur = Math.round(18*s);
+      ctx.shadowColor = "rgba(255, 210, 80, 0.55)";
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      const mw = ctx.measureText(quizMsg).width;
+      ctx.fillText(quizMsg, cx - mw/2, baseY + Math.round(38*s));
+      ctx.restore();
     }
 
-    ctx.fillStyle = fill;
-    ctx.fillRect(x, y, btnW, btnH);
-
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, btnW, btnH);
-
-    const label = (i+1) + ")  " + quizQ.choices[i];
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.fillText(label, x + 16, y + 36);
-  }
-
-  // Hint
-  ctx.font = "700 14px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  const hint = "Tap an answer or press 1–4";
-  const hw = ctx.measureText(hint).width;
-  ctx.fillText(hint, innerWidth/2 - hw/2, startY + 4*(btnH+gap) + 12);
-
-  // ✅ Message (JP)
-  if(typeof quizMsg === "string" && quizMsg){
-    ctx.font = "900 16px system-ui, -apple-system, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    const mw = ctx.measureText(quizMsg).width;
-    ctx.fillText(quizMsg, innerWidth/2 - mw/2, startY + 4*(btnH+gap) + 38);
-  }
-
-  ctx.restore();
-} // ✅ closes: if(quizOpen && quizQ)
+    ctx.restore();
+  } // ✅ closes: if(quizOpen && quizQ)
 
 } // ✅ closes: function drawQuizOverlay()
+
 
 
 // -----------------------
@@ -938,6 +1109,8 @@ const mobileControls = document.getElementById("mobileHoldControls");
 if(IS_COARSE && mobileControls){
 
   mobileControls.addEventListener("pointerdown", (e)=>{
+    if(IS_COARSE && !quizOpen && !paused) return;
+
     e.preventDefault();
 
     pointerDown = true;
@@ -969,7 +1142,7 @@ if(IS_COARSE && mobileControls){
   
 
 canvas.addEventListener("pointerdown", (e)=>{
-  if(IS_COARSE) return;
+  if(IS_COARSE && !quizOpen && !paused) return;
 
 
   // PAUSE: click anywhere resumes
@@ -1011,7 +1184,8 @@ canvas.addEventListener("pointerdown", (e)=>{
 }, { passive:false });
 
 canvas.addEventListener("pointermove", (e)=>{
-  if(IS_COARSE) return;
+  if(IS_COARSE && !quizOpen && !paused) return;
+
 
   if(!pointerDown) return;
   e.preventDefault();
@@ -1019,7 +1193,8 @@ canvas.addEventListener("pointermove", (e)=>{
 }, { passive:false });
 
 canvas.addEventListener("pointerup", (e)=>{
-  if(IS_COARSE) return;
+ if(IS_COARSE && !quizOpen && !paused) return;
+
 
   pointerDown = false;
   pointerX = null;
@@ -1027,7 +1202,8 @@ canvas.addEventListener("pointerup", (e)=>{
 });
 
 canvas.addEventListener("pointercancel", (e)=>{
-  if(IS_COARSE) return;
+  if(IS_COARSE && !quizOpen && !paused) return;
+
 
   pointerDown = false;
   pointerX = null;
