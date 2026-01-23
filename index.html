@@ -338,6 +338,23 @@ function worldScale(){
   return started ? LOCKED_SCALE : GAME_SCALE;
 }
 
+function viewportW(){
+  return Math.floor(
+    window.visualViewport?.width ||
+    document.documentElement.clientWidth ||
+    window.innerWidth
+  );
+}
+
+function viewportH(){
+  return Math.floor(
+    window.visualViewport?.height ||
+    document.documentElement.clientHeight ||
+    window.innerHeight
+  );
+}
+
+  
   
 function shotScale(){
   // desktop/tablets: 1
