@@ -339,13 +339,22 @@ function worldScale(){
 }
 
 function H(){
-  const isIPhone = /iPhone/.test(navigator.userAgent);
-  return (isIPhone && window.visualViewport) ? Math.floor(visualViewport.height) : innerHeight;
+  const vv = window.visualViewport;
+  if(!vv) return innerHeight;
+
+  const vh = Math.floor(vv.height);
+  // Use visualViewport ONLY when it meaningfully differs (iPhone toolbar/safe-area situation)
+  return (Math.abs(vh - innerHeight) > 8) ? vh : innerHeight;
 }
+
 function W(){
-  const isIPhone = /iPhone/.test(navigator.userAgent);
-  return (isIPhone && window.visualViewport) ? Math.floor(visualViewport.width) : innerWidth;
+  const vv = window.visualViewport;
+  if(!vv) return innerWidth;
+
+  const vw = Math.floor(vv.width);
+  return (Math.abs(vw - innerWidth) > 8) ? vw : innerWidth;
 }
+
   
 
 function viewportW(){
