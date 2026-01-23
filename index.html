@@ -167,6 +167,32 @@ HEAD + STYLE
   background: #000;
 }
 
+#mobileHoldControls{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 42vh;                 /* bottom “half-ish” of screen */
+  z-index: 99990;               /* below endVideo (99998), above canvas */
+  display: none;                /* we’ll enable for touch devices next */
+  touch-action: none;           /* prevents double-tap zoom inside control */
+  overscroll-behavior: none;
+}
+
+#mobileHoldControls .zone{
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+}
+
+#mobileHoldControls .zone.left{ left: 0; }
+#mobileHoldControls .zone.right{ right: 0; }
+
+/* Optional: DEBUG (turn on to see the zones) */
+/*
+#mobileHoldControls .zone.left  { background: rgba(0,255,255,0.08); }
+#mobileHoldControls .zone.right { background: rgba(255,0,255,0.08); }
+*/
+
+  
  
 </style>
 </head>
@@ -188,6 +214,12 @@ BODY + SCRIPT (PART 1)
 <video id="endVideo" playsinline preload="auto">
   <source src="b-i-endscreen.mp4" type="video/mp4">
 </video>
+
+<div id="mobileHoldControls" aria-hidden="true">
+  <div class="zone left"></div>
+  <div class="zone right"></div>
+</div>
+  
 
 <div id="rotateOverlay" style="
   position:fixed; inset:0;
@@ -306,6 +338,7 @@ let LOCKED_SCALE = 1;
 
 // coarse pointer = phones/tablets (desktop stays exact)
 const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
+document.getElementById("mobileHoldControls").style.display = (IS_COARSE ? "block" : "none");
 
   
 const rotateOverlay = document.getElementById("rotateOverlay");
