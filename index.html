@@ -338,6 +338,16 @@ function worldScale(){
   return started ? LOCKED_SCALE : GAME_SCALE;
 }
 
+function H(){
+  const isIPhone = /iPhone/.test(navigator.userAgent);
+  return (isIPhone && window.visualViewport) ? Math.floor(visualViewport.height) : innerHeight;
+}
+function W(){
+  const isIPhone = /iPhone/.test(navigator.userAgent);
+  return (isIPhone && window.visualViewport) ? Math.floor(visualViewport.width) : innerWidth;
+}
+  
+
 function viewportW(){
   return Math.floor(
     window.visualViewport?.width ||
@@ -2837,21 +2847,22 @@ draw();
 
 /////TRYING TO FIX THE BOSS  
 
-
 // -----------------------
 // Reset Game (RESTORED – required by boot())
 // -----------------------
 function resetGame(){
   resize();
 
-  // player sizing
- player.w = clamp(U() * 0.22, 46, 86) * worldScale();
- player.h = player.w;
- player.x = innerWidth/2 - player.w/2;
+  // keep Booha near bottom even on short screens
+  const bottomPad = 14;
 
-// keep Booha near bottom even on short screens
-const bottomPad = 14;
-player.y = innerHeight - player.h - bottomPad;
+  // player sizing
+  player.w = clamp(U() * 0.22, 46, 86) * worldScale();
+  player.h = player.w;
+
+  // ✅ iPhone-safe positioning (only changes if you use W()/H())
+  player.x = W()/2 - player.w/2;
+  player.y = H() - player.h - bottomPad;
 
   player.energy = 100;
   player.glow = 0;
@@ -2864,18 +2875,15 @@ player.y = innerHeight - player.h - bottomPad;
   const rockW = clamp(U() * 0.34, 84, 150) * worldScale();
   const rockH = rockW * 0.72;
 
+  // keep 4 rocks fitting on tiny screens
+  const gap = Math.max(10, (W() - count*rockW) / (count+1));
 
-// keep 4 rocks fitting on tiny screens
-const gap = Math.max(10, (innerWidth - count*rockW) / (count+1));
+  // push rocks lower (closer to Booha, arcade-style)
+  const rockPad = (IS_COARSE && isLandscape())
+    ? (clamp(U()*0.10, 10, 32) * worldScale())   // smaller pad on phones = rocks lower
+    : (clamp(U()*0.18, 26, 60) * worldScale());
 
-// push rocks lower (closer to Booha, arcade-style)
-const rockPad = (IS_COARSE && isLandscape()) 
-  ? (clamp(U()*0.10, 10, 32) * worldScale())   // ✅ smaller pad on phones = rocks lower
-  : (clamp(U()*0.18, 26, 60) * worldScale());
-
-const ry = player.y - rockH - rockPad;
-
- 
+  const ry = player.y - rockH - rockPad;
 
   for(let i=0;i<count;i++){
     rocks.push({
@@ -2899,6 +2907,7 @@ const ry = player.y - rockH - rockPad;
 
   stageTime = 0;
 }
+
 
 function startMainBGM(){
   try{
