@@ -930,7 +930,8 @@ if(quizOpen && quizQ){
 // -----------------------
 let pointerDown = false;
 let pointerX = null;
-let dragOffsetX = 0;   // ← add THIS here
+let dragOffsetX = 0;
+
 canvas.addEventListener("pointerdown", (e)=>{
 
   // PAUSE: click anywhere resumes
@@ -956,22 +957,19 @@ canvas.addEventListener("pointerdown", (e)=>{
     }
   }
 
-  // Normal pointer control
-  //MOBILE: bottom control
-canvas.addEventListener("pointerdown", (e)=>{
-if(IS_COARSE){
-  const vh = (typeof viewportH === "function") ? viewportH() : window.innerHeight;
-  if(e.clientY < vh * 0.58) return;  // top 58% = no control
-}
+  // MOBILE: bottom control only
+  if(IS_COARSE){
+    const vh = (typeof viewportH === "function") ? viewportH() : window.innerHeight;
+    if(e.clientY < vh * 0.58) return; // top 58% = no control
+  }
 
+  // Normal pointer control
   e.preventDefault();
   pointerDown = true;
   pointerX = e.clientX;
-  // ✅ anchor Booha to finger (mobile feel fix)
- dragOffsetX = pointerX - (player.x + player.w/2);
+  dragOffsetX = pointerX - (player.x + player.w/2);
 
   try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
-
 }, { passive:false });
 
 canvas.addEventListener("pointermove", (e)=>{
