@@ -1523,6 +1523,8 @@ bugs.push({
 //INCREASE 0.05 to move BOSS higher//  
 function spawnBossDotty(){
   // base dotty size
+ const baseW = clamp(U() * 0.16, 36, 72) * worldScale();
+
   const ty = clamp(
   U()*0.18 + ((IS_COARSE && isLandscape()) ? -U()*0.05 : 0),
   90, 170
