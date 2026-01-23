@@ -1151,7 +1151,11 @@ if(IS_COARSE && mobileControls){
   
 
 canvas.addEventListener("pointerdown", (e)=>{
-  if(IS_COARSE && !quizOpen && !paused) return;
+  // MOBILE: allow ONLY pause-button taps during play (canvas otherwise blocked)
+if(IS_COARSE && !quizOpen && !paused){
+  if(!(started && player.energy > 0 && hitPauseBtn(e.clientX, e.clientY))) return;
+}
+
 
 
   // PAUSE: click anywhere resumes
