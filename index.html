@@ -1109,17 +1109,26 @@ const mobileControls = document.getElementById("mobileHoldControls");
 if(IS_COARSE && mobileControls){
 
   mobileControls.addEventListener("pointerdown", (e)=>{
-    if(IS_COARSE && !quizOpen && !paused) return;
+  // Don't let the bottom overlay interfere with the quiz
+  if(quizOpen) return;
 
+  // If paused, tapping the bottom overlay resumes (since it sits on top)
+  if(paused){
     e.preventDefault();
+    setPaused(false);
+    return;
+  }
 
-    pointerDown = true;
-    pointerX = e.clientX;
+  e.preventDefault();
 
-    dragOffsetX = pointerX - (player.x + player.w/2);
+  pointerDown = true;
+  pointerX = e.clientX;
 
-    try { mobileControls.setPointerCapture(e.pointerId); } catch(_){}
-  }, { passive:false });
+  dragOffsetX = pointerX - (player.x + player.w/2);
+
+  try { mobileControls.setPointerCapture(e.pointerId); } catch(_){}
+}, { passive:false });
+
 
   mobileControls.addEventListener("pointermove", (e)=>{
     if(!pointerDown) return;
