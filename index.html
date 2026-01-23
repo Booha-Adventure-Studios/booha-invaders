@@ -896,6 +896,7 @@ function drawQuizOverlay(){
     const W = innerWidth, H = innerHeight;
     const cx = W/2, cy = H/2;
     const minD = Math.min(W, H);
+    const t = performance.now()/1000;
 
     // "mobile-ish" detection (keeps desktop unchanged)
     const isMob = (typeof IS_COARSE !== "undefined")
@@ -906,95 +907,192 @@ function drawQuizOverlay(){
     const s = isMob ? clamp(minD / 560, 0.78, 0.95) : 1;
 
     // -----------------------
+    // helpers (local)
+    // -----------------------
+    function rr(x,y,w,h,r){
+      r = Math.max(0, Math.min(r, Math.min(w,h)/2));
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y,   x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x,   y+h, r);
+      ctx.arcTo(x,   y+h, x,   y,   r);
+      ctx.arcTo(x,   y,   x+w, y,   r);
+      ctx.closePath();
+    }
+    function glowPuffs(x,y,w,h,color,alpha,blur){
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.shadowBlur = blur;
+      ctx.shadowColor = color;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      rr(x,y,w,h,Math.round(18*s));
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // -----------------------
     // Dim + colorful Booha vignette (more "fun")
     // -----------------------
-    ctx.fillStyle = "rgba(0,0,0,0.50)";
+    ctx.fillStyle = "rgba(0,0,0,0.46)";
     ctx.fillRect(0,0,W,H);
 
-    // soft candy aura behind the card
+    // soft candy aura behind the card (animated a touch)
     const auraR0 = minD * 0.05;
-    const auraR1 = minD * 0.75;
+    const auraR1 = minD * (0.72 + 0.03*Math.sin(t*0.9));
     const aura = ctx.createRadialGradient(cx, cy, auraR0, cx, cy, auraR1);
-    aura.addColorStop(0.00, "rgba(255, 210, 80, 0.10)"); // warm gold
-    aura.addColorStop(0.35, "rgba(120, 200, 255, 0.10)"); // aqua
-    aura.addColorStop(0.70, "rgba(255, 120, 210, 0.08)"); // pink
+    aura.addColorStop(0.00, "rgba(255, 210, 80, 0.12)"); // warm gold
+    aura.addColorStop(0.35, "rgba(120, 200, 255, 0.11)"); // aqua
+    aura.addColorStop(0.70, "rgba(255, 120, 210, 0.09)"); // pink
     aura.addColorStop(1.00, "rgba(0,0,0,0.62)");
     ctx.fillStyle = aura;
     ctx.fillRect(0,0,W,H);
 
     // extra vignette to keep focus
     const r0 = minD * 0.22;
-    const r1 = minD * 0.86;
+    const r1 = minD * 0.88;
     const vg = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
     vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, "rgba(0,0,0,0.70)");
+    vg.addColorStop(1, "rgba(0,0,0,0.72)");
     ctx.fillStyle = vg;
     ctx.fillRect(0,0,W,H);
 
     // -----------------------
-// Card geometry (fits both desktop + mobile) + MOBILE FIT
-// -----------------------
-const cardW = clamp(W * (isMob ? 0.90 : 0.76), 280, 620);
-const btnW  = clamp(cardW * 0.94, 260, 560);
-const btnH  = Math.round(56 * s);
-const gap   = Math.round(12 * s);
+    // Card geometry (fits both desktop + mobile) + MOBILE FIT
+    // -----------------------
+    const cardW = clamp(W * (isMob ? 0.90 : 0.76), 280, 620);
+    const btnW  = clamp(cardW * 0.94, 260, 560);
+    const btnH  = Math.round(56 * s);
+    const gap   = Math.round(12 * s);
 
-// Compute a startY that keeps the whole stack on-screen (mobile)
-const extraBelow = Math.round(72 * s);          // hint + message area
-const stackH = 4*btnH + 3*gap + extraBelow;
+    // Compute a startY that keeps the whole stack on-screen (mobile)
+    const extraBelow = Math.round(72 * s);          // hint + message area
+    const stackH = 4*btnH + 3*gap + extraBelow;
 
-const topTarget = H * (isMob ? 0.38 : 0.42);
-const bottomPad = Math.round(18 * s);
+    const topTarget = H * (isMob ? 0.38 : 0.42);
+    const bottomPad = Math.round(18 * s);
 
-let startY = topTarget;
+    let startY = topTarget;
 
-// If it would clip, push it up (mobile only)
-if(isMob && (startY + stackH > H - bottomPad)){
-  startY = Math.max(
-    Math.round(H - bottomPad - stackH),
-    Math.round(H * 0.20)
-  );
-}
+    // If it would clip, push it up (mobile only)
+    if(isMob && (startY + stackH > H - bottomPad)){
+      startY = Math.max(
+        Math.round(H - bottomPad - stackH),
+        Math.round(H * 0.20)
+      );
+    }
 
-const x = cx - btnW/2;
-
+    const x = cx - btnW/2;
 
     // -----------------------
-    // Big number (glow + candy gradient)
+    // Subtle Booha presence (soft ghost silhouette + eyes)
+    // -----------------------
+    (function boohaHint(){
+      const gy = H * (isMob ? 0.30 : 0.315);
+      const gw = Math.round(btnW * 0.34);
+      const gh = Math.round(gw * 0.92);
+      const gx = cx - gw/2;
+      const wob = 2 * Math.sin(t*1.5);
+
+      // ghost body (very subtle, behind number)
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      rr(gx, gy-gh/2 + wob, gw, gh, Math.round(26*s));
+      ctx.fill();
+
+      // little scallop bottom
+      ctx.globalAlpha = 0.07;
+      const scallops = 4;
+      const r = gw/(scallops*2);
+      ctx.beginPath();
+      for(let i=0;i<scallops;i++){
+        const cx2 = gx + r + i*2*r;
+        const cy2 = gy + gh/2 - r + wob;
+        ctx.arc(cx2, cy2, r, 0, Math.PI, true);
+      }
+      ctx.fill();
+
+      // eyes (off-white pupils vibe)
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = "rgba(0,0,0,1)";
+      const ex = cx;
+      const ey = gy - gh*0.10 + wob;
+      const er = Math.round(10*s);
+      ctx.beginPath();
+      ctx.arc(ex - gw*0.10, ey, er, 0, Math.PI*2);
+      ctx.arc(ex + gw*0.10, ey, er, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "rgba(248,248,248,1)";
+      ctx.beginPath();
+      ctx.arc(ex - gw*0.10 + 3*s, ey - 2*s, 3.2*s, 0, Math.PI*2);
+      ctx.arc(ex + gw*0.10 + 3*s, ey - 2*s, 3.2*s, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.restore();
+    })();
+
+    // -----------------------
+    // Big number (glow + candy gradient) + "event" feel
     // -----------------------
     const q = String(quizQ.n);
 
-    // gradient fill for number
-    const ng = ctx.createLinearGradient(cx - 120, 0, cx + 120, 0);
+    const ng = ctx.createLinearGradient(cx - 140, 0, cx + 140, 0);
     ng.addColorStop(0.00, "rgba(255, 220, 120, 0.98)");
     ng.addColorStop(0.45, "rgba(255, 255, 255, 0.98)");
     ng.addColorStop(1.00, "rgba(160, 220, 255, 0.98)");
 
-    const numSize = Math.round((isMob ? 64 : 72) * s);
+    const numSize = Math.round((isMob ? 64 : 74) * s);
     ctx.font = `900 ${numSize}px system-ui, -apple-system, sans-serif`;
 
     // glow pass
     ctx.save();
-    ctx.shadowBlur = Math.round(26 * s);
-    ctx.shadowColor = "rgba(255, 210, 80, 0.55)";
+    ctx.shadowBlur = Math.round(28 * s);
+    ctx.shadowColor = "rgba(255, 210, 80, 0.60)";
     ctx.fillStyle = ng;
     const qw = ctx.measureText(q).width;
     ctx.fillText(q, cx - qw/2, H * (isMob ? 0.305 : 0.34));
     ctx.restore();
 
-    // -----------------------
-    // Tiny header label (adds flavor)
-    // -----------------------
+    // tiny header label (more "brand", less "app")
     const tag = "BOOHA QUIZ";
-    ctx.font = `800 ${Math.round(12*s)}px system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = `900 ${Math.round(12*s)}px system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
     const tw = ctx.measureText(tag).width;
-    ctx.fillText(tag, cx - tw/2, H * (isMob ? 0.265 : 0.295));
+    ctx.fillText(tag, cx - tw/2, H * (isMob ? 0.262 : 0.292));
+
+    // sparkle confetti (subtle + deterministic)
+    (function sparkles(){
+      const count = isMob ? 10 : 14;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for(let i=0;i<count;i++){
+        const a = (i*17.3 + t*0.9) % (Math.PI*2);
+        const rad = minD * (0.10 + 0.035*Math.sin(t*0.7 + i));
+        const sx = cx + Math.cos(a) * (rad + i*2);
+        const sy = (H * (isMob ? 0.305 : 0.34)) + Math.sin(a*1.2) * (rad*0.55) - 18*s;
+        const r = (2.2 + 1.4*Math.sin(t*2.4 + i*0.7)) * s;
+
+        const c = (i%3===0) ? "rgba(255,220,120,0.55)"
+                : (i%3===1) ? "rgba(160,220,255,0.50)"
+                            : "rgba(255,150,220,0.42)";
+
+        ctx.fillStyle = c;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    })();
 
     // -----------------------
-    // Buttons (glass + neon edge)
+    // Buttons (round + toy-like + personality + reactions)
     // -----------------------
-    ctx.font = `800 ${Math.round(20*s)}px system-ui, -apple-system, sans-serif`;
+    ctx.font = `900 ${Math.round(20*s)}px system-ui, -apple-system, sans-serif`;
+    const radius = Math.round(18 * s);
 
     for(let i=0;i<4;i++){
       const y = startY + i*(btnH+gap);
@@ -1002,67 +1100,101 @@ const x = cx - btnW/2;
       const isCorrect = (quizSolved && i === quizQ.correctIndex);
       const isWrong   = (quizTried && quizTried[i]);
 
-      // base glass
-      let fillA = 0.14;
-      let stroke = "rgba(255,255,255,0.22)";
+      // playful per-choice accent hues (Booha candy vibe)
+      let edge = "rgba(140, 210, 255, 0.45)"; // aqua
+      if(i === 1) edge = "rgba(255, 170, 230, 0.42)"; // pink
+      if(i === 2) edge = "rgba(255, 220, 120, 0.40)"; // gold
+      if(i === 3) edge = "rgba(160, 255, 210, 0.38)"; // mint
 
-      // accent hues
-      let edge = "rgba(140, 210, 255, 0.35)"; // aqua default
-      if(i === 1) edge = "rgba(255, 170, 230, 0.32)"; // pink
-      if(i === 2) edge = "rgba(255, 220, 120, 0.30)"; // gold
-      if(i === 3) edge = "rgba(160, 255, 210, 0.28)"; // mint
+      // base glass + depth
+      let fillA = 0.16;
+      let stroke = "rgba(255,255,255,0.24)";
+      let lift = 0;
 
+      // reactions
       if(isWrong){
         fillA = 0.18;
-        edge = "rgba(255,60,90,0.70)";
-        stroke = "rgba(255,60,90,0.62)";
+        edge = "rgba(255,60,90,0.78)";
+        stroke = "rgba(255,60,90,0.66)";
+        lift = -1.0 * Math.sin(t*16) * s; // tiny wobble
       }
       if(isCorrect){
         fillA = 0.18;
-        edge = "rgba(60,255,140,0.78)";
-        stroke = "rgba(60,255,140,0.66)";
+        edge = "rgba(60,255,140,0.82)";
+        stroke = "rgba(60,255,140,0.68)";
+        lift = -2.0 * Math.abs(Math.sin(t*10)) * s; // tiny bounce
       }
 
-      // soft glow behind button
+      const yy = y + lift;
+
+      // outer glow puff
+      glowPuffs(x-2, yy-2, btnW+4, btnH+4, edge, 0.16, Math.round(22*s));
+
+      // button body (rounded)
       ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = edge;
-      ctx.globalAlpha = 0.16;
-      ctx.fillRect(x-2, y-2, btnW+4, btnH+4);
-      ctx.restore();
-
-      // glass fill
+      rr(x, yy, btnW, btnH, radius);
       ctx.fillStyle = `rgba(255,255,255,${fillA})`;
-      ctx.fillRect(x, y, btnW, btnH);
+      ctx.fill();
 
-      // subtle inner gradient sheen
-      const gg = ctx.createLinearGradient(0, y, 0, y+btnH);
-      gg.addColorStop(0.0, "rgba(255,255,255,0.10)");
-      gg.addColorStop(0.5, "rgba(255,255,255,0.02)");
-      gg.addColorStop(1.0, "rgba(0,0,0,0.06)");
+      // inner sheen (top highlight)
+      const gg = ctx.createLinearGradient(0, yy, 0, yy+btnH);
+      gg.addColorStop(0.0, "rgba(255,255,255,0.18)");
+      gg.addColorStop(0.35, "rgba(255,255,255,0.06)");
+      gg.addColorStop(1.0, "rgba(0,0,0,0.08)");
       ctx.fillStyle = gg;
-      ctx.fillRect(x, y, btnW, btnH);
+      ctx.fill();
 
       // outline
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, btnW, btnH);
+      ctx.stroke();
 
-      // small neon edge line (top)
-      ctx.save();
-      ctx.globalAlpha = 0.45;
+      // neon rim (top line)
+      ctx.globalAlpha = 0.55;
       ctx.strokeStyle = edge;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(x+2, y+2);
-      ctx.lineTo(x+btnW-2, y+2);
+      ctx.moveTo(x + radius, yy + 3);
+      ctx.lineTo(x + btnW - radius, yy + 3);
       ctx.stroke();
+
+      // tiny "pressable" shadow under (subtle depth)
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "rgba(0,0,0,1)";
+      rr(x, yy + btnH - 2, btnW, 10*s, 10*s);
+      ctx.fill();
       ctx.restore();
 
-      // text
+      // label text (with subtle glow when correct)
       const label = (i+1) + ")  " + quizQ.choices[i];
-      ctx.fillStyle = "rgba(255,255,255,0.93)";
-      ctx.fillText(label, x + Math.round(16*s), y + Math.round(36*s));
+
+      ctx.save();
+      if(isCorrect){
+        ctx.shadowBlur = Math.round(18*s);
+        ctx.shadowColor = "rgba(60,255,140,0.55)";
+      } else if(isWrong){
+        ctx.shadowBlur = Math.round(16*s);
+        ctx.shadowColor = "rgba(255,60,90,0.45)";
+      } else {
+        ctx.shadowBlur = Math.round(10*s);
+        ctx.shadowColor = "rgba(255,255,255,0.18)";
+      }
+
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.fillText(label, x + Math.round(16*s), yy + Math.round(36*s));
+      ctx.restore();
+
+      // tiny icon dot at left (adds “toy UI” feel)
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.65;
+      ctx.fillStyle = edge;
+      ctx.beginPath();
+      ctx.arc(x + Math.round(12*s), yy + btnH/2, Math.round(4.2*s), 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
     }
 
     // -----------------------
@@ -1070,8 +1202,8 @@ const x = cx - btnW/2;
     // -----------------------
     const baseY = startY + 4*(btnH+gap);
 
-    ctx.font = `700 ${Math.round(14*s)}px system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.font = `800 ${Math.round(14*s)}px system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
     const hint = "Tap an answer or press 1–4";
     const hw = ctx.measureText(hint).width;
     ctx.fillText(hint, cx - hw/2, baseY + Math.round(12*s));
@@ -1079,10 +1211,11 @@ const x = cx - btnW/2;
     if(typeof quizMsg === "string" && quizMsg){
       ctx.font = `900 ${Math.round(16*s)}px system-ui, -apple-system, sans-serif`;
 
-      // message glow
+
+      //message glow
       ctx.save();
       ctx.shadowBlur = Math.round(18*s);
-      ctx.shadowColor = "rgba(255, 210, 80, 0.55)";
+      ctx.shadowColor = "rgba(255, 210, 80, 0.60)";
       ctx.fillStyle = "rgba(255,255,255,0.92)";
       const mw = ctx.measureText(quizMsg).width;
       ctx.fillText(quizMsg, cx - mw/2, baseY + Math.round(38*s));
@@ -1090,10 +1223,9 @@ const x = cx - btnW/2;
     }
 
     ctx.restore();
-  } // ✅ closes: if(quizOpen && quizQ)
+  }  //✅ closes: if(quizOpen && quizQ)
 
 } // ✅ closes: function drawQuizOverlay()
-
 
 
 // -----------------------
