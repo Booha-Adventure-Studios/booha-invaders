@@ -430,7 +430,7 @@ addEventListener("orientationchange", updateSafeArea);
 
  
 function updateOrientationGate(){
-  GAME_SCALE = computeGameScale();
+  if(!started) GAME_SCALE = computeGameScale();
   const needRotate = !isLandscape();
 
   // ✅ prevent flicker: only act when state actually changes
@@ -3073,24 +3073,27 @@ function startMainBGM(){
   // START button (wire once)
 const startBtn = document.getElementById("startBtn");
 if(startBtn){
-  startBtn.addEventListener("click", ()=>{
-    updateOrientationGate();
+ startBtn.addEventListener("click", ()=>{
+  started = true;              // ✅ set FIRST
 
-    LOCKED_SCALE = GAME_SCALE;   // ← ✅ LOCK IT HERE
-    
-    started = true;
-    quizOpen = false;
+  updateOrientationGate();     // ✅ computes GAME_SCALE once
+  LOCKED_SCALE = GAME_SCALE;   // ✅ lock once
 
-    lastPlayerX = player.x;
-    playerMoving = false;
-    shootResumeDelay = 0;
+  quizOpen = false;
 
-    document.getElementById("startOverlay").style.display = "none";
-    primeEndVideo();
+  lastPlayerX = player.x;
+  playerMoving = false;
+  shootResumeDelay = 0;
 
-    startWave(1);
-    startBGM();
-  });
+  document.getElementById("startOverlay").style.display = "none";
+  primeEndVideo();
+
+  resetGame();                 // ✅ IMPORTANT: rebuild Booha + rocks using locked scale
+
+  startWave(1);
+  startBGM();
+});
+
 } // ← THIS one
 
 endVideo = document.getElementById("endVideo");
