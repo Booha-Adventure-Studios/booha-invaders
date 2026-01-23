@@ -957,6 +957,13 @@ canvas.addEventListener("pointerdown", (e)=>{
   }
 
   // Normal pointer control
+  //MOBILE: bottom control
+canvas.addEventListener("pointerdown", (e)=>{
+if(IS_COARSE){
+  const vh = (typeof viewportH === "function") ? viewportH() : window.innerHeight;
+  if(e.clientY < vh * 0.58) return;  // top 58% = no control
+}
+
   e.preventDefault();
   pointerDown = true;
   pointerX = e.clientX;
