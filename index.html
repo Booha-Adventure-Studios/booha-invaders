@@ -188,8 +188,8 @@ HEAD + STYLE
 
 /* Optional: DEBUG (turn on to see the zones) */
 
-#mobileHoldControls .zone.left  { background: rgba(0,255,255,0.08); }
-#mobileHoldControls .zone.right { background: rgba(255,0,255,0.08); }
+/*#mobileHoldControls .zone.left  { background: rgba(0,255,255,0.08); }*/
+/*#mobileHoldControls .zone.right { background: rgba(255,0,255,0.08); }*/
 
   
  
@@ -932,7 +932,45 @@ let pointerDown = false;
 let pointerX = null;
 let dragOffsetX = 0;
 
+const mobileControls = document.getElementById("mobileHoldControls");
+
+// MOBILE ONLY: bottom overlay controls Booha
+if(IS_COARSE && mobileControls){
+
+  mobileControls.addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
+
+    pointerDown = true;
+    pointerX = e.clientX;
+
+    dragOffsetX = pointerX - (player.x + player.w/2);
+
+    try { mobileControls.setPointerCapture(e.pointerId); } catch(_){}
+  }, { passive:false });
+
+  mobileControls.addEventListener("pointermove", (e)=>{
+    if(!pointerDown) return;
+    e.preventDefault();
+    pointerX = e.clientX;
+  }, { passive:false });
+
+  mobileControls.addEventListener("pointerup", (e)=>{
+    pointerDown = false;
+    pointerX = null;
+    try { mobileControls.releasePointerCapture(e.pointerId); } catch(_){}
+  });
+
+  mobileControls.addEventListener("pointercancel", ()=>{
+    pointerDown = false;
+    pointerX = null;
+  });
+}
+
+  
+
 canvas.addEventListener("pointerdown", (e)=>{
+  if(IS_COARSE) return;
+
 
   // PAUSE: click anywhere resumes
   if(paused){
@@ -973,18 +1011,24 @@ canvas.addEventListener("pointerdown", (e)=>{
 }, { passive:false });
 
 canvas.addEventListener("pointermove", (e)=>{
+  if(IS_COARSE) return;
+
   if(!pointerDown) return;
   e.preventDefault();
   pointerX = e.clientX;
 }, { passive:false });
 
 canvas.addEventListener("pointerup", (e)=>{
+  if(IS_COARSE) return;
+
   pointerDown = false;
   pointerX = null;
   try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
 });
 
 canvas.addEventListener("pointercancel", (e)=>{
+  if(IS_COARSE) return;
+
   pointerDown = false;
   pointerX = null;
   try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
