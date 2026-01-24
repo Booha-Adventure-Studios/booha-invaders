@@ -8,7 +8,9 @@ HEAD + STYLE
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="viewport"
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+
 <title>Booha Invaders — DOTTY</title>
 <style>
   html, body{
@@ -759,6 +761,37 @@ let booPinkCD = 0;   // boost cadence cooldown (pink)
 
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
+
+function disableDoubleTapZoomScoped(root){
+  try{
+    const el = root || document.getElementById("game") || document.documentElement;
+    let lastTouchEnd = 0;
+
+    el.addEventListener("touchend", (ev)=>{
+      // allow zoom on inputs if you ever add them
+      const t = ev.target;
+      if(t && (t.closest?.('input,textarea,select,[data-allow-zoom="true"]'))) return;
+
+      const now = Date.now();
+      if(now - lastTouchEnd <= 300){
+        ev.preventDefault(); // blocks double-tap zoom
+      }
+      lastTouchEnd = now;
+    }, { passive:false, capture:true });
+
+    el.addEventListener("touchstart", (ev)=>{
+      if(ev.touches && ev.touches.length > 1){
+        ev.preventDefault(); // blocks pinch
+      }
+    }, { passive:false, capture:true });
+
+    el.addEventListener("gesturestart", (ev)=>{
+      ev.preventDefault(); // older iOS gesture events
+    }, { passive:false, capture:true });
+
+  } catch(_){}
+}
+  
 
 // -----------------------
 // Mobile Gesture Guard (canvas-only)
@@ -3705,7 +3738,31 @@ function primeEndVideo(){
   } catch(_){}
 }
 
+function primeBossBGM(){
+  try{
+    if(!bossBgm){
+      bossBgm = new Audio("dotty-boss.mp3");
+      bossBgm.loop = true;
+      bossBgm.volume = 0.9;
+    }
 
+    // iOS unlock: muted play → pause
+    bossBgm.pause();
+    bossBgm.currentTime = 0;
+    bossBgm.muted = true;
+
+    const p = bossBgm.play();
+    if(p && p.catch) p.catch(()=>{});
+
+    setTimeout(()=>{
+      try{
+        bossBgm.pause();
+        bossBgm.currentTime = 0;
+        bossBgm.muted = false;
+      } catch(_){}
+    }, 60);
+  } catch(_){}
+}
  
 // -----------------------
 // Boot
@@ -3713,6 +3770,9 @@ function primeEndVideo(){
 (async function boot(){
   resize();
 
+disableDoubleTapZoomScoped(document.documentElement);
+
+  
   try{
     const [bg, b1, b2, bug, candy, r1,r2,r3,r4] = await Promise.all([
       loadImg(ASSETS.bg),
@@ -3774,11 +3834,11 @@ if(startBtn){
 
   document.getElementById("startOverlay").style.display = "none";
   primeEndVideo();
-
-  resetGame();                 // ✅ IMPORTANT: rebuild Booha + rocks using locked scale
-
+  primeBossBGM();   // ← ADD THIS LINE
+  resetGame();
   showTiltPromptAndThenStartWave1();
   startBGM();
+
 });
 
 } // ← THIS one
