@@ -2361,20 +2361,42 @@ if(pointerX !== null){
 if(pointerX === null && TILT_ENABLED){
   let g = tiltSmooth - tiltBaseline;
 
-  // DEADZONE = HARD STOP
+  // 1) DEADZONE (do NOT overwrite tiltSmooth)
   if(Math.abs(g) < tiltDead){
-    tiltSmooth = tiltBaseline;
-    tiltVx = 0;
+    g = 0;
   } else {
-    g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
-
-    const v = (g / tiltMaxDeg) * tiltMaxSpeed;
-
-    tiltVx += (v - tiltVx) * 0.12; //snappier
-    player.x += tiltVx * dt;
-    tiltVx *= 0.88; //heavier
+    // subtract deadzone so motion starts immediately after threshold
+    g = (g > 0) ? (g - tiltDead) : (g + tiltDead);
   }
-}
+
+  // 2) clamp to max tilt
+  g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
+
+  // 3) map to target velocity with a gentle curve (more sensitive for small tilts)
+  const t = (tiltMaxDeg === 0) ? 0 : (g / tiltMaxDeg);     // -1..1
+  const curved = Math.sign(t) * Math.pow(Math.abs(t), 0.65); // <1 = more sensitive near center
+  const vxTarget = curved * tiltMaxSpeed; // px/sec in WORLD units
+
+  // 4) dt-based smoothing so it feels same at 60/120hz
+  // response: bigger = snappier
+  const response = 18; 
+  const a = 1 - Math.exp(-response * dt);
+  tiltVx += (vxTarget - tiltVx) * a;
+
+  // 5) hard stop when flat (kills sensor-noise drift)
+  if(vxTarget === 0){
+    tiltVx = 0;
+  }
+
+  // 6) integrate
+  player.x += tiltVx * dt;
+
+  // 7) CLAMP in the SAME coordinate space you draw the player in
+  // If your world is PLAYFIELD coords:
+  player.x = clamp(player.x, 0, PLAYFIELD.w - player.w);
+  // (If you don’t have PLAYFIELD, clamp to your world width variable instead.)
+ }
+}  
 }
   
 // --------------------
