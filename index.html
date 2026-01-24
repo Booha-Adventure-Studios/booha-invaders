@@ -3738,6 +3738,19 @@ function primeEndVideo(){
   } catch(_){}
 }
 
+function primeCandySFX(){
+  try{
+    const a = new Audio("assets/audio/candy.mp3"); // use your exact candy path
+    a.muted = true;
+    const p = a.play();
+    if(p && p.catch) p.catch(()=>{});
+    setTimeout(()=>{
+      try{ a.pause(); } catch(_){}
+    }, 50);
+  } catch(_){}
+}
+
+  
 function primeBossBGM(){
   try{
     if(!bossBgm){
@@ -3838,7 +3851,7 @@ if(startBtn){
   resetGame();
   showTiltPromptAndThenStartWave1();
   startBGM();
-
+  primeCandySFX(); 
 });
 
 } // ← THIS one
