@@ -1339,16 +1339,16 @@ if(IS_COARSE && !quizOpen && !paused){
     return;
   }
 
- // QUIZ: tap an answer (do not start dragging)
+// QUIZ: tap an answer (do not start dragging)
 if(quizOpen){
   const r = canvas.getBoundingClientRect();
   const px = e.clientX - r.left;
   const py = e.clientY - r.top;
 
-  const idx = quizHitTest(px, py);   // ✅ now in canvas CSS pixels
-  if(idx >= 0) answerQuiz(idx);
+  quizTapToKey(px, py);   // ✅ single source of truth
   return;
 }
+
 
 
   // PAUSE: tap pause button (only during play)
@@ -3133,20 +3133,6 @@ let quizTried = [false,false,false,false];   // wrong attempts (red)
 let quizSolved = false;                      // lock after correct
 let quizFirstTry = true;                     // reward only if true
 let quizMsg = "";                            // JP message
-
-function quizHitTest(mx, my){
-  const btnW = clamp(innerWidth*0.72, 260, 560);
-  const btnH = 54;
-  const gap = 14;
-  const startY = innerHeight*0.42;
-  const x = innerWidth/2 - btnW/2;
-
-  for(let i=0;i<4;i++){
-    const y = startY + i*(btnH+gap);
-    if(mx >= x && mx <= x+btnW && my >= y && my <= y+btnH) return i;
-  }
-  return -1;
-}
 
 
 // =========================
