@@ -2703,228 +2703,10 @@ function drawWaveBanner(){
   ctx.restore();
 }
 
+// -----------------------
+// HUD / OVERLAYS (keep in this chunk)
+// -----------------------
 
- 
-  function draw(){
-    // background
-    if(IMG.bg) drawCover(IMG.bg);
-    else {
-      ctx.fillStyle = "#050014";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
-    }
-
-    // rocks
-    for(const r of rocks){
-      if(r.hp <= 0) continue;
-      // 20 hp, switch every 5
-      const idx = clamp(4 - Math.ceil(r.hp/5), 0, 3);
-      const img = IMG.rocks?.[idx];
-      if(img) ctx.drawImage(img, r.x, r.y, r.w, r.h);
-    }
-
-// bugs (glow while shooting)
-for(const b of bugs){
-  if(!b.alive) continue;
-
-  // 🔥 SHAKE OFFSET (visual only)
-  let sx = 0, sy = 0;
-  if(b.shakeT > 0){
-    const m = b.shakeMag || 5;
-    sx = rand(-m, m);
-    sy = rand(-m, m);
-  }
-
-  const bx = b.x + sx;
-  const by = b.y + sy;
-
-  // glow
-  if(b.glow > 0){
-    drawGlow(
-      bx + b.w/2, by + b.h/2,
-      b.w * 0.55,
-      (b.glow / 0.18) * 0.22,
-      "rgba(120,255,200,0.55)"
-    );
-  }
-
-  // sprite
-  if(IMG.bug) ctx.drawImage(IMG.bug, bx, by, b.w, b.h);
-
-  // shield orb
-  if(b.shieldT > 0){
-    const t = performance.now()/1000;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 6 + (b.bob || 0));
-    const cx = bx + b.w/2;
-    const cy = by + b.h/2;
-    const r  = b.w * (0.42 + 0.03 * pulse);
-
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-
-    ctx.globalAlpha = 0.26 + 0.10 * pulse;
-    ctx.fillStyle = "rgba(255, 209, 102, 1)";
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.globalAlpha = 0.10 + 0.06 * pulse;
-    ctx.shadowBlur = 22 + 10 * pulse;
-    ctx.shadowColor = "rgba(255, 209, 102, 1)";
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 1.10, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-  }
-}
-drawBossHpBar();
-   
-
-    // bug shots (green glowing slime blobs)
-    for(const bl of bugShots){
-      if(bl.dead) continue;
-
-      // outer soft glow
-      drawGlow(
-        bl.x,
-        bl.y,
-        bl.r * 2.8,
-        0.18,
-        "rgba(70,255,140,0.65)"
-      );
-
-      // inner glow (gives depth)
-      drawGlow(
-        bl.x,
-        bl.y,
-        bl.r * 1.6,
-        0.22,
-        "rgba(140,255,190,0.75)"
-      );
-
-      // solid slime core
-      ctx.fillStyle = "rgba(90,255,150,0.95)";
-      ctx.beginPath();
-      ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-   // boo shots (gold or pink)
-for(const s of booShots){
-  if(s.dead) continue;
-
-  const sm = shotScale();
-  const glowR = 16 * sm;
-  const w = 4 * sm;
-  const h = 14 * sm;
-
-  if(s.isPink){
-    drawGlow(s.x, s.y, glowR, 0.22, "rgba(255,120,220,0.55)");
-    ctx.fillStyle = "#ffd1ef";
-    ctx.fillRect(s.x - (w/2), s.y - h, w, h);
-  } else {
-    drawGlow(s.x, s.y, glowR, 0.18, "rgba(255,214,102,0.55)");
-    ctx.fillStyle = "#fff2c7";
-    ctx.fillRect(s.x - (w/2), s.y - h, w, h);
-  }
-}
-
-    // candy
-    for(const c of candies){
-      if(c.dead) continue;
-      if(IMG.candy){
-  if(c.type === "blue"){
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    drawGlow(c.x, c.y, 20, 0.22, "rgba(120,200,255,0.65)");
-    ctx.restore();
-  }
- const cm = candyScale();
- const cs = 36 * cm;
- ctx.drawImage(IMG.candy, c.x - cs/2, c.y - cs/2, cs, cs);
- }
-}
-
-    // sparkles
-    if(sparkles.length){
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      for(const p of sparkles){
-        const t = p.life / p.ttl;
-        const a = 1 - t;
-        ctx.globalAlpha = a;
-
-        if(p.kind === "pink") ctx.fillStyle = "rgba(255,170,235,0.9)";
-        else if(p.kind === "slime") ctx.fillStyle = "rgba(120,255,160,0.7)";
-        else ctx.fillStyle = "rgba(255,230,140,0.85)";
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-        ctx.fill();
-      }
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    }
-
-    // player glow:
-    // - subtle gold on normal shoot
-    // - pink pulsate during sugar
-    const px = player.x + player.w/2;
-    const py = player.y + player.h/2;
-
-    if(player.sugar > 0){
-      // pink pulsate (subtle)
-      const pulse = 0.5 + 0.5*Math.sin((performance.now()/1000)*6);
-      drawGlow(px, py, player.w*0.50, 0.10 + pulse*0.08, "rgba(255,120,220,0.55)");
-    } else if(player.glow > 0){
-      drawGlow(px, py, player.w*0.45, 0.12, "rgba(255,214,102,0.55)");
-    }
-
-   
-    // player sprite (shoot pose if a shot just fired recently)
-    const isShootingPose = (booFireTimer > 0 && booFireTimer < 0.10);
-    const pimg = isShootingPose ? IMG.booShoot : IMG.booIdle;
-
-    // i-frame flicker (very subtle)
-    if(player.hitIFrames > 0){
-      ctx.globalAlpha = 0.78;
-    }
-
-    if(pimg) ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
-    else {
-      ctx.fillStyle = "#ff7eb9";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
-    }
-    ctx.globalAlpha = 1;
-
-  // HUD: energy meter + stage label (SAFE-area aware)
-const PAD = 12;
-
-const barX = 16;
-const barY = SAFE.top + PAD;
-const barW = 150;
-const barH = 10;
-
-ctx.fillStyle = "rgba(0,0,0,0.45)";
-ctx.fillRect(barX, barY, barW, barH);
-
-const fillW = barW * (player.energy / 100);
-const color = (player.energy > 50) ? "rgba(255,214,102,0.95)"
-            : (player.energy > 20) ? "rgba(255,180,120,0.95)"
-            : "rgba(255,120,160,0.95)";
-ctx.fillStyle = color;
-ctx.fillRect(barX, barY, fillW, barH);
-
-// label under bar
-ctx.font = "700 13px system-ui, -apple-system, sans-serif";
-ctx.fillStyle = "rgba(255,255,255,0.85)";
-ctx.fillText("Booha", barX, barY + 28);
-
-drawPauseButton();
-drawDottyKills();
-
-
-   
 function drawPauseButton(){
   // smaller
   PAUSE_BTN.w = 36;
@@ -2932,8 +2714,6 @@ function drawPauseButton(){
   const PAD = 12;
   PAUSE_BTN.x = innerWidth - SAFE.right - HUD_PAD - PAUSE_BTN.w;
   PAUSE_BTN.y = SAFE.top + HUD_PAD;
-
-
 
   var cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
   var cy = PAUSE_BTN.y + PAUSE_BTN.h/2;
@@ -2964,16 +2744,17 @@ function drawPauseButton(){
   ctx.restore();
 }
 
-   
-
-
 function drawPauseOverlay(){
   ctx.save();
 
   // Dim + soft vignette
   ctx.fillStyle = "rgba(0,0,0,0.62)";
   ctx.fillRect(0,0,innerWidth,innerHeight);
-  const vg = ctx.createRadialGradient(innerWidth/2, innerHeight/2, 50, innerWidth/2, innerHeight/2, Math.max(innerWidth,innerHeight)*0.75);
+  const vg = ctx.createRadialGradient(
+    innerWidth/2, innerHeight/2, 50,
+    innerWidth/2, innerHeight/2,
+    Math.max(innerWidth,innerHeight)*0.75
+  );
   vg.addColorStop(0, "rgba(0,0,0,0.00)");
   vg.addColorStop(1, "rgba(0,0,0,0.55)");
   ctx.fillStyle = vg;
@@ -2982,11 +2763,9 @@ function drawPauseOverlay(){
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Helper: glowing text
   function glowText(text, x, y, size, weight, color, glowColor, blur, shadowA){
     ctx.font = `${weight} ${size}px system-ui, -apple-system, sans-serif`;
 
-    // dark shadow (depth)
     ctx.shadowColor = `rgba(0,0,0,${shadowA})`;
     ctx.shadowBlur = 10;
     ctx.shadowOffsetX = 0;
@@ -2994,7 +2773,6 @@ function drawPauseOverlay(){
     ctx.fillStyle = "rgba(0,0,0,0.65)";
     ctx.fillText(text, x, y+2);
 
-    // glow
     ctx.shadowColor = glowColor;
     ctx.shadowBlur = blur;
     ctx.shadowOffsetX = 0;
@@ -3005,16 +2783,13 @@ function drawPauseOverlay(){
 
   const cx = innerWidth/2;
 
-  // Title (Booha pink)
   glowText("PAUSED", cx, innerHeight*0.24, 40, 900,
            "rgba(255, 120, 200, 0.98)", "rgba(255, 120, 200, 0.85)", 22, 0.85);
 
-  // Copy (EN then JP under each line)
   const y0 = innerHeight*0.40;
-  const lineGap = 68;     // distance between the two English blocks
-  const jpOffset = 26;    // JP line sits under EN
+  const lineGap = 68;
+  const jpOffset = 26;
 
-  // Line 1
   glowText(
     "The game is paused because the player had a toilet emergency!!!",
     cx, y0, 18, 900,
@@ -3026,7 +2801,6 @@ function drawPauseOverlay(){
     "rgba(255, 230, 120, 0.98)", "rgba(255, 230, 120, 0.75)", 18, 0.90
   );
 
-  // Line 2
   const y1 = y0 + lineGap;
   glowText(
     "Click anywhere to return to the game. I hope you washed your hands.",
@@ -3039,7 +2813,6 @@ function drawPauseOverlay(){
     "rgba(255, 230, 120, 0.98)", "rgba(255, 230, 120, 0.75)", 18, 0.90
   );
 
-  // Bottom hint
   glowText(
     "Tap / Click anywhere",
     cx, innerHeight*0.78, 16, 800,
@@ -3052,29 +2825,25 @@ function drawPauseOverlay(){
   );
 
   ctx.restore();
-}  
+}
 
 function drawDottyKills(){
   if(!started) return;
 
-  // under pause button, aligned to right
   const gap = 10;
   const rBase = 16;
 
   const cx = PAUSE_BTN.x + PAUSE_BTN.w/2;
   const cy = PAUSE_BTN.y + PAUSE_BTN.h + gap + rBase;
 
-  // bounce (scale 1.0 -> 1.15 -> 1.0)
   const k = dottyPop; // 0..1
   const scale = 1 + 0.18 * Math.sin(k * Math.PI);
 
-  // colors
   const fillNum = dottyGold ? "rgba(255, 210, 80, 1)" : "rgba(255, 80, 90, 1)";
   const ringCol = dottyGold ? "rgba(255, 220, 120, 0.80)" : "rgba(255,255,255,0.70)";
   const circleFill = dottyGold ? "rgba(255, 220, 120, 0.20)" : "rgba(255,255,255,0.22)";
   const circleGlow = dottyGold ? "rgba(255, 200, 80, 0.70)" : "rgba(255,255,255,0.55)";
 
-  // circle
   ctx.save();
   ctx.shadowBlur = 14;
   ctx.shadowColor = circleGlow;
@@ -3091,7 +2860,6 @@ function drawDottyKills(){
   ctx.stroke();
   ctx.restore();
 
-  // outlined number (no glow)
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
@@ -3100,72 +2868,244 @@ function drawDottyKills(){
   ctx.textBaseline = "middle";
   ctx.font = "900 18px system-ui, -apple-system, sans-serif";
 
-  // outline
   ctx.lineWidth = 4;
   ctx.strokeStyle = "rgba(0,0,0,0.90)";
   ctx.strokeText(String(dottyKills), 0, 0.5);
 
-  // fill
   ctx.fillStyle = fillNum;
   ctx.fillText(String(dottyKills), 0, 0.5);
 
   ctx.restore();
 }
 
-
-
-   
-    // =========================
-// QUIZ OVERLAY (Multiple Choice) ✅ use the real overlay with red/green + JP message
-// =========================
-// =========================
-// WAVE BANNER ✅ Step 1
-// =========================
-drawWaveBanner();
-
-// =========================
-// QUIZ OVERLAY ...
-// =========================
-drawQuizOverlay();
-
-  // =========================
-  // PAUSE (HUD + Overlay)
-  // =========================
-if(started){
-  drawPauseButton();
-  drawDottyKills();
-  if(paused){
-    drawPauseOverlay();
+// -----------------------
+// Draw (your original content, fixed braces/order)
+// -----------------------
+function draw(){
+  // background
+  if(IMG.bg) drawCover(IMG.bg);
+  else {
+    ctx.fillStyle = "#050014";
+    ctx.fillRect(0,0,innerWidth,innerHeight);
   }
-}
 
-// MOBILE: let canvas receive taps during quiz (mobileHoldControls sits on top otherwise)
-if(IS_COARSE && mobileControls){
-  mobileControls.style.pointerEvents = quizOpen ? "none" : "auto";
-}
-    
+  // rocks
+  for(const r of rocks){
+    if(r.hp <= 0) continue;
+    const idx = clamp(4 - Math.ceil(r.hp/5), 0, 3);
+    const img = IMG.rocks?.[idx];
+    if(img) ctx.drawImage(img, r.x, r.y, r.w, r.h);
+  }
 
+  // bugs (glow while shooting)
+  for(const b of bugs){
+    if(!b.alive) continue;
 
-    // Game Over overlay
-   if(player.energy <= 0 && !endPlaying){
+    let sx = 0, sy = 0;
+    if(b.shakeT > 0){
+      const m = b.shakeMag || 5;
+      sx = rand(-m, m);
+      sy = rand(-m, m);
+    }
+
+    const bx = b.x + sx;
+    const by = b.y + sy;
+
+    if(b.glow > 0){
+      drawGlow(
+        bx + b.w/2, by + b.h/2,
+        b.w * 0.55,
+        (b.glow / 0.18) * 0.22,
+        "rgba(120,255,200,0.55)"
+      );
+    }
+
+    if(IMG.bug) ctx.drawImage(IMG.bug, bx, by, b.w, b.h);
+
+    if(b.shieldT > 0){
+      const t = performance.now()/1000;
+      const pulse = 0.5 + 0.5 * Math.sin(t * 6 + (b.bob || 0));
+      const cx = bx + b.w/2;
+      const cy = by + b.h/2;
+      const r  = b.w * (0.42 + 0.03 * pulse);
+
       ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(0,0,innerWidth,innerHeight);
+      ctx.globalCompositeOperation = "lighter";
 
-      ctx.fillStyle = "rgba(255,255,255,0.94)";
-      ctx.font = "900 38px system-ui, -apple-system, sans-serif";
-      const msg = "GAME OVER";
-      const mw = ctx.measureText(msg).width;
-      ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
+      ctx.globalAlpha = 0.26 + 0.10 * pulse;
+      ctx.fillStyle = "rgba(255, 209, 102, 1)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.fill();
 
-      ctx.font = "700 16px system-ui, -apple-system, sans-serif";
-      const msg2 = "Press R to Restart";
-      const mw2 = ctx.measureText(msg2).width;
-      ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
+      ctx.globalAlpha = 0.10 + 0.06 * pulse;
+      ctx.shadowBlur = 22 + 10 * pulse;
+      ctx.shadowColor = "rgba(255, 209, 102, 1)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.10, 0, Math.PI*2);
+      ctx.fill();
+
       ctx.restore();
     }
-  } // ✅ end draw()
+  }
 
+  drawBossHpBar();
+
+  // bug shots
+  for(const bl of bugShots){
+    if(bl.dead) continue;
+
+    drawGlow(bl.x, bl.y, bl.r * 2.8, 0.18, "rgba(70,255,140,0.65)");
+    drawGlow(bl.x, bl.y, bl.r * 1.6, 0.22, "rgba(140,255,190,0.75)");
+
+    ctx.fillStyle = "rgba(90,255,150,0.95)";
+    ctx.beginPath();
+    ctx.arc(bl.x, bl.y, bl.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // boo shots
+  for(const s of booShots){
+    if(s.dead) continue;
+
+    const sm = shotScale();
+    const glowR = 16 * sm;
+    const w = 4 * sm;
+    const h = 14 * sm;
+
+    if(s.isPink){
+      drawGlow(s.x, s.y, glowR, 0.22, "rgba(255,120,220,0.55)");
+      ctx.fillStyle = "#ffd1ef";
+    } else {
+      drawGlow(s.x, s.y, glowR, 0.18, "rgba(255,214,102,0.55)");
+      ctx.fillStyle = "#fff2c7";
+    }
+    ctx.fillRect(s.x - (w/2), s.y - h, w, h);
+  }
+
+  // candy
+  for(const c of candies){
+    if(c.dead) continue;
+    if(IMG.candy){
+      if(c.type === "blue"){
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        drawGlow(c.x, c.y, 20, 0.22, "rgba(120,200,255,0.65)");
+        ctx.restore();
+      }
+      const cm = candyScale();
+      const cs = 36 * cm;
+      ctx.drawImage(IMG.candy, c.x - cs/2, c.y - cs/2, cs, cs);
+    }
+  }
+
+  // sparkles
+  if(sparkles.length){
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    for(const p of sparkles){
+      const t = p.life / p.ttl;
+      const a = 1 - t;
+      ctx.globalAlpha = a;
+
+      if(p.kind === "pink") ctx.fillStyle = "rgba(255,170,235,0.9)";
+      else if(p.kind === "slime") ctx.fillStyle = "rgba(120,255,160,0.7)";
+      else ctx.fillStyle = "rgba(255,230,140,0.85)";
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // player glow
+  const px = player.x + player.w/2;
+  const py = player.y + player.h/2;
+
+  if(player.sugar > 0){
+    const pulse = 0.5 + 0.5*Math.sin((performance.now()/1000)*6);
+    drawGlow(px, py, player.w*0.50, 0.10 + pulse*0.08, "rgba(255,120,220,0.55)");
+  } else if(player.glow > 0){
+    drawGlow(px, py, player.w*0.45, 0.12, "rgba(255,214,102,0.55)");
+  }
+
+  const isShootingPose = (booFireTimer > 0 && booFireTimer < 0.10);
+  const pimg = isShootingPose ? IMG.booShoot : IMG.booIdle;
+
+  if(player.hitIFrames > 0){
+    ctx.globalAlpha = 0.78;
+  }
+
+  if(pimg) ctx.drawImage(pimg, player.x, player.y, player.w, player.h);
+  else {
+    ctx.fillStyle = "#ff7eb9";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+  }
+  ctx.globalAlpha = 1;
+
+  // HUD: energy meter + stage label
+  const PAD = 12;
+  const barX = 16;
+  const barY = SAFE.top + PAD;
+  const barW = 150;
+  const barH = 10;
+
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fillRect(barX, barY, barW, barH);
+
+  const fillW = barW * (player.energy / 100);
+  const color = (player.energy > 50) ? "rgba(255,214,102,0.95)"
+              : (player.energy > 20) ? "rgba(255,180,120,0.95)"
+              : "rgba(255,120,160,0.95)";
+  ctx.fillStyle = color;
+  ctx.fillRect(barX, barY, fillW, barH);
+
+  ctx.font = "700 13px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillText("Booha", barX, barY + 28);
+
+  // ---- HUD + overlays ----
+  drawPauseButton();
+  drawDottyKills();
+
+  drawWaveBanner();
+  drawQuizOverlay();
+
+  if(started){
+    if(paused){
+      drawPauseOverlay();
+    }
+  }
+
+  if(IS_COARSE && mobileControls){
+    mobileControls.style.pointerEvents = quizOpen ? "none" : "auto";
+  }
+
+  // Game Over overlay
+  if(player.energy <= 0 && !endPlaying){
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    ctx.fillStyle = "rgba(255,255,255,0.94)";
+    ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+    const msg = "GAME OVER";
+    const mw = ctx.measureText(msg).width;
+    ctx.fillText(msg, innerWidth/2 - mw/2, innerHeight/2 - 10);
+
+    ctx.font = "700 16px system-ui, -apple-system, sans-serif";
+    const msg2 = "Press R to Restart";
+    const mw2 = ctx.measureText(msg2).width;
+    ctx.fillText(msg2, innerWidth/2 - mw2/2, innerHeight/2 + 26);
+    ctx.restore();
+  }
+} // ✅ end draw()
+
+ 
+ 
+ 
   // -----------------------
 // Quiz helpers (Multiple Choice runtime) ✅ feedback + retry + 1st-try reward
 // -----------------------
