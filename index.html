@@ -706,7 +706,9 @@ loadImg("assets/bug-1.png").then(img=>{
 
   // cover background (no distortion)
   function drawCover(img){
-    const W = innerWidth, H = innerHeight;
+    const r = canvas.getBoundingClientRect();
+    const W = r.width, H = r.height;
+
     const iw = img.width, ih = img.height;
     const s = Math.max(W/iw, H/ih);
     const dw = iw*s, dh = ih*s;
@@ -868,7 +870,9 @@ function quizTapToKey(px, py){
   if(!quizOpen || !quizQ) return false;
 
   // Must match drawQuizOverlay() geometry
-  const W = innerWidth, H = innerHeight;
+  const r = canvas.getBoundingClientRect();
+  const W = r.width, H = r.height;
+
   const cx = W/2;
 
   const isMob = (typeof IS_COARSE !== "undefined")
@@ -926,7 +930,9 @@ function drawQuizOverlay(){
   if(quizOpen && quizQ){
     ctx.save();
 
-    const W = innerWidth, H = innerHeight;
+    const r = canvas.getBoundingClientRect();
+    const W = r.width, H = r.height;
+
     const cx = W/2, cy = H/2;
     const minD = Math.min(W, H);
     const t = performance.now()/1000;
@@ -1333,12 +1339,17 @@ if(IS_COARSE && !quizOpen && !paused){
     return;
   }
 
-  // QUIZ: tap an answer (do not start dragging)
-  if(quizOpen){
-    const idx = quizHitTest(e.clientX, e.clientY);
-    if(idx >= 0) answerQuiz(idx);
-    return;
-  }
+ // QUIZ: tap an answer (do not start dragging)
+if(quizOpen){
+  const r = canvas.getBoundingClientRect();
+  const px = e.clientX - r.left;
+  const py = e.clientY - r.top;
+
+  const idx = quizHitTest(px, py);   // ✅ now in canvas CSS pixels
+  if(idx >= 0) answerQuiz(idx);
+  return;
+}
+
 
   // PAUSE: tap pause button (only during play)
   if(started && player.energy > 0){
