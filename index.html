@@ -417,6 +417,68 @@ let _needRotateLast = null;
 let _gateTimer = 0;
 let GAME_SCALE = 1;  
 let LOCKED_SCALE = 1;
+let TILT_ENABLED = false;
+let tiltGamma = 0;        // raw current tilt
+let tiltSmooth = 0;       // smoothed tilt (what we’ll use later)
+let tiltBaseline = 0;
+
+const tiltDead = 1.2;      // degrees (small deadzone)
+const tiltMaxDeg = 18;     // degrees (full tilt range)
+const tiltMaxSpeed = 820;  // px/sec at full tilt
+
+  
+
+function calibrateTilt(){
+  tiltBaseline = tiltSmooth;
+}
+  
+
+function handleTiltEvent(e){
+  // gamma = left/right tilt in degrees (-90..90)
+  const g = (typeof e.gamma === "number") ? e.gamma : 0;
+  tiltGamma = g;
+
+  // light smoothing (keeps it stable)
+  tiltSmooth = tiltSmooth * 0.85 + tiltGamma * 0.15;
+}
+  
+  
+function showTiltPromptAndThenStartWave1(){
+  const tiltOverlay = document.getElementById("tiltOverlay");
+  const yesBtn = document.getElementById("tiltYesBtn");
+  const noBtn  = document.getElementById("tiltNoBtn");
+  const msgEl  = document.getElementById("tiltMsg");
+
+  // fallback safety
+  if(!tiltOverlay || !yesBtn || !noBtn){
+    startWave(1);
+    return;
+  }
+
+  msgEl.textContent = "Choose your control style.";
+  tiltOverlay.style.display = "flex";
+
+  const cleanup = ()=>{
+    tiltOverlay.style.display = "none";
+    yesBtn.onclick = null;
+    noBtn.onclick = null;
+  };
+
+  yesBtn.onclick = ()=>{
+    TILT_ENABLED = true;
+    calibrateTilt();
+
+    
+    cleanup();
+    startWave(1);
+  };
+
+  noBtn.onclick = ()=>{
+    TILT_ENABLED = false;
+    cleanup();
+    startWave(1);
+  };
+}
 
 
 // coarse pointer = phones/tablets (desktop stays exact)
@@ -2259,6 +2321,23 @@ if(pointerX !== null){
 } else {
   if(keys.has("ArrowLeft")  || keys.has("a") || keys.has("A")) player.x -= 420*dt;
   if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
+  // ---- TILT MOVE (only when no finger control is active) ----
+if(pointerX === null && TILT_ENABLED){
+  let g = (tiltSmooth - tiltBaseline);
+
+  // deadzone
+  if(Math.abs(g) < tiltDead) g = 0;
+
+  // clamp
+  g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
+
+  // map to speed
+  const v = (g / tiltMaxDeg) * tiltMaxSpeed;
+
+  // apply (dt = seconds)
+  player.x += v * dt;
+}
+
   player.x = clamp(player.x, 10, innerWidth - player.w - 10);
 }
 
@@ -3576,6 +3655,9 @@ function startMainBGM(){
   bgm.play().catch(()=>{});
 }
 
+ // ✅ ADD THIS LINE HERE (last thing in boot)
+  window.addEventListener("deviceorientation", handleTiltEvent, true);
+}  
 
 
   // START button (wire once)
@@ -3603,7 +3685,7 @@ if(startBtn){
 
   resetGame();                 // ✅ IMPORTANT: rebuild Booha + rocks using locked scale
 
-  startWave(1);
+  showTiltPromptAndThenStartWave1();
   startBGM();
 });
 
