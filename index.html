@@ -437,6 +437,8 @@ let _needRotateLast = null;
 let _gateTimer = 0;
 let GAME_SCALE = 1;  
 let LOCKED_SCALE = 1;
+let tiltVx = 0;
+  
 
 let TILT_ENABLED = false;
 let tiltGamma = 0;
@@ -2368,7 +2370,9 @@ if(pointerX === null && TILT_ENABLED){
   const v = (g / tiltMaxDeg) * tiltMaxSpeed;
 
   // apply (dt = seconds)
-  player.x += v * dt;
+  tiltVx += (v - tiltVx) * 0.12;   // ease toward target speed
+  player.x += tiltVx * dt;
+  tiltVx *= 0.88;                 // friction (this is the stop)
 }
 
   player.x = clamp(player.x, 10, innerWidth - player.w - 10);
