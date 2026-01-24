@@ -553,10 +553,46 @@ const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
 // -----------------------
+// Mobile Gesture Guard (canvas-only)
+// -----------------------
+(function(el){
+  if(!el) return;
+
+  // iOS: block pinch zoom
+  el.addEventListener("touchstart", e => {
+    if(e.touches.length > 1) e.preventDefault();
+  }, { passive:false });
+
+  // iOS: block double-tap zoom
+  let lastTouchEnd = 0;
+  el.addEventListener("touchend", e => {
+    const now = Date.now();
+    if(now - lastTouchEnd < 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+
+})(document.getElementById("c"));
+
+// -----------------------
+// Android Back Gesture Trap
+// -----------------------
+history.pushState(null, "", location.href);
+
+window.addEventListener("popstate", () => {
+  history.pushState(null, "", location.href);
+
+  // Optional: turn back into pause
+  if(started && !paused){
+    setPaused(true);
+  }
+});
+  
+
+// -----------------------
 // Mobile: prevent page/gesture scrolling (Android + iOS)
 // Place once during init (after IS_COARSE is defined)
 // -----------------------
-if(IS_COARSE){
+/*if(IS_COARSE){
   const root = document.documentElement;
 
   // CSS overscroll lock (Android/Chrome + some others)
@@ -569,7 +605,7 @@ if(IS_COARSE){
   document.body.style.width = "100%";
   document.body.style.height = "100%";
   document.body.style.overflow = "hidden";
-}
+}*/
   
 // -----------------------
 // DPR / resize
