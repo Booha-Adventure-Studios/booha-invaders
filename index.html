@@ -444,6 +444,14 @@ function handleTiltEvent(e){
   
   
 function showTiltPromptAndThenStartWave1(){
+
+  // ✅ mobile only
+  if(!IS_COARSE){
+    TILT_ENABLED = false;
+    startWave(1);
+    return;
+  }
+
   const tiltOverlay = document.getElementById("tiltOverlay");
   const yesBtn = document.getElementById("tiltYesBtn");
   const noBtn  = document.getElementById("tiltNoBtn");
@@ -457,18 +465,20 @@ function showTiltPromptAndThenStartWave1(){
 
   msgEl.textContent = "Choose your control style.";
   tiltOverlay.style.display = "flex";
+  canvas.style.pointerEvents = "none";
 
-  const cleanup = ()=>{
-    tiltOverlay.style.display = "none";
-    yesBtn.onclick = null;
-    noBtn.onclick = null;
-  };
+
+ const cleanup = ()=>{
+  tiltOverlay.style.display = "none";
+  canvas.style.pointerEvents = "auto";
+  yesBtn.onclick = null;
+  noBtn.onclick = null;
+};
+
 
   yesBtn.onclick = ()=>{
     TILT_ENABLED = true;
     calibrateTilt();
-
-    
     cleanup();
     startWave(1);
   };
