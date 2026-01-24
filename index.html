@@ -455,10 +455,23 @@ function calibrateTilt(){
 }
 
 function handleTiltEvent(e){
-  const g = (typeof e.gamma === "number") ? e.gamma : 0;
-  tiltGamma = g;
+  const beta  = (typeof e.beta  === "number") ? e.beta  : 0;
+  const gamma = (typeof e.gamma === "number") ? e.gamma : 0;
+
+  const ang = (screen.orientation && typeof screen.orientation.angle === "number")
+    ? screen.orientation.angle
+    : (typeof window.orientation === "number" ? window.orientation : 0);
+
+  // left/right tilt in *landscape*
+  let lr = gamma;
+  if(ang === 90) lr = beta;
+  else if(ang === -90 || ang === 270) lr = -beta;
+
+  tiltGamma = lr;
   tiltSmooth = tiltSmooth * 0.85 + tiltGamma * 0.15;
 }
+
+
 
 function showTiltPromptAndThenStartWave1(){
 
