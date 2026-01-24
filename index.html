@@ -1261,7 +1261,7 @@ ctx.restore();
         const a = (i*17.3 + t*0.9) % (Math.PI*2);
         const rad = minD * (0.10 + 0.035*Math.sin(t*0.7 + i));
         const sx = cx + Math.cos(a) * (rad + i*2);
-        const sy = (H * (isMob ? 0.305 : 0.34)) + Math.sin(a*1.2) * (rad*0.55) - 18*s;
+        const sy = (H * 0.305) + Math.sin(a*1.2) * (rad*0.55) - 18*s;
         const r = (2.2 + 1.4*Math.sin(t*2.4 + i*0.7)) * s;
 
         const c = (i%3===0) ? "rgba(255,220,120,0.55)"
@@ -1276,6 +1276,7 @@ ctx.restore();
       }
       ctx.restore();
     })();
+    }   
 
 
     // -----------------------
