@@ -483,6 +483,7 @@ function handleTiltEvent(e){
   yesBtn.onpointerdown = (e)=>{
     e.preventDefault();
     e.stopPropagation();
+    tiltOverlay.style.display = "none";
 
     TILT_ENABLED = true;
     calibrateTilt();
@@ -493,6 +494,7 @@ function handleTiltEvent(e){
   noBtn.onpointerdown = (e)=>{
     e.preventDefault();
     e.stopPropagation();
+    tiltOverlay.style.display = "none";
 
     TILT_ENABLED = false;
 
