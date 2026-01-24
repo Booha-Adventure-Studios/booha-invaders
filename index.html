@@ -40,6 +40,12 @@ canvas{
    Everything centered + tighter spacing
    ========================= */
 
+#tiltOverlay{
+  z-index: 100000;   /* higher than rotateOverlay + mobileHoldControls */
+  pointer-events: auto;
+}
+
+  
 #startOverlay{
   background: rgba(0,0,0,.82);
   backdrop-filter: blur(10px);
@@ -298,10 +304,17 @@ BODY + SCRIPT (PART 1)
 
 <!-- TILT PROMPT (shows after Start) -->
 <div id="tiltOverlay" style="
-  position:fixed; inset:0; z-index:20050; display:none;
-  align-items:center; justify-content:center; padding:18px;
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:none;
+  pointer-events:auto;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
   background:rgba(255,0,0,0.35);
 ">
+
   <div style="
     width:min(560px, 92vw);
     border-radius:22px;
@@ -400,7 +413,6 @@ window.addEventListener("unhandledrejection", (e)=>{
 // =======================
 
 //Globals
-//Globals  
 let booFireTimer = 0;
 let bgm = null;      // main game BGM
 let bossBgm = null;  // boss BGM
@@ -417,34 +429,29 @@ let _needRotateLast = null;
 let _gateTimer = 0;
 let GAME_SCALE = 1;  
 let LOCKED_SCALE = 1;
+
 let TILT_ENABLED = false;
-let tiltGamma = 0;        // raw current tilt
-let tiltSmooth = 0;       // smoothed tilt (what we’ll use later)
+let tiltGamma = 0;
+let tiltSmooth = 0;
 let tiltBaseline = 0;
 
-const tiltDead = 1.2;      // degrees (small deadzone)
-const tiltMaxDeg = 18;     // degrees (full tilt range)
-const tiltMaxSpeed = 820;  // px/sec at full tilt
-
-  
+const tiltDead = 1.2;
+const tiltMaxDeg = 18;
+const tiltMaxSpeed = 820;
 
 function calibrateTilt(){
   tiltBaseline = tiltSmooth;
 }
-  
 
 function handleTiltEvent(e){
-  // gamma = left/right tilt in degrees (-90..90)
   const g = (typeof e.gamma === "number") ? e.gamma : 0;
   tiltGamma = g;
-
-  // light smoothing (keeps it stable)
   tiltSmooth = tiltSmooth * 0.85 + tiltGamma * 0.15;
 }
-  
- function showTiltPromptAndThenStartWave1(){
 
-  // ✅ mobile only
+function showTiltPromptAndThenStartWave1(){
+
+  // ✅ desktop: skip prompt
   if(!IS_COARSE){
     TILT_ENABLED = false;
     startWave(1);
@@ -461,79 +468,77 @@ function handleTiltEvent(e){
     return;
   }
 
-  // ✅ freeze the game while choosing
+  const rotateOverlayEl  = document.getElementById("rotateOverlay");
+  const mobileControlsEl = document.getElementById("mobileHoldControls");
+
+  // ✅ freeze while choosing
   paused = true;
-
   msgEl.textContent = "Choose your control style.";
-  tiltOverlay.style.display = "flex";
 
-  // ✅ stop canvas from eating touches
-  canvas.style.pointerEvents = "none";
+  // ✅ make tilt overlay the ONLY clickable layer
+  if(rotateOverlayEl)  rotateOverlayEl.style.pointerEvents = "none";
+  if(mobileControlsEl) mobileControlsEl.style.pointerEvents = "none";
+  if(canvas) canvas.style.pointerEvents = "none";
+
+  tiltOverlay.style.display = "flex";
 
   const cleanup = ()=>{
     tiltOverlay.style.display = "none";
-    canvas.style.pointerEvents = "auto";
+
+    // restore normal input layers
+    if(rotateOverlayEl)  rotateOverlayEl.style.pointerEvents = "auto";
+    if(mobileControlsEl) mobileControlsEl.style.pointerEvents = "auto";
+    if(canvas) canvas.style.pointerEvents = "auto";
+
     paused = false;
 
-    yesBtn.onpointerdown = null;
-    noBtn.onpointerdown  = null;
+    yesBtn.onclick = null;
+    noBtn.onclick  = null;
   };
 
-  // ✅ capture taps on the overlay itself (buttons are being intercepted elsewhere)
-  const onPick = (e)=>{
-    const hitYes = e.target.closest("#tiltYesBtn");
-    const hitNo  = e.target.closest("#tiltNoBtn");
-    if(!hitYes && !hitNo) return;
-
+  // ✅ bind directly to buttons (most reliable on iOS)
+  yesBtn.onclick = (e)=>{
     e.preventDefault();
     e.stopPropagation();
-
-    TILT_ENABLED = !!hitYes;
-    if(TILT_ENABLED) calibrateTilt();
-
+    TILT_ENABLED = true;
+    calibrateTilt();
     cleanup();
-    tiltOverlay.removeEventListener("pointerdown", onPick, true);
+    startWave(1);
   };
 
-  tiltOverlay.addEventListener("pointerdown", onPick, true);
+  noBtn.onclick = (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    TILT_ENABLED = false;
+    cleanup();
+    startWave(1);
+  };
 }
- 
 
 
 // coarse pointer = phones/tablets (desktop stays exact)
-const IS_COARSE = matchMedia && matchMedia("(pointer:coarse)").matches;
-document.getElementById("mobileHoldControls").style.display = "none";
+const IS_COARSE = (window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 
-  
+// ✅ DO NOT force-hide here if you use finger controls.
+// Leave display control to your start flow / choice.
+// document.getElementById("mobileHoldControls").style.display = "none";
+
 const rotateOverlay = document.getElementById("rotateOverlay");
 
-function U(){
-  return Math.min(viewportW(), viewportH());
-}
-
-function isLandscape(){
-  return viewportW() > viewportH();
-}
-
+function U(){ return Math.min(viewportW(), viewportH()); }
+function isLandscape(){ return viewportW() > viewportH(); }
 
 const HUD_PAD = 12;
 
-// phone landscape = shrink pieces, not canvas
 function computeGameScale(){
   if(!isLandscape()) return 1;
-
-  const u = U(); // min(innerWidth, innerHeight)
-
-  // tune these thresholds once, then forget about it
-  if(u <= 430) return 0.58;  // tiny phones
-  if(u <= 520) return 0.62;  // normal phones
-  return 1;                  // tablets / desktop
+  const u = U();
+  if(u <= 430) return 0.58;
+  if(u <= 520) return 0.62;
+  return 1;
 }
-  
-const SAFE = {
-  top: 0,
-  right: 0
-};
+
+const SAFE = { top: 0, right: 0 };
 
 function worldScale(){
   return started ? LOCKED_SCALE : GAME_SCALE;
