@@ -1460,64 +1460,60 @@ function drawQuizOverlay(){
       ctx.restore();
     }
 
-     // -----------------------
-    // Big number (glow + candy gradient) + "event" feel
     // -----------------------
-    if(isMob){
-    const q = String(quizQ.n);
+// Big number (HUGE glow + readable outline)
+// -----------------------
+if(isMob){
+  const q = String(quizQ.n);
 
-    const ng = ctx.createLinearGradient(cx - 140, 0, cx + 140, 0);
-    ng.addColorStop(0.00, "rgba(255, 220, 120, 0.98)");
-    ng.addColorStop(0.45, "rgba(255, 255, 255, 0.98)");
-    ng.addColorStop(1.00, "rgba(160, 220, 255, 0.98)");
+  // candy-ish light gradient fill
+  const ng = ctx.createLinearGradient(cx - 160, 0, cx + 160, 0);
+  ng.addColorStop(0.00, "rgba(255, 220, 120, 1.00)");
+  ng.addColorStop(0.45, "rgba(255, 255, 255, 1.00)");
+  ng.addColorStop(1.00, "rgba(160, 220, 255, 1.00)");
 
-    const numSize = Math.round((isMob ? 64 : 74) * s);
-    ctx.font = `900 ${numSize}px system-ui, -apple-system, sans-serif`;
-    // dark back-glow halo (depth + contrast)
-ctx.save();
-ctx.shadowBlur = Math.round(38 * s);
-ctx.shadowColor = "rgba(0,0,0,0.85)";
-ctx.fillStyle = "rgba(0,0,0,0.65)";
-const qwBack = ctx.measureText(q).width;
-ctx.fillText(q, cx - qwBack/2, H * 0.305);
-ctx.restore();
+  const y = H * 0.305;
+  const numSize = Math.round(72 * s); // big + stable (mobile)
+  ctx.font = `900 ${numSize}px system-ui, -apple-system, sans-serif`;
+  ctx.textBaseline = "alphabetic";
 
+  const w = ctx.measureText(q).width;
+  const x = cx - w/2;
 
-    // glow pass
-    ctx.save();
-    ctx.shadowBlur = Math.round(28 * s);
-    ctx.shadowColor = "rgba(255, 210, 80, 0.60)";
-    ctx.fillStyle = ng;
-    const qw = ctx.measureText(q).width;
-    ctx.fillText(q, cx - qwBack/2, H * 0.305);
-    ctx.restore();
+  // 1) BIG dark back-glow (depth)
+  ctx.save();
+  ctx.shadowBlur  = Math.round(64 * s);
+  ctx.shadowColor = "rgba(0,0,0,0.92)";
+  ctx.fillStyle   = "rgba(0,0,0,0.72)";
+  ctx.fillText(q, x, y);
+  ctx.restore();
 
-   
-    // sparkle confetti (subtle + deterministic)
-    (function sparkles(){
-      const count = isMob ? 10 : 14;
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      for(let i=0;i<count;i++){
-        const a = (i*17.3 + t*0.9) % (Math.PI*2);
-        const rad = minD * (0.10 + 0.035*Math.sin(t*0.7 + i));
-        const sx = cx + Math.cos(a) * (rad + i*2);
-        const sy = (H * 0.305) + Math.sin(a*1.2) * (rad*0.55) - 18*s;
-        const r = (2.2 + 1.4*Math.sin(t*2.4 + i*0.7)) * s;
+  // 2) Dark outline (readability)
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.miterLimit = 2;
+  ctx.lineWidth = Math.max(3, Math.round(10 * s));
+  ctx.strokeStyle = "rgba(0,0,0,0.78)";
+  ctx.strokeText(q, x, y);
+  ctx.restore();
 
-        const c = (i%3===0) ? "rgba(255,220,120,0.55)"
-                : (i%3===1) ? "rgba(160,220,255,0.50)"
-                            : "rgba(255,150,220,0.42)";
+  // 3) Bright outer glow + candy fill
+  ctx.save();
+  ctx.shadowBlur  = Math.round(36 * s);
+  ctx.shadowColor = "rgba(255, 230, 170, 0.80)";
+  ctx.fillStyle   = ng;
+  ctx.fillText(q, x, y);
+  ctx.restore();
 
-        ctx.fillStyle = c;
-        ctx.globalAlpha = 0.9;
-        ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI*2);
-        ctx.fill();
-      }
-      ctx.restore();
-    })();
-    }   
+  // 4) Tiny inner highlight (optional “pop”)
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.lineWidth = Math.max(2, Math.round(6 * s));
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.strokeText(q, x, y);
+  ctx.restore();
+}
+
 
 
     // -----------------------
