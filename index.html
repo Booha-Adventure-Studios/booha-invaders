@@ -442,8 +442,7 @@ function handleTiltEvent(e){
   tiltSmooth = tiltSmooth * 0.85 + tiltGamma * 0.15;
 }
   
-  
-function showTiltPromptAndThenStartWave1(){
+ function showTiltPromptAndThenStartWave1(){
 
   // ✅ mobile only
   if(!IS_COARSE){
@@ -457,38 +456,52 @@ function showTiltPromptAndThenStartWave1(){
   const noBtn  = document.getElementById("tiltNoBtn");
   const msgEl  = document.getElementById("tiltMsg");
 
-  // fallback safety
   if(!tiltOverlay || !yesBtn || !noBtn){
     startWave(1);
     return;
   }
 
+  // ✅ freeze the game while choosing
+  paused = true;
+
   msgEl.textContent = "Choose your control style.";
   tiltOverlay.style.display = "flex";
+
+  // ✅ stop canvas from eating touches
   canvas.style.pointerEvents = "none";
 
+  const cleanup = ()=>{
+    tiltOverlay.style.display = "none";
+    canvas.style.pointerEvents = "auto";
+    paused = false;
 
- const cleanup = ()=>{
-  tiltOverlay.style.display = "none";
-  canvas.style.pointerEvents = "auto";
-  yesBtn.onclick = null;
-  noBtn.onclick = null;
-};
+    yesBtn.onpointerdown = null;
+    noBtn.onpointerdown  = null;
+  };
 
+  // ✅ use pointerdown (more reliable than click on mobile)
+  yesBtn.onpointerdown = (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
 
-  yesBtn.onclick = ()=>{
     TILT_ENABLED = true;
     calibrateTilt();
+
     cleanup();
     startWave(1);
   };
 
-  noBtn.onclick = ()=>{
+  noBtn.onpointerdown = (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+
     TILT_ENABLED = false;
+
     cleanup();
     startWave(1);
   };
 }
+ 
 
 
 // coarse pointer = phones/tablets (desktop stays exact)
