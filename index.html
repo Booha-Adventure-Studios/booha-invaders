@@ -445,7 +445,7 @@ let tiltGamma = 0;
 let tiltSmooth = 0;
 let tiltBaseline = 0;
 
-const tiltDead = 3.0; //Booha move-smaller=moves constantly 
+const tiltDead = 4.0; //Booha move-smaller=moves constantly 
 const tiltMaxDeg = 8; //How much to tilt phone for movement
 const tiltMaxSpeed = 380; //Booha speed pixels per second
 
@@ -2362,6 +2362,10 @@ if(pointerX === null && TILT_ENABLED){
 
   // deadzone
   if(Math.abs(g) < tiltDead) g = 0;
+
+  if(g === 0){
+  tiltSmooth = tiltBaseline;
+}
 
   // clamp
   g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
