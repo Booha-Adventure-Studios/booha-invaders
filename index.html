@@ -2393,7 +2393,8 @@ if(pointerX === null && TILT_ENABLED){
 
   // 7) CLAMP in the SAME coordinate space you draw the player in
   // If your world is PLAYFIELD coords:
-  player.x = clamp(player.x, 0, PLAYFIELD.w - player.w);
+  player.x = clamp(player.x, 0, W() - player.w);
+
   // (If you don’t have PLAYFIELD, clamp to your world width variable instead.)
  }
 }  
