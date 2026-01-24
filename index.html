@@ -2357,30 +2357,25 @@ if(pointerX !== null){
   if(keys.has("ArrowLeft")  || keys.has("a") || keys.has("A")) player.x -= 420*dt;
   if(keys.has("ArrowRight") || keys.has("d") || keys.has("D")) player.x += 420*dt;
   // ---- TILT MOVE (only when no finger control is active) ----
+  
 if(pointerX === null && TILT_ENABLED){
-  let g = (tiltSmooth - tiltBaseline);
+  let g = tiltSmooth - tiltBaseline;
 
-  // deadzone
-  if(Math.abs(g) < tiltDead) g = 0;
+  // DEADZONE = HARD STOP
+  if(Math.abs(g) < tiltDead){
+    tiltSmooth = tiltBaseline;
+    tiltVx = 0;
+  } else {
+    g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
 
-  if(g === 0){
-  tiltSmooth = tiltBaseline;
+    const v = (g / tiltMaxDeg) * tiltMaxSpeed;
+
+    tiltVx += (v - tiltVx) * 0.12; //snappier
+    player.x += tiltVx * dt;
+    tiltVx *= 0.88; //heavier
+  }
 }
 
-  // clamp
-  g = clamp(g, -tiltMaxDeg, tiltMaxDeg);
-
-  // map to speed
-  const v = (g / tiltMaxDeg) * tiltMaxSpeed;
-
-  // apply (dt = seconds)
-  tiltVx += (v - tiltVx) * 0.12;   // ease toward target speed
-  player.x += tiltVx * dt;
-  tiltVx *= 0.88;                 // friction (this is the stop)
-}
-
-  player.x = clamp(player.x, 10, innerWidth - player.w - 10);
-}
 
 
 // --------------------
