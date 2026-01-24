@@ -312,7 +312,15 @@ BODY + SCRIPT (PART 1)
   align-items:center;
   justify-content:center;
   padding:18px;
-  background:rgba(255,0,0,0.35);
+  background:
+  radial-gradient(
+    800px 500px at 50% 40%,
+    rgba(255,180,220,0.10),
+    rgba(0,0,0,0.82)
+  );
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+
 ">
 
   <div style="
@@ -435,12 +443,13 @@ let tiltGamma = 0;
 let tiltSmooth = 0;
 let tiltBaseline = 0;
 
-const tiltDead = 1.2;
-const tiltMaxDeg = 18;
-const tiltMaxSpeed = 820;
+const tiltDead = 3.0; //Booha move-smaller=moves constantly 
+const tiltMaxDeg = 12; //How much to tilt phone for movement
+const tiltMaxSpeed = 420; //Booha speed pixels per second
 
 function calibrateTilt(){
-  tiltBaseline = tiltSmooth;
+  tiltSmooth = tiltGamma;   // force sync first
+  tiltBaseline = tiltGamma;
 }
 
 function handleTiltEvent(e){
