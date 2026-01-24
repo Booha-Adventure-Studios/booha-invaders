@@ -521,14 +521,36 @@ function showTiltPromptAndThenStartWave1(){
   };
 
   // ✅ bind directly to buttons (most reliable on iOS)
-  yesBtn.onclick = (e)=>{
-    e.preventDefault();
-    e.stopPropagation();
-    TILT_ENABLED = true;
-    calibrateTilt();
-    cleanup();
-    startWave(1);
-  };
+ yesBtn.onclick = async (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+
+  // iOS Safari requires explicit permission
+  if(typeof DeviceOrientationEvent !== "undefined" &&
+     typeof DeviceOrientationEvent.requestPermission === "function"){
+    try{
+      const res = await DeviceOrientationEvent.requestPermission();
+      if(res !== "granted"){
+        // user said no → fall back safely
+        TILT_ENABLED = false;
+        cleanup();
+        startWave(1);
+        return;
+      }
+    } catch(_){
+      TILT_ENABLED = false;
+      cleanup();
+      startWave(1);
+      return;
+    }
+  }
+
+  TILT_ENABLED = true;
+  calibrateTilt();
+  cleanup();
+  startWave(1);
+};
+
 
   noBtn.onclick = (e)=>{
     e.preventDefault();
