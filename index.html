@@ -429,6 +429,17 @@ let bossBgm = null;  // boss BGM
 let booWeaponLevel = 1; // 1=single, 2=spread, 3=better spread
 let dottyKills = 0;
 let dottyGold = false;   // becomes true after first 1000
+
+function applyWeaponLevelForWave(w){
+  const target =
+    (w >= 17) ? 3 :
+    (w >=  9) ? 2 : 1;
+
+  // never downgrade
+  booWeaponLevel = Math.max(booWeaponLevel, target);
+}
+  
+  
 let dottyPop = 0;        // 0..1 bounce amount
 let endVideo = null;
 let endPlaying = false;     // lock so it triggers once
@@ -1574,9 +1585,6 @@ if(isMob){
 // -----------------------
 // Input (universal)
 // -----------------------
-let pointerDown = false;
-let pointerX = null;
-let dragOffsetX = 0;
 
 const mobileControls = document.getElementById("mobileHoldControls");
 
@@ -1921,10 +1929,10 @@ function waveShooterCap(wave){
 
 function startWave(n){
   WaveState.wave = n;
-  // Weapon upgrades by wave
-// Weapon upgrades by wave
-if(n >= 17) booWeaponLevel = Math.max(booWeaponLevel, 3);
-else if(n >= 9) booWeaponLevel = Math.max(booWeaponLevel, 2);
+  applyWeaponLevelForWave(n);
+}
+
+
 
 
   WaveState.groupIdx = 0;
@@ -2825,15 +2833,11 @@ if(!bl.dead && player.hitIFrames <= 0){
       player.boost = clamp((player.boost || 0) + 1, 0, 3);
       playCandySfx();
 
-
-     // ✅ NEW: blue candy upgrades weapon instantly
+// ✅ blue candy upgrades weapon up to wave cap
 if(c.type === "blue"){
-  if(WaveState.wave >= 17) booWeaponLevel = Math.max(booWeaponLevel, 3);
-  else if(WaveState.wave >= 9) booWeaponLevel = Math.max(booWeaponLevel, 2);
+  applyWeaponLevelForWave(WaveState.wave);
 }
 
-     
-      // small restore (keep this)
       player.energy = Math.min(100, player.energy + 30);
 
       // turn off old timer-based sugar (so boost is the only system)
