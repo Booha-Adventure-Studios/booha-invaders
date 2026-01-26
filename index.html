@@ -447,6 +447,18 @@ let tiltGamma = 0;
 let tiltSmooth = 0;
 let tiltBaseline = 0;
 
+let candySfx = null;
+
+function playCandySfx(){
+  try{
+    if(!candySfx) candySfx = new Audio("candy-get.mp3");
+    candySfx.currentTime = 0;
+    const p = candySfx.play();
+    if(p && p.catch) p.catch(()=>{});
+  } catch(_){}
+}
+  
+
 const tiltDead = 4.0; //Booha move-smaller=moves constantly 
 const tiltMaxDeg = 8; //How much to tilt phone for movement
 const tiltMaxSpeed = 380; //Booha speed pixels per second
@@ -2790,7 +2802,8 @@ if(!bl.dead && player.hitIFrames <= 0){
       // ✅ BOOST STACKS (persist until hit)
       // 1 candy = +1 stack, 2 candies = +2 stacks, capped at 3
       player.boost = clamp((player.boost || 0) + 1, 0, 3);
-      new Audio("candy-get.mp3").play().catch(()=>{});
+      playCandySfx();
+
 
      // ✅ NEW: blue candy upgrades weapon instantly
 if(c.type === "blue"){
@@ -3780,7 +3793,7 @@ function primeBossBGM(){
   resize();
 
 disableDoubleTapZoomScoped(canvas);
-disableDoubleTapZoomScoped(document.documentElement);
+//disableDoubleTapZoomScoped(document.documentElement);
 
 
   
@@ -3810,17 +3823,12 @@ disableDoubleTapZoomScoped(document.documentElement);
   // prepare clean state ONCE (do NOT start waves here)
   resetGame();
 
-  // BGM and Dotty Boss
-function startMainBGM(){
-  const bgm = new Audio("bgm.mp3");
-  bgm.loop = true;
-  bgm.volume = 0.55;
-  MAIN_BGM = bgm;                 // ✅ register
-  bgm.play().catch(()=>{});
-}
 
  // ✅ ADD THIS LINE HERE (last thing in boot)
+if(typeof handleTiltEvent === "function"){
   window.addEventListener("deviceorientation", handleTiltEvent, true);
+}
+
 
 
   // START button (wire once)
