@@ -1922,8 +1922,10 @@ function waveShooterCap(wave){
 function startWave(n){
   WaveState.wave = n;
   // Weapon upgrades by wave
-if(n >= 26) booWeaponLevel = Math.max(booWeaponLevel, 3);
-else if(n >= 16) booWeaponLevel = Math.max(booWeaponLevel, 2);
+// Weapon upgrades by wave
+if(n >= 17) booWeaponLevel = Math.max(booWeaponLevel, 3);
+else if(n >= 9) booWeaponLevel = Math.max(booWeaponLevel, 2);
+
 
   WaveState.groupIdx = 0;
   WaveState.phaseT = 0;
@@ -2826,8 +2828,8 @@ if(!bl.dead && player.hitIFrames <= 0){
 
      // ✅ NEW: blue candy upgrades weapon instantly
 if(c.type === "blue"){
-  if(WaveState.wave >= 26) booWeaponLevel = Math.max(booWeaponLevel, 3);
-  else if(WaveState.wave >= 16) booWeaponLevel = Math.max(booWeaponLevel, 2);
+  if(WaveState.wave >= 17) booWeaponLevel = Math.max(booWeaponLevel, 3);
+  else if(WaveState.wave >= 9) booWeaponLevel = Math.max(booWeaponLevel, 2);
 }
 
      
