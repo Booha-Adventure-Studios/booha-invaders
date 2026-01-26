@@ -441,6 +441,10 @@ let GAME_SCALE = 1;
 let LOCKED_SCALE = 1;
 let tiltVx = 0;
   
+let pointerDown = false;
+let pointerX = null;
+let dragOffsetX = 0;
+  
 
 let TILT_ENABLED = false;
 let tiltGamma = 0;
@@ -448,6 +452,14 @@ let tiltSmooth = 0;
 let tiltBaseline = 0;
 
 let candySfx = null;
+
+function inEdgeZone(clientX, edgePx = 18){
+  const vw = (typeof viewportW === "function")
+    ? viewportW()
+    : window.innerWidth;
+  return (clientX <= edgePx) || (clientX >= vw - edgePx);
+}
+  
 
 function playCandySfx(){
   try{
@@ -1571,9 +1583,12 @@ const mobileControls = document.getElementById("mobileHoldControls");
 // MOBILE ONLY: bottom overlay controls Booha
 if(IS_COARSE && mobileControls){
 
-  mobileControls.addEventListener("pointerdown", (e)=>{
-  // Don't let the bottom overlay interfere with the quiz
+ mobileControls.addEventListener("pointerdown", (e)=>{
+  // 🚫 Android edge-swipe guard
+  if(IS_COARSE && inEdgeZone(e.clientX, 18)) return;
+
   if(quizOpen) return;
+
 
   // If paused, tapping the bottom overlay resumes (since it sits on top)
   if(paused){
@@ -1614,10 +1629,14 @@ if(IS_COARSE && mobileControls){
   
 
 canvas.addEventListener("pointerdown", (e)=>{
-  // MOBILE: allow ONLY pause-button taps during play (canvas otherwise blocked)
-if(IS_COARSE && !quizOpen && !paused){
-  if(!(started && player.energy > 0 && hitPauseBtn(e.clientX, e.clientY))) return;
-}
+  // 🚫 Android edge-swipe guard
+  if(IS_COARSE && inEdgeZone(e.clientX, 18)) return;
+
+  // MOBILE: allow ONLY pause-button taps during play
+  if(IS_COARSE && !quizOpen && !paused){
+    if(!(started && player.energy > 0 && hitPauseBtn(e.clientX, e.clientY))) return;
+  }
+
 
 
 
