@@ -1930,19 +1930,14 @@ function waveShooterCap(wave){
 function startWave(n){
   WaveState.wave = n;
   applyWeaponLevelForWave(n);
-}
-
-
-
 
   WaveState.groupIdx = 0;
   WaveState.phaseT = 0;
 
-
-
   WaveState.phase = "intro";
   beginGroup();
 }
+
 
 
 function beginGroup(){
