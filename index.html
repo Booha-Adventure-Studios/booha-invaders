@@ -34,6 +34,17 @@ canvas{
 }
 
 
+#gameWrap{
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+}
+
+  
 /* =========================
    Booha Invaders — Start Overlay (CLEAN)
    Black + Pink glow
@@ -223,7 +234,9 @@ BODY + SCRIPT (PART 1)
 ========================= -->
 
 <body>
-<canvas id="c"></canvas>
+<div id="gameWrap">
+  <canvas id="c"></canvas>
+</div>
 
 
 <video id="endVideo" playsinline preload="auto">
@@ -797,6 +810,16 @@ let booPinkCD = 0;   // boost cadence cooldown (pink)
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d", { alpha:false });
 
+const gameWrap = document.getElementById("gameWrap");
+
+function viewportX(){
+  return window.visualViewport ? visualViewport.offsetLeft : 0;
+}
+function viewportY(){
+  return window.visualViewport ? visualViewport.offsetTop : 0;
+}
+  
+
 function disableDoubleTapZoomScoped(root){
   try{
     const el = root || document.getElementById("game") || document.documentElement;
@@ -900,23 +923,31 @@ function resize(){
   const vw = viewportW();
   const vh = viewportH();
 
-  // set CSS pixel size explicitly (avoids 100vh / toolbar lies)
   canvas.style.width  = vw + "px";
   canvas.style.height = vh + "px";
 
-  // DPR backing store
-  DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
   canvas.width  = Math.floor(vw * DPR);
   canvas.height = Math.floor(vh * DPR);
 
- // THIS fucking shit- CSS-pixel contract: reset transform
-ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  // ✅ ADD THIS — LAST LINE IN resize()
+  if(gameWrap){
+    gameWrap.style.transform =
+      `translate(${viewportX()}px, ${viewportY()}px)`;
+  }
 }
+
+// ✅ iOS Safari viewport drift fix
+if(window.visualViewport){
+  visualViewport.addEventListener("resize", resize, { passive:true });
+  visualViewport.addEventListener("scroll", resize, { passive:true });
+}
+  
+
+  
 addEventListener("resize", resize);
 
-// IMPORTANT: mobile browsers change visualViewport without firing resize reliably
-window.visualViewport?.addEventListener("resize", resize);
-window.visualViewport?.addEventListener("scroll", resize);
 
 
 // -----------------------
