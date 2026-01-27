@@ -922,6 +922,8 @@ function viewportH(){
 }
 
 function resize(){
+  if(started && !paused) return;
+
   const vw = viewportW();
   const vh = viewportH();
 
@@ -931,14 +933,14 @@ function resize(){
   canvas.width  = Math.floor(vw * DPR);
   canvas.height = Math.floor(vh * DPR);
 
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.setTransform(DPR,0,0,0,DPR,0,0);
 
-  // ✅ ADD THIS — LAST LINE IN resize()
   if(gameWrap){
     gameWrap.style.transform =
       `translate(${viewportX()}px, ${viewportY()}px)`;
   }
 }
+
 
 // ✅ iOS Safari viewport drift fix
 if(window.visualViewport){
@@ -1039,28 +1041,37 @@ loadImg("assets/bug-1.png").then(img=>{
   IMG.dotty = img;
 }).catch(console.warn);
 
-  // -----------------------
-  // Helpers
-  // -----------------------
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const rand  = (a,b)=>a + Math.random()*(b-a);
+ // -----------------------
+// Helpers
+// -----------------------
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const rand  = (a,b)=>a + Math.random()*(b-a);
 
-  function aabb(ax,ay,aw,ah, bx,by,bw,bh){
-    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
-  }
+function aabb(ax,ay,aw,ah, bx,by,bw,bh){
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+}
 
-  // cover background (no distortion)
-  function drawCover(img){
-    const r = canvas.getBoundingClientRect();
-    const W = r.width, H = r.height;
+// cover background (no distortion)
+function drawCover(img){
+  const r = canvas.getBoundingClientRect();
+  const W = r.width, H = r.height;
 
-    const iw = img.width, ih = img.height;
-    const s = Math.max(W/iw, H/ih);
-    const dw = iw*s, dh = ih*s;
-    const dx = (W - dw)/2;
-    const dy = (H - dh)/2;
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
+  const iw = img.width, ih = img.height;
+  const s = Math.max(W/iw, H/ih);
+  const dw = iw*s, dh = ih*s;
+  const dx = (W - dw)/2;
+  const dy = (H - dh)/2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+// -----------------------
+// UI helpers
+// -----------------------
+function showStartOverlay(){
+  if(started) return; // ⛔ NEVER mid-game
+  const so = document.getElementById("startOverlay");
+  if(so) so.style.display = "flex";
+}
 
   // -----------------------
   // Question Popup (Multiple Choice 1–100)
@@ -3911,7 +3922,7 @@ if(startBtn){
   playerMoving = false;
   shootResumeDelay = 0;
 
-document.getElementById("startOverlay").style.display = "none";
+showStartOverlay();
 
 primeCandySFX();    // ✅ move here (earliest possible)
 primeEndVideo();
@@ -3939,9 +3950,8 @@ if(endVideo){
     endPlaying = false;
     endFadeStarted = false;
 
-    // show start overlay again
-    const so = document.getElementById("startOverlay");
-    if(so) so.style.display = "flex";
+  showStartOverlay();
+
 
     // reset game (your existing function)
     resetGame();
