@@ -487,12 +487,14 @@ function inEdgeZone(clientX, edgePx = 18){
 
 function playCandySfx(){
   try{
-    if(!candySfx) candySfx = new Audio("candy-get.mp3");
+    if(!candySfx) return;
     candySfx.currentTime = 0;
     const p = candySfx.play();
     if(p && p.catch) p.catch(()=>{});
   } catch(_){}
 }
+
+
   
 
 const tiltDead = 4.0; //Booha move-smaller=moves constantly 
@@ -3800,15 +3802,22 @@ function primeEndVideo(){
 
 function primeCandySFX(){
   try{
-    const a = new Audio("candy-get.mp3"); // use your exact candy path
-    a.muted = true;
-    const p = a.play();
+    if(!candySfx){
+      candySfx = new Audio("candy-get.mp3");
+      candySfx.volume = 1;
+    }
+    candySfx.muted = true;
+    const p = candySfx.play();
     if(p && p.catch) p.catch(()=>{});
     setTimeout(()=>{
-      try{ a.pause(); } catch(_){}
+      candySfx.pause();
+      candySfx.currentTime = 0;
+      candySfx.muted = false;
     }, 50);
-  } catch(_){}
+  } catch(_) {}
 }
+
+
 
   
 function primeBossBGM(){
