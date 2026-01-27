@@ -927,19 +927,23 @@ function resize(){
   const vw = viewportW();
   const vh = viewportH();
 
+  // ✅ ADD THIS
+  DPR = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+
   canvas.style.width  = vw + "px";
   canvas.style.height = vh + "px";
 
   canvas.width  = Math.floor(vw * DPR);
   canvas.height = Math.floor(vh * DPR);
 
-  ctx.setTransform(DPR,0,0,0,DPR,0,0);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
   if(gameWrap){
     gameWrap.style.transform =
       `translate(${viewportX()}px, ${viewportY()}px)`;
   }
 }
+
 
 
 // ✅ iOS Safari viewport drift fix
@@ -3513,9 +3517,6 @@ function closeQuiz(){
 
   // prepare next question (but do NOT open it)
   nextQuiz();
-
-  // --- START NEXT WAVE ---
-  startWave(WaveState.wave + 1);
 }
 
 
@@ -3922,7 +3923,8 @@ if(startBtn){
   playerMoving = false;
   shootResumeDelay = 0;
 
-showStartOverlay();
+document.getElementById("startOverlay").style.display = "none";
+
 
 primeCandySFX();    // ✅ move here (earliest possible)
 primeEndVideo();
@@ -3950,14 +3952,10 @@ if(endVideo){
     endPlaying = false;
     endFadeStarted = false;
 
+  started = false;
   showStartOverlay();
+  resetGame();
 
-
-    // reset game (your existing function)
-    resetGame();
-
-    // IMPORTANT: keep started false so it behaves like fresh boot
-    started = false;
   });
 }
 
