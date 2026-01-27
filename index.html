@@ -14,6 +14,11 @@ content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,vie
 <title>Booha Invaders — DOTTY</title>
 <style>
   html, body{
+  width: 100%;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  
   margin: 0;
   height: 100%;
   background: #000;
@@ -58,6 +63,15 @@ canvas{
   pointer-events: auto;
 }
 
+#startOverlay{
+  touch-action: none;
+}
+
+/* allow only vertical scroll inside the panel */
+#startOverlay > div{
+  touch-action: pan-y;
+}
+  
   
 #startOverlay{
   background: rgba(0,0,0,.82);
@@ -477,7 +491,7 @@ let tiltBaseline = 0;
 
 let candySfx = null;
 
-function inEdgeZone(clientX, edgePx = 18){
+function inEdgeZone(clientX, edgePx = 30){
   const vw = (typeof viewportW === "function")
     ? viewportW()
     : window.innerWidth;
@@ -1641,7 +1655,7 @@ if(IS_COARSE && mobileControls){
 
  mobileControls.addEventListener("pointerdown", (e)=>{
   // 🚫 Android edge-swipe guard
-  if(IS_COARSE && inEdgeZone(e.clientX, 18)) return;
+  if(IS_COARSE && inEdgeZone(e.clientX, 30)) return;
 
   if(quizOpen) return;
 
@@ -1682,11 +1696,59 @@ if(IS_COARSE && mobileControls){
   });
 }
 
+// -----------------------
+// ✅ ANDROID "PAGE SWIPE / REFRESH" HARD BLOCK (ADD-ONLY)
+// Blocks browser gesture scrolling while playing.
+// Keeps overlay scroll before start.
+// -----------------------
+(function lockAndroidGestures(){
+  if(!IS_COARSE) return;
+
+  function shouldBlock(){
+    // Only block during actual gameplay drag time
+    if(!started) return false;
+    if(paused) return false;
+    if(quizOpen) return false;
+    if(endPlaying) return false;
+    return true;
+  }
+
+  // Block swipe/scroll rubber-banding
+  document.addEventListener("touchmove", (e)=>{
+    if(!shouldBlock()) return;
+
+    // allow scrolling inside the overlay panel ONLY
+    const panel = e.target && e.target.closest && e.target.closest("#startOverlay > div");
+    if(panel) return;
+
+    e.preventDefault();
+  }, { passive:false, capture:true });
+
+  // Block pinch zoom
+  document.addEventListener("touchstart", (e)=>{
+    if(!shouldBlock()) return;
+    if(e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive:false, capture:true });
+
+  // Block Safari/Chrome gesture events (some Android builds fire these)
+  document.addEventListener("gesturestart", (e)=>{
+    if(shouldBlock()) e.preventDefault();
+  }, { passive:false, capture:true });
+
+  document.addEventListener("gesturechange", (e)=>{
+    if(shouldBlock()) e.preventDefault();
+  }, { passive:false, capture:true });
+
+  document.addEventListener("gestureend", (e)=>{
+    if(shouldBlock()) e.preventDefault();
+  }, { passive:false, capture:true });
+})();
+  
   
 
 canvas.addEventListener("pointerdown", (e)=>{
   // 🚫 Android edge-swipe guard
-  if(IS_COARSE && inEdgeZone(e.clientX, 18)) return;
+  if(IS_COARSE && inEdgeZone(e.clientX, 30)) return;
 
   // MOBILE: allow ONLY pause-button taps during play
   if(IS_COARSE && !quizOpen && !paused){
