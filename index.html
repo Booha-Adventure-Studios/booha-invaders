@@ -3902,13 +3902,16 @@ if(startBtn){
   playerMoving = false;
   shootResumeDelay = 0;
 
-  document.getElementById("startOverlay").style.display = "none";
-  primeEndVideo();
-  primeBossBGM();   // ← ADD THIS LINE
-  resetGame();
-  showTiltPromptAndThenStartWave1();
-  startBGM();
-  primeCandySFX(); 
+document.getElementById("startOverlay").style.display = "none";
+
+primeCandySFX();    // ✅ move here (earliest possible)
+primeEndVideo();
+primeBossBGM();
+
+resetGame();
+showTiltPromptAndThenStartWave1();
+startBGM();
+
 });
 
 } // ← THIS one
